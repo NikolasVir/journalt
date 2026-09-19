@@ -19,8 +19,7 @@ body:json {
 }
 
 docs {
-  Creates a new user account and signs them in automatically.
+  Expects 200 with user (id, userName, email). Session cookie is set automatically.
 
-  Expects Auth:RegistrationEnabled = true in appsettings.json.
-  Returns the created user (id, userName, email) and sets the session cookie.
+  Note: select the "local" environment (top-right in Bruno) or {{baseUrl}} will not resolve.
 }

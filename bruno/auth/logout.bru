@@ -1,7 +1,7 @@
 meta {
   name: Logout
   type: http
-  seq: 8
+  seq: 5
 }
 
 post {
@@ -11,11 +11,6 @@ post {
 }
 
 docs {
-  Signs the current user out and clears the session cookie.
-  Requires an active session cookie (run Login first).
-
-  Returns 204 No Content on success.
-  Returns 401 Unauthorized if no cookie is present.
-
-  After running this, Me should return 401.
+  Expects 204 No Content. Clears the session cookie.
+  Requires an active session (run Login first) — returns 401 otherwise.
 }

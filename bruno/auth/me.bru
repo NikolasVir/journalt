@@ -1,7 +1,7 @@
 meta {
   name: Me
   type: http
-  seq: 6
+  seq: 4
 }
 
 get {
@@ -11,8 +11,6 @@ get {
 }
 
 docs {
-  Returns the current authenticated user.
-  Requires an active session cookie (run Login first).
-
-  Expects 401 Unauthorized if no cookie is present.
+  Expects 200 with the current user. Requires an active session (run Login first).
+  Without a session cookie returns 401.
 }

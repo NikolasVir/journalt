@@ -1,7 +1,7 @@
 meta {
   name: Login
   type: http
-  seq: 4
+  seq: 3
 }
 
 post {
@@ -19,9 +19,8 @@ body:json {
 }
 
 docs {
-  Authenticates the user and sets the session cookie.
-  Bruno stores the cookie automatically — subsequent requests in this
-  environment will carry it without any manual steps.
+  Expects 200 with user (id, userName, email).
+  Bruno stores the session cookie automatically — Me and Logout will use it.
 
-  Returns the user (id, userName, email) on success.
+  Wrong credentials return 401 with a generic message (intentional — prevents user enumeration).
 }
