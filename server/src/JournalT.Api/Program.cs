@@ -1,4 +1,6 @@
 using JournalT.Infrastructure;
+using JournalT.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Auto-apply migrations so deleting journalt.db + dotnet run is enough to reset.
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<JournalTDbContext>();
+    db.Database.Migrate();
 }
 
 app.UseHttpsRedirection();
