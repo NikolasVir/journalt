@@ -1,0 +1,21 @@
+meta {
+  name: Logout
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/auth/logout
+  body: none
+  auth: none
+}
+
+docs {
+  Signs the current user out and clears the session cookie.
+  Requires an active session cookie (run Login first).
+
+  Returns 204 No Content on success.
+  Returns 401 Unauthorized if no cookie is present.
+
+  After running this, Me should return 401.
+}

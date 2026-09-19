@@ -1,6 +1,0 @@
-@JournalT.Api_HostAddress = http://localhost:5050
-
-GET {{JournalT.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

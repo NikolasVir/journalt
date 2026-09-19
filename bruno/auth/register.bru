@@ -1,0 +1,26 @@
+meta {
+  name: Register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "admin@journalt.dev",
+    "userName": "admin",
+    "password": "password"
+  }
+}
+
+docs {
+  Creates a new user account and signs them in automatically.
+
+  Expects Auth:RegistrationEnabled = true in appsettings.json.
+  Returns the created user (id, userName, email) and sets the session cookie.
+}

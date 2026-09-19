@@ -1,0 +1,27 @@
+meta {
+  name: Login
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "admin@journalt.dev",
+    "password": "password",
+    "rememberMe": false
+  }
+}
+
+docs {
+  Authenticates the user and sets the session cookie.
+  Bruno stores the cookie automatically — subsequent requests in this
+  environment will carry it without any manual steps.
+
+  Returns the user (id, userName, email) on success.
+}

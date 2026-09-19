@@ -1,0 +1,18 @@
+meta {
+  name: Me
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/auth/me
+  body: none
+  auth: none
+}
+
+docs {
+  Returns the current authenticated user.
+  Requires an active session cookie (run Login first).
+
+  Expects 401 Unauthorized if no cookie is present.
+}
