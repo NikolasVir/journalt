@@ -1,9 +1,11 @@
 namespace JournalT.Infrastructure;
 
+using JournalT.Application.Auth;
 using JournalT.Application.Common.Interfaces;
 using JournalT.Infrastructure.Identity;
 using JournalT.Infrastructure.Persistence;
 using JournalT.Infrastructure.Persistence.Interceptors;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +15,7 @@ public static class InfrastructureExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
         services.AddPersistence(configuration);
         services.AddIdentityServices();
         return services;
@@ -39,7 +42,7 @@ public static class InfrastructureExtensions
 
     public static IServiceCollection AddIdentityServices(this IServiceCollection services)
     {
-        services.AddIdentityCore<AppUser>(options =>
+        services.AddIdentity<AppUser, IdentityRole<Guid>>(options =>
         {
             options.Password.RequireDigit = false;
             options.Password.RequireLowercase = false;
@@ -47,9 +50,30 @@ public static class InfrastructureExtensions
             options.Password.RequireUppercase = false;
             options.Password.RequiredLength = 6;
         })
-        .AddRoles<IdentityRole<Guid>>()
-        .AddEntityFrameworkStores<JournalTDbContext>()
-        .AddSignInManager();
+        .AddEntityFrameworkStores<JournalTDbContext>();
+
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.ExpireTimeSpan = TimeSpan.FromDays(14);
+            options.SlidingExpiration = true;
+
+            // Return 401/403 instead of redirecting to a login page (API-friendly)
+            options.Events.OnRedirectToLogin = ctx =>
+            {
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = ctx =>
+            {
+                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            };
+        });
+
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }
