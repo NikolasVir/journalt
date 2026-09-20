@@ -26,7 +26,7 @@ public class ApiKeysController(IApiKeyService apiKeyService) : ControllerBase
         var result = await _apiKeyService.CreateAsync(CurrentUserId, request, ct);
 
         if (!result.Succeeded)
-            return Conflict(new { error = result.Error });
+            return Problem(detail: result.Error, statusCode: StatusCodes.Status409Conflict);
 
         return CreatedAtAction(nameof(GetAll), null, result.ApiKey);
     }

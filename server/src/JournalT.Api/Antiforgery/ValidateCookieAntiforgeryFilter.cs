@@ -59,10 +59,15 @@ public class ValidateCookieAntiforgeryFilter(IAntiforgery antiforgery) : IAsyncA
         }
         catch (AntiforgeryValidationException)
         {
-            context.Result = new BadRequestObjectResult(new
+            context.Result = new ObjectResult(new ProblemDetails
             {
-                error = "Antiforgery token validation failed. Missing or invalid 'X-XSRF-TOKEN' header."
-            });
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Antiforgery validation failed",
+                Detail = "Missing or invalid 'X-XSRF-TOKEN' header."
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest
+            };
             return;
         }
 

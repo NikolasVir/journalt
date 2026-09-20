@@ -33,7 +33,12 @@ public class AuthController(IAuthService authService, IAntiforgery antiforgery) 
         var result = await _authService.RegisterAsync(request, ct);
 
         if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors });
+        {
+            foreach (var error in result.Errors)
+                ModelState.AddModelError(string.Empty, error);
+
+            return ValidationProblem();
+        }
 
         AppendCsrfCookie();
         return Ok(result.User);
@@ -46,7 +51,7 @@ public class AuthController(IAuthService authService, IAntiforgery antiforgery) 
         var result = await _authService.LoginAsync(request, ct);
 
         if (!result.Succeeded)
-            return Unauthorized(new { errors = result.Errors });
+            return Problem(detail: result.Errors.FirstOrDefault(), statusCode: StatusCodes.Status401Unauthorized);
 
         AppendCsrfCookie();
         return Ok(result.User);

@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ValidateCookieAntiforgeryFilter>();
@@ -47,6 +48,9 @@ builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(dualSchemePolicy);
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
