@@ -1,0 +1,19 @@
+meta {
+  name: Revoke API Key by Name
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/apikeys/by-name/My%20CLI%20Key
+  body: none
+  auth: none
+}
+
+docs {
+  Requires an active session cookie (run Login first).
+  Revokes an active API key using its human-readable name.
+
+  Returns 204 No Content on success.
+  Returns 404 if no active key with this name exists for the current user.
+}

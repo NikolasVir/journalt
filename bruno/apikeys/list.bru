@@ -1,0 +1,16 @@
+meta {
+  name: List API Keys
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/apikeys
+  body: none
+  auth: none
+}
+
+docs {
+  Requires an active session cookie (run Login first).
+  Returns prefix, name, expiry, and last used time — never the secret or hash.
+}

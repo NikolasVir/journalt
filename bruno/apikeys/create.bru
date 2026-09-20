@@ -1,0 +1,26 @@
+meta {
+  name: Create API Key
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/apikeys
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "My CLI Key",
+    "expiresAtUtc": null
+  }
+}
+
+docs {
+  Requires an active session cookie (run Login first).
+  Returns 201 with the API key including PlaintextKey — this is the only time
+  the full key is shown. Copy it before closing the response.
+
+  To set an expiry, provide an ISO 8601 datetime: "expiresAtUtc": "2027-01-01T00:00:00Z"
+}

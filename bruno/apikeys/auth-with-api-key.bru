@@ -1,0 +1,23 @@
+meta {
+  name: Authenticate with API Key
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/auth/me
+  body: none
+  auth: none
+}
+
+headers {
+  X-Api-Key: jrt_replace_with_plaintext_key
+}
+
+docs {
+  Tests authentication via API Key header instead of session cookie.
+  Replace the header value with the plaintext key returned from the Create API Key request.
+
+  Returns 200 with the user details (id, userName, email) on success.
+  Returns 401 if the key is invalid, revoked, or expired.
+}
