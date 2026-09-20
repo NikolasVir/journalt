@@ -1,3 +1,4 @@
+using JournalT.Api.Antiforgery;
 using JournalT.Api.Extensions;
 using JournalT.Application.Common.Interfaces;
 using JournalT.Infrastructure;
@@ -11,7 +12,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ValidateCookieAntiforgeryFilter>();
+});
+
+// Antiforgery / CSRF protection for cookie-authenticated clients (e.g. Angular)
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.Name = ".JournalT.Antiforgery";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+});
 
 // Add Infrastructure (SQLite DbContext, Identity, etc.)
 builder.Services.AddInfrastructure(builder.Configuration);
