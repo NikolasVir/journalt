@@ -1,5 +1,10 @@
+using JournalT.Api.Extensions;
+using JournalT.Application.Common.Interfaces;
 using JournalT.Infrastructure;
 using JournalT.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +15,22 @@ builder.Services.AddControllers();
 
 // Add Infrastructure (SQLite DbContext, Identity, etc.)
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Current user abstraction — resolved from HttpContext claims in the API layer
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+
+// Dual-scheme authorization: cookie or API key
+// - DefaultPolicy: applies to [Authorize] without arguments
+// - FallbackPolicy: applies to all endpoints with no auth attribute (deny-by-default)
+var dualSchemePolicy = new AuthorizationPolicyBuilder(
+        IdentityConstants.ApplicationScheme, "ApiKey")
+    .RequireAuthenticatedUser()
+    .Build();
+
+builder.Services.AddAuthorizationBuilder()
+    .SetDefaultPolicy(dualSchemePolicy)
+    .SetFallbackPolicy(dualSchemePolicy);
 
 var app = builder.Build();
 
