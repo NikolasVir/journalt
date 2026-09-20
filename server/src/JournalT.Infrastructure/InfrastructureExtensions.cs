@@ -2,9 +2,11 @@ namespace JournalT.Infrastructure;
 
 using JournalT.Application.Auth;
 using JournalT.Application.Common.Interfaces;
+using JournalT.Infrastructure.Identity.ApiKeys;
 using JournalT.Infrastructure.Identity;
 using JournalT.Infrastructure.Persistence;
 using JournalT.Infrastructure.Persistence.Interceptors;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +20,7 @@ public static class InfrastructureExtensions
         services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
         services.AddPersistence(configuration);
         services.AddIdentityServices();
+        services.AddApiKeyServices();
         return services;
     }
 
@@ -74,6 +77,16 @@ public static class InfrastructureExtensions
         });
 
         services.AddScoped<IAuthService, AuthService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddApiKeyServices(this IServiceCollection services)
+    {
+        services.AddAuthentication()
+            .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthHandler>("ApiKey", _ => { });
+
+        services.AddScoped<IApiKeyService, ApiKeyService>();
 
         return services;
     }
