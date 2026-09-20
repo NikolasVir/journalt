@@ -63,6 +63,10 @@ namespace JournalT.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique()
+                        .HasFilter("\"IsRevoked\" = 0");
+
                     b.ToTable("ApiKeys", (string)null);
                 });
 

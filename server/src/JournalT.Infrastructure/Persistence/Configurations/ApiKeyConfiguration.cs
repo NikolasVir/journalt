@@ -31,5 +31,11 @@ public class ApiKeyConfiguration : IEntityTypeConfiguration<ApiKey>
             .IsUnique();
 
         builder.HasIndex(k => k.UserId);
+
+        // Partial unique index: name must be unique per user among active keys only.
+        // Allows reusing a name after a key is revoked.
+        builder.HasIndex(k => new { k.UserId, k.Name })
+            .IsUnique()
+            .HasFilter("\"IsRevoked\" = 0");
     }
 }
