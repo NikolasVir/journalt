@@ -1,0 +1,22 @@
+meta {
+  name: Get CSRF Token
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/auth/csrf
+  body: none
+  auth: none
+}
+
+script:post-response {
+  if (res.body && res.body.token) {
+    bru.setEnvVar("csrfToken", res.body.token);
+  }
+}
+
+docs {
+  Fetches an Antiforgery (CSRF) token and sets the XSRF-TOKEN cookie.
+  Automatically sets the 'csrfToken' environment variable for subsequent mutating requests.
+}

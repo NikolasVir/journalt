@@ -10,6 +10,10 @@ post {
   auth: none
 }
 
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
 docs {
   Expects 204 No Content. Clears the session cookie.
   Requires an active session (run Login first) — returns 401 otherwise.

@@ -10,6 +10,10 @@ delete {
   auth: none
 }
 
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
 docs {
   Requires an active session cookie (run Login first).
   Revokes an active API key using its human-readable name.

@@ -10,6 +10,10 @@ delete {
   auth: none
 }
 
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
 docs {
   Requires an active session cookie (run Login first).
   Replace the ID in the URL with one from the List response.

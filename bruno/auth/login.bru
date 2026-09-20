@@ -24,3 +24,10 @@ docs {
 
   Wrong credentials return 401 with a generic message (intentional — prevents user enumeration).
 }
+
+script:post-response {
+  const csrf = res.getHeader('x-xsrf-token');
+  if (csrf) {
+    bru.setEnvVar("csrfToken", csrf);
+  }
+}

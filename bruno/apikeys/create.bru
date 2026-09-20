@@ -10,6 +10,10 @@ post {
   auth: none
 }
 
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
 body:json {
   {
     "name": "My CLI Key",
