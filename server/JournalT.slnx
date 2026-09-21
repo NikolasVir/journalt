@@ -5,4 +5,7 @@
     <Project Path="src/JournalT.Domain/JournalT.Domain.csproj" />
     <Project Path="src/JournalT.Infrastructure/JournalT.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/JournalT.UnitTests/JournalT.UnitTests.csproj" />
+  </Folder>
 </Solution>

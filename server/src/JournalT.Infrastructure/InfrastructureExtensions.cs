@@ -13,6 +13,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using JournalT.Application.Markdown;
+using JournalT.Application.Types;
+using JournalT.Infrastructure.Markdown;
+using JournalT.Infrastructure.Validation;
+
 public static class InfrastructureExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
@@ -21,6 +26,8 @@ public static class InfrastructureExtensions
         services.AddPersistence(configuration);
         services.AddIdentityServices();
         services.AddApiKeyServices();
+        services.AddSingleton<IMarkdownService, MarkdownService>();
+        services.AddSingleton<ITypeValidationService, TypeValidationService>();
         return services;
     }
 
