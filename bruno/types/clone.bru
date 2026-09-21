@@ -1,0 +1,25 @@
+meta {
+  name: Clone Type Definition
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/types/{{typeId}}/clone
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "newName": "MovieReview"
+  }
+}
+
+docs {
+  Duplicates an existing Type definition under a new name with version 1 (TYPE-009).
+}

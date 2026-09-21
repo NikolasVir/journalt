@@ -1,0 +1,15 @@
+meta {
+  name: Get Type Definition
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/types/{{typeId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Retrieves a specific Type definition by ID, including its schema and section constraints.
+}

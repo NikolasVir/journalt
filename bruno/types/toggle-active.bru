@@ -1,0 +1,19 @@
+meta {
+  name: Toggle Type Active State
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/types/{{typeId}}/toggle-active
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+docs {
+  Soft-deactivates or reactivates a Type definition. Inactive types cannot be used for new notes.
+}

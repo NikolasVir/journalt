@@ -1,0 +1,15 @@
+meta {
+  name: List Type Definitions
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/types?includeInactive=false
+  body: none
+  auth: none
+}
+
+docs {
+  Lists all available Type definitions for the current user.
+}

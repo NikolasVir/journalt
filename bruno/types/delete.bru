@@ -1,0 +1,19 @@
+meta {
+  name: Delete Type Definition
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/api/types/{{typeId}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+docs {
+  Deletes a Type definition if unused, or soft-deactivates it if notes reference it (TYPE-014).
+}

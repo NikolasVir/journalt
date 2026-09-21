@@ -1,0 +1,27 @@
+meta {
+  name: Create New Type Version
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/types/{{typeId}}/version
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "description": "Updated book review template with genre field",
+    "schemaJson": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"author\":{\"type\":\"string\"},\"rating\":{\"type\":\"number\",\"minimum\":1,\"maximum\":5},\"genre\":{\"type\":\"string\"}},\"required\":[\"author\"],\"additionalProperties\":false}"
+  }
+}
+
+docs {
+  Publishes a new version of an existing Type definition (TYPE-012, TYPE-014).
+  Increments version number; existing notes remain pinned to their original version.
+}

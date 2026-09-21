@@ -19,6 +19,7 @@ using JournalT.Infrastructure.Markdown;
 using JournalT.Infrastructure.Libraries;
 using JournalT.Infrastructure.Notes;
 using JournalT.Infrastructure.Tags;
+using JournalT.Infrastructure.Types;
 using JournalT.Infrastructure.Validation;
 
 public static class InfrastructureExtensions
@@ -34,6 +35,7 @@ public static class InfrastructureExtensions
         services.AddScoped<INoteService, NoteService>();
         services.AddScoped<ILibraryService, LibraryService>();
         services.AddScoped<ITagDefinitionService, TagDefinitionService>();
+        services.AddScoped<ITypeDefinitionService, TypeDefinitionService>();
         return services;
     }
 
