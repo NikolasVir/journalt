@@ -13,12 +13,12 @@ using Microsoft.AspNetCore.Mvc;
 [ApiController]
 [Route("api/apikeys")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class ApiKeysController(IApiKeyService apiKeyService) : ControllerBase
+public class ApiKeysController(IApiKeyService apiKeyService, ICurrentUser currentUser) : ControllerBase
 {
     private readonly IApiKeyService _apiKeyService = apiKeyService;
+    private readonly ICurrentUser _currentUser = currentUser;
 
-    private Guid CurrentUserId =>
-        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid CurrentUserId => _currentUser.UserId;
 
     [HttpPost]
     public async Task<IActionResult> Create(CreateApiKeyRequest request, CancellationToken ct)

@@ -10,10 +10,14 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IAuthService authService, IAntiforgery antiforgery) : ControllerBase
+public class AuthController(
+    IAuthService authService,
+    IAntiforgery antiforgery,
+    ICurrentUser currentUser) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
     private readonly IAntiforgery _antiforgery = antiforgery;
+    private readonly ICurrentUser _currentUser = currentUser;
 
     [AllowAnonymous]
     [HttpGet("csrf")]
@@ -70,12 +74,7 @@ public class AuthController(IAuthService authService, IAntiforgery antiforgery) 
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
     {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (claim is null || !Guid.TryParse(claim, out var userId))
-            return Unauthorized();
-
-        var user = await _authService.GetUserByIdAsync(userId, ct);
+        var user = await _authService.GetUserByIdAsync(_currentUser.UserId, ct);
 
         if (user is null)
             return Unauthorized();
