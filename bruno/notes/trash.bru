@@ -1,0 +1,20 @@
+meta {
+  name: Move Note to Trash
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/api/notes/{{noteId}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+docs {
+  Soft-deletes the note (sets isTrashed = true, records trashedAtUtc).
+  Returns 204 No Content on success.
+}

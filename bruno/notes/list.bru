@@ -1,0 +1,20 @@
+meta {
+  name: List Notes
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/notes?page=1&pageSize=20
+  body: none
+  auth: none
+}
+
+docs {
+  Returns a paged list of active notes for the current user. Trashed notes are excluded by default.
+  Filter query parameters:
+  - level: Inbox, Quick, Journal
+  - isTrashed: true/false
+  - isTodo: true/false
+  - search: keyword search on Title and Summary
+}

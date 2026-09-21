@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using JournalT.Application.Markdown;
 using JournalT.Application.Types;
 using JournalT.Infrastructure.Markdown;
+using JournalT.Infrastructure.Notes;
 using JournalT.Infrastructure.Validation;
 
 public static class InfrastructureExtensions
@@ -28,6 +29,7 @@ public static class InfrastructureExtensions
         services.AddApiKeyServices();
         services.AddSingleton<IMarkdownService, MarkdownService>();
         services.AddSingleton<ITypeValidationService, TypeValidationService>();
+        services.AddScoped<INoteService, NoteService>();
         return services;
     }
 

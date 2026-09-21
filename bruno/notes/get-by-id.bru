@@ -1,0 +1,15 @@
+meta {
+  name: Get Note by ID
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/notes/{{noteId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Returns full note details including rendered HTML, tags, and extracted wiki-links.
+}

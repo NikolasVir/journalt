@@ -1,0 +1,20 @@
+meta {
+  name: Restore Note from Trash
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/notes/{{noteId}}/restore
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+docs {
+  Restores a trashed note back to active status (sets isTrashed = false, clears trashedAtUtc).
+  Returns 204 No Content on success.
+}

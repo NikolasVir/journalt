@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using JournalT.Api.Antiforgery;
 using JournalT.Api.Extensions;
 using JournalT.Application.Common.Interfaces;
@@ -16,6 +17,10 @@ builder.Services.AddProblemDetails();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ValidateCookieAntiforgeryFilter>();
+})
+.AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
 // Antiforgery / CSRF protection for cookie-authenticated clients (e.g. Angular)

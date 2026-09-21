@@ -1,0 +1,20 @@
+meta {
+  name: Permanently Delete Note
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/api/notes/{{noteId}}/permanent
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+docs {
+  Permanently removes the note and cascades all associated tags, sources, and relations.
+  Returns 204 No Content on success.
+}

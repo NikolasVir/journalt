@@ -1,0 +1,34 @@
+meta {
+  name: Create Inbox Note
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/notes
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "title": "Quick Capture Idea",
+    "level": "Inbox",
+    "bodyMarkdown": "Raw thought captured on the go. See also [[Project Roadmap]] for context."
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setEnvVar("noteId", res.body.id);
+  }
+}
+
+docs {
+  Creates an unfiled Inbox note. Automatically renders Markdown to HTML and extracts wiki-links.
+  Sets the 'noteId' environment variable for subsequent note requests.
+}
