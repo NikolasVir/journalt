@@ -15,7 +15,7 @@ namespace JournalT.Infrastructure.Persistence.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
 
             modelBuilder.Entity("JournalT.Domain.Entities.ApiKey", b =>
                 {
@@ -293,6 +293,37 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                     b.ToTable("NoteTags", (string)null);
                 });
 
+            modelBuilder.Entity("JournalT.Domain.Entities.TagDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AllowedValuesJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Category")
+                        .IsUnique();
+
+                    b.ToTable("TagDefinitions", (string)null);
+                });
+
             modelBuilder.Entity("JournalT.Domain.Entities.TypeDefinition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -319,9 +350,6 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SectionsJson")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TagsConfigJson")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAtUtc")

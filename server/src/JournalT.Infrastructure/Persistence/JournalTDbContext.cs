@@ -18,6 +18,7 @@ public class JournalTDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<Library> Libraries => Set<Library>();
     public DbSet<TypeDefinition> TypeDefinitions => Set<TypeDefinition>();
     public DbSet<NoteTag> NoteTags => Set<NoteTag>();
+    public DbSet<TagDefinition> TagDefinitions => Set<TagDefinition>();
     public DbSet<NoteRelation> NoteRelations => Set<NoteRelation>();
     public DbSet<NoteSource> NoteSources => Set<NoteSource>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();

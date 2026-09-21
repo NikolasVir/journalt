@@ -10,7 +10,6 @@ public class TypeDefinition : BaseEntity
     public string? Description { get; set; }
     public string SchemaJson { get; set; } = "{}";
     public string? SectionsJson { get; set; }
-    public string? TagsConfigJson { get; set; }
     public bool IsActive { get; set; } = true;
 
     public ICollection<Note> Notes { get; set; } = [];

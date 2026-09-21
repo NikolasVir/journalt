@@ -9,6 +9,7 @@ public interface IJournalTDbContext
     DbSet<Library> Libraries { get; }
     DbSet<TypeDefinition> TypeDefinitions { get; }
     DbSet<NoteTag> NoteTags { get; }
+    DbSet<TagDefinition> TagDefinitions { get; }
     DbSet<NoteRelation> NoteRelations { get; }
     DbSet<NoteSource> NoteSources { get; }
     DbSet<ApiKey> ApiKeys { get; }
