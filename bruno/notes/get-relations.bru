@@ -1,0 +1,15 @@
+meta {
+  name: Get Note Relations
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/notes/{{noteId}}/relations
+  body: none
+  auth: none
+}
+
+docs {
+  Lists all outbound typed relations for a note (SRC-004). Relations targeting trashed notes are excluded (SRC-005).
+}

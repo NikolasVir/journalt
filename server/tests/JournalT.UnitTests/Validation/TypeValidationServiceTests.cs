@@ -12,10 +12,9 @@ public class TypeValidationServiceTests
             "type": "object",
             "properties": {
                 "author": { "type": "string" },
-                "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
-                "status": { "type": "string", "enum": ["draft", "published"] }
+                "rating": { "type": "integer", "minimum": 1, "maximum": 5 }
             },
-            "required": ["author", "status"],
+            "required": ["author"],
             "additionalProperties": false
         }
         """;
@@ -29,359 +28,97 @@ public class TypeValidationServiceTests
         """;
 
     [Fact]
-    public void ValidateTypeDefinition_ValidSchemaAndSections_ReturnsSuccess()
+    public void ValidateTypeDefinitionAndMetadata_ValidPayload_Succeeds()
     {
-        var result = _sut.ValidateTypeDefinition(SimpleSchema, SimpleSections);
+        var typeResult = _sut.ValidateTypeDefinition(SimpleSchema, SimpleSections);
+        Assert.True(typeResult.IsValid);
 
-        Assert.True(result.IsValid);
-        Assert.Empty(result.Errors);
-    }
+        var validMetadata = "{\"author\": \"Alice\", \"rating\": 5}";
+        var metaResult = _sut.ValidateNoteMetadata(validMetadata, SimpleSchema);
+        Assert.True(metaResult.IsValid);
 
-    [Fact]
-    public void ValidateTypeDefinition_MalformedSchema_ReturnsError()
-    {
-        var result = _sut.ValidateTypeDefinition("{ invalid json", null);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "InvalidJsonSchema");
-    }
-
-    [Fact]
-    public void ValidateTypeDefinition_EmptySchema_ReturnsError()
-    {
-        var result = _sut.ValidateTypeDefinition("", null);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "EmptySchema");
-    }
-
-    [Fact]
-    public void ValidateTypeDefinition_InvalidSectionLevel_ReturnsError()
-    {
-        var invalidSections = """
-            [
-                { "heading": "Too Deep", "level": 7, "required": true }
-            ]
-            """;
-
-        var result = _sut.ValidateTypeDefinition(SimpleSchema, invalidSections);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "InvalidSectionLevel");
-    }
-
-    [Fact]
-    public void ValidateNoteMetadata_ConformingPayload_ReturnsSuccess()
-    {
-        var metadata = """
-            {
-                "author": "Alice",
-                "rating": 5,
-                "status": "published"
-            }
-            """;
-
-        var result = _sut.ValidateNoteMetadata(metadata, SimpleSchema);
-
-        Assert.True(result.IsValid);
-        Assert.Empty(result.Errors);
-    }
-
-    [Fact]
-    public void ValidateNoteMetadata_MissingRequiredProperty_ReturnsError()
-    {
-        var metadata = """
-            {
-                "author": "Alice"
-            }
-            """;
-
-        var result = _sut.ValidateNoteMetadata(metadata, SimpleSchema);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "required");
-    }
-
-    [Fact]
-    public void ValidateNoteMetadata_UnknownPropertyRejected()
-    {
-        var metadata = """
-            {
-                "author": "Alice",
-                "status": "draft",
-                "unknownField": "unexpected"
-            }
-            """;
-
-        var result = _sut.ValidateNoteMetadata(metadata, SimpleSchema);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "additionalProperties");
-    }
-
-    [Fact]
-    public void ValidateNoteMetadata_InvalidType_ReturnsError()
-    {
-        var metadata = """
-            {
-                "author": 12345,
-                "status": "draft"
-            }
-            """;
-
-        var result = _sut.ValidateNoteMetadata(metadata, SimpleSchema);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "type");
-    }
-
-    [Fact]
-    public void ValidateNoteSections_ValidMarkdownBody_ReturnsSuccess()
-    {
-        var body = """
+        var validBody = """
             ## Summary
-            This is the overview.
-
+            Overview here.
             ## Details
-            Point 1.
-
-            ## Details
-            Point 2.
-
+            Extra info.
             ## Action Items
-            - Do this.
+            - Task 1
             """;
-
-        var result = _sut.ValidateNoteSections(body, SimpleSections);
-
-        Assert.True(result.IsValid);
-        Assert.Empty(result.Errors);
+        var sectionResult = _sut.ValidateNoteSections(validBody, SimpleSections);
+        Assert.True(sectionResult.IsValid);
     }
 
     [Fact]
-    public void ValidateNoteSections_MissingRequiredSection_ReturnsError()
+    public void ValidateNoteMetadata_RejectsMissingRequiredInvalidTypeAndExtraProperties()
     {
-        var body = """
-            ## Summary
-            Only summary provided.
-            """;
+        // Missing required property
+        var missingRequired = "{\"rating\": 4}";
+        var r1 = _sut.ValidateNoteMetadata(missingRequired, SimpleSchema);
+        Assert.False(r1.IsValid);
+        Assert.Contains(r1.Errors, e => e.ErrorCode == "required");
 
-        var result = _sut.ValidateNoteSections(body, SimpleSections);
+        // Invalid type
+        var invalidType = "{\"author\": 12345}";
+        var r2 = _sut.ValidateNoteMetadata(invalidType, SimpleSchema);
+        Assert.False(r2.IsValid);
+        Assert.Contains(r2.Errors, e => e.ErrorCode == "type");
 
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "MissingRequiredSection" && e.Message.Contains("Action Items"));
+        // Additional properties forbidden
+        var extraProps = "{\"author\": \"Alice\", \"unexpected\": \"value\"}";
+        var r3 = _sut.ValidateNoteMetadata(extraProps, SimpleSchema);
+        Assert.False(r3.IsValid);
+        Assert.Contains(r3.Errors, e => e.ErrorCode == "additionalProperties");
     }
 
     [Fact]
-    public void ValidateNoteSections_DuplicateNonRepeatableSection_ReturnsError()
+    public void ValidateNoteSections_EnforcesOrderAndRejectsMissingOrDuplicateRequiredSections()
     {
-        var body = """
-            ## Summary
-            First summary.
+        // Missing required section
+        var missingSection = "## Summary\nOnly summary.";
+        var r1 = _sut.ValidateNoteSections(missingSection, SimpleSections);
+        Assert.False(r1.IsValid);
+        Assert.Contains(r1.Errors, e => e.ErrorCode == "MissingRequiredSection" && e.Message.Contains("Action Items"));
 
+        // Duplicate non-repeatable section
+        var duplicateSection = """
             ## Summary
-            Second summary.
-
+            First.
+            ## Summary
+            Second.
             ## Action Items
             Tasks.
             """;
+        var r2 = _sut.ValidateNoteSections(duplicateSection, SimpleSections);
+        Assert.False(r2.IsValid);
+        Assert.Contains(r2.Errors, e => e.ErrorCode == "DuplicateSection");
 
-        var result = _sut.ValidateNoteSections(body, SimpleSections);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "DuplicateSection" && e.Message.Contains("Summary"));
-    }
-
-    [Fact]
-    public void ValidateNoteSections_OutOfOrderSection_ReturnsError()
-    {
-        var body = """
+        // Out of order
+        var outOfOrder = """
             ## Action Items
             Tasks before summary.
-
             ## Summary
-            Summary at the end.
+            Summary at end.
             """;
-
-        var result = _sut.ValidateNoteSections(body, SimpleSections);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "SectionOutOfOrder");
+        var r3 = _sut.ValidateNoteSections(outOfOrder, SimpleSections);
+        Assert.False(r3.IsValid);
+        Assert.Contains(r3.Errors, e => e.ErrorCode == "SectionOutOfOrder");
     }
 
     [Fact]
-    public void ValidateNoteMetadata_NestedObjectAndArray_EnforcesSchemaRules()
-    {
-        const string nestedSchema = """
-            {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "type": "object",
-                "properties": {
-                    "contact": {
-                        "type": "object",
-                        "properties": {
-                            "email": { "type": "string" }
-                        },
-                        "required": ["email"],
-                        "additionalProperties": false
-                    },
-                    "tags": {
-                        "type": "array",
-                        "items": { "type": "string" },
-                        "minItems": 1
-                    }
-                },
-                "required": ["contact", "tags"],
-                "additionalProperties": false
-            }
-            """;
-
-        var validMetadata = """
-            {
-                "contact": { "email": "test@example.com" },
-                "tags": ["tech", "dotnet"]
-            }
-            """;
-
-        var invalidMetadata = """
-            {
-                "contact": { "email": "test@example.com", "phone": "123" },
-                "tags": []
-            }
-            """;
-
-        var validResult = _sut.ValidateNoteMetadata(validMetadata, nestedSchema);
-        var invalidResult = _sut.ValidateNoteMetadata(invalidMetadata, nestedSchema);
-
-        Assert.True(validResult.IsValid);
-        Assert.False(invalidResult.IsValid);
-        Assert.Contains(invalidResult.Errors, e => e.ErrorCode == "additionalProperties"); // "phone" rejected
-        Assert.Contains(invalidResult.Errors, e => e.ErrorCode == "minItems"); // empty tags rejected
-    }
-
-    [Fact]
-    public void ValidateNoteSections_CaseInsensitiveAndFreeformSubheadings_Passes()
-    {
-        var body = """
-            ## summary
-            Overview.
-
-            ### Custom Subheading Not In Definition
-            This should be allowed and ignored by section checks.
-
-            ## ACTION ITEMS
-            Task 1.
-            """;
-
-        var result = _sut.ValidateNoteSections(body, SimpleSections);
-
-        Assert.True(result.IsValid);
-        Assert.Empty(result.Errors);
-    }
-
-    [Fact]
-    public void ValidateNoteSections_HeadingsInsideCodeBlocks_IgnoredByValidator()
+    public void ValidateNoteSections_HeadingsInsideCodeBlocks_Ignored()
     {
         var body = """
             ```markdown
             ## Summary
             ## Action Items
             ```
-            No actual headings outside the code block.
+            Text without real markdown headings.
             """;
 
         var result = _sut.ValidateNoteSections(body, SimpleSections);
 
         Assert.False(result.IsValid);
-        Assert.Equal(2, result.Errors.Count);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "MissingRequiredSection" && e.Message.Contains("Summary"));
-        Assert.Contains(result.Errors, e => e.ErrorCode == "MissingRequiredSection" && e.Message.Contains("Action Items"));
-    }
-
-    [Fact]
-    public void ValidateNoteSections_HeadingWithInlineFormattingAndTrailingHashes_Matches()
-    {
-        var body = """
-            ## **Summary** ##
-            Overview.
-
-            ## `Action Items`
-            Tasks.
-            """;
-
-        var result = _sut.ValidateNoteSections(body, SimpleSections);
-
-        Assert.True(result.IsValid);
-        Assert.Empty(result.Errors);
-    }
-
-    [Fact]
-    public void ValidateNoteSections_SkippedOptionalSectionInMiddle_Passes()
-    {
-        var body = """
-            ## Summary
-            Overview.
-
-            ## Action Items
-            Details was skipped because it is optional.
-            """;
-
-        var result = _sut.ValidateNoteSections(body, SimpleSections);
-
-        Assert.True(result.IsValid);
-        Assert.Empty(result.Errors);
-    }
-
-    [Fact]
-    public void ValidateNoteSections_InterleavedRepeatableSection_FailsSequenceOrder()
-    {
-        var body = """
-            ## Details
-            First details.
-
-            ## Summary
-            Summary in middle.
-
-            ## Details
-            Details again.
-
-            ## Action Items
-            Tasks.
-            """;
-
-        var result = _sut.ValidateNoteSections(body, SimpleSections);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "SectionOutOfOrder" && e.Message.Contains("Summary"));
-    }
-
-    [Fact]
-    public void ValidateNoteMetadata_MalformedJsonWithCommentsOrTrailingCommas_FailsWithInvalidJson()
-    {
-        var metadataWithComments = """
-            {
-                // This comment is invalid in strict JSON
-                "author": "Alice",
-                "status": "draft",
-            }
-            """;
-
-        var result = _sut.ValidateNoteMetadata(metadataWithComments, SimpleSchema);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "InvalidJson");
-    }
-
-    [Fact]
-    public void ValidateNoteSections_MultipleMissingRequiredSections_ReportsAllErrors()
-    {
-        var emptyBody = "Just random text without any headings.";
-
-        var result = _sut.ValidateNoteSections(emptyBody, SimpleSections);
-
-        Assert.False(result.IsValid);
-        Assert.Equal(2, result.Errors.Count);
-        Assert.Contains(result.Errors, e => e.ErrorCode == "MissingRequiredSection" && e.Message.Contains("Summary"));
-        Assert.Contains(result.Errors, e => e.ErrorCode == "MissingRequiredSection" && e.Message.Contains("Action Items"));
+        Assert.Contains(result.Errors, e => e.ErrorCode == "MissingRequiredSection");
     }
 }

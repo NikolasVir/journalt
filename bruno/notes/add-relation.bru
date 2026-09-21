@@ -1,0 +1,34 @@
+meta {
+  name: Add Note Relation
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/notes/{{noteId}}/relations
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "targetNoteId": "{{targetNoteId}}",
+    "role": "relates_to",
+    "context": "Related architectural consideration"
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setEnvVar("relationId", res.body.id);
+  }
+}
+
+docs {
+  Creates an explicit typed relation between notes (TYPE-008, SRC-004).
+  Inbox notes are rejected per INBOX-003.
+}

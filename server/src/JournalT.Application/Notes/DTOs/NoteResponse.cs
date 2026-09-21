@@ -21,5 +21,7 @@ public sealed record NoteResponse(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
     IReadOnlyList<TagDto> Tags,
-    IReadOnlyList<string> WikiLinks
+    IReadOnlyList<string> WikiLinks,
+    IReadOnlyList<NoteSourceResponse>? Sources = null,
+    IReadOnlyList<NoteRelationResponse>? OutboundRelations = null
 );

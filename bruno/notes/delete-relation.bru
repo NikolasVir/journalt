@@ -1,0 +1,19 @@
+meta {
+  name: Delete Note Relation
+  type: http
+  seq: 15
+}
+
+delete {
+  url: {{baseUrl}}/api/notes/{{noteId}}/relations/{{relationId}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+docs {
+  Deletes an outbound typed relation between notes (TYPE-008).
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Delete Note Source
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{baseUrl}}/api/notes/{{noteId}}/sources/{{sourceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+docs {
+  Removes an external source citation from a note (SRC-001).
+}

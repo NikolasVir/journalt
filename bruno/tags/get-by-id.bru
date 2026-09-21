@@ -1,0 +1,15 @@
+meta {
+  name: Get Tag Definition
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/tags/definitions/{{tagDefinitionId}}
+  body: none
+  auth: none
+}
+
+docs {
+  Retrieves a specific tag definition by ID.
+}

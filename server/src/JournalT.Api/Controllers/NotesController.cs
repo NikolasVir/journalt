@@ -2,7 +2,6 @@ namespace JournalT.Api.Controllers;
 
 using JournalT.Application.Common.Interfaces;
 using JournalT.Application.Notes.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -65,6 +64,66 @@ public class NotesController(INoteService noteService) : ControllerBase
     public async Task<IActionResult> DeletePermanent(Guid id, CancellationToken ct)
     {
         var deleted = await _noteService.DeletePermanentAsync(id, ct);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    // Phase 3: Promotion
+    [HttpPost("{id:guid}/promote")]
+    public async Task<IActionResult> Promote(Guid id, [FromBody] PromoteNoteRequest request, CancellationToken ct)
+    {
+        var result = await _noteService.PromoteAsync(id, request, ct);
+
+        if (!result.Succeeded)
+            return Problem(detail: string.Join("; ", result.Errors), statusCode: result.StatusCode);
+
+        return Ok(result.Note);
+    }
+
+    // Phase 3: Sources
+    [HttpPost("{id:guid}/sources")]
+    public async Task<IActionResult> AddSource(Guid id, [FromBody] CreateNoteSourceRequest request, CancellationToken ct)
+    {
+        var source = await _noteService.AddSourceAsync(id, request, ct);
+        return source is not null ? StatusCode(StatusCodes.Status201Created, source) : NotFound();
+    }
+
+    [HttpGet("{id:guid}/sources")]
+    public async Task<IActionResult> GetSources(Guid id, CancellationToken ct)
+    {
+        var sources = await _noteService.GetSourcesAsync(id, ct);
+        return Ok(sources);
+    }
+
+    [HttpDelete("{id:guid}/sources/{sourceId:guid}")]
+    public async Task<IActionResult> DeleteSource(Guid id, Guid sourceId, CancellationToken ct)
+    {
+        var deleted = await _noteService.DeleteSourceAsync(id, sourceId, ct);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    // Phase 3: Relations
+    [HttpPost("{id:guid}/relations")]
+    public async Task<IActionResult> AddRelation(Guid id, [FromBody] CreateNoteRelationRequest request, CancellationToken ct)
+    {
+        var result = await _noteService.AddRelationAsync(id, request, ct);
+
+        if (!result.Succeeded)
+            return Problem(detail: string.Join("; ", result.Errors), statusCode: result.StatusCode);
+
+        return StatusCode(StatusCodes.Status201Created, result.Note!.OutboundRelations!.First());
+    }
+
+    [HttpGet("{id:guid}/relations")]
+    public async Task<IActionResult> GetRelations(Guid id, CancellationToken ct)
+    {
+        var relations = await _noteService.GetRelationsAsync(id, ct);
+        return Ok(relations);
+    }
+
+    [HttpDelete("{id:guid}/relations/{relationId:guid}")]
+    public async Task<IActionResult> DeleteRelation(Guid id, Guid relationId, CancellationToken ct)
+    {
+        var deleted = await _noteService.DeleteRelationAsync(id, relationId, ct);
         return deleted ? NoContent() : NotFound();
     }
 }

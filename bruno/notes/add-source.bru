@@ -1,0 +1,33 @@
+meta {
+  name: Add Note Source
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/notes/{{noteId}}/sources
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "title": "SQLite Documentation",
+    "description": "Official docs on query planner and indexes",
+    "url": "https://www.sqlite.org/queryplanner.html"
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setEnvVar("sourceId", res.body.id);
+  }
+}
+
+docs {
+  Attaches an external source citation/reference to a note (SRC-001).
+}

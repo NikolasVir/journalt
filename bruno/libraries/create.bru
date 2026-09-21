@@ -1,0 +1,32 @@
+meta {
+  name: Create Library
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/libraries
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "name": "Engineering",
+    "parentLibraryId": null
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setEnvVar("libraryId", res.body.id);
+  }
+}
+
+docs {
+  Creates a new top-level or nested Library folder.
+}

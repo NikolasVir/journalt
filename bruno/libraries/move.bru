@@ -1,0 +1,25 @@
+meta {
+  name: Move Library
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/libraries/{{libraryId}}/move
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "newParentLibraryId": null
+  }
+}
+
+docs {
+  Reparents a library. Rejects moving a library into itself or any descendant.
+}

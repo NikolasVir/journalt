@@ -12,4 +12,17 @@ public interface INoteService
     Task<bool> TrashAsync(Guid id, CancellationToken ct = default);
     Task<bool> RestoreAsync(Guid id, CancellationToken ct = default);
     Task<bool> DeletePermanentAsync(Guid id, CancellationToken ct = default);
+
+    // Promotion (Phase 3)
+    Task<NoteResult> PromoteAsync(Guid id, PromoteNoteRequest request, CancellationToken ct = default);
+
+    // Sources (Phase 3)
+    Task<NoteSourceResponse?> AddSourceAsync(Guid noteId, CreateNoteSourceRequest request, CancellationToken ct = default);
+    Task<IReadOnlyList<NoteSourceResponse>> GetSourcesAsync(Guid noteId, CancellationToken ct = default);
+    Task<bool> DeleteSourceAsync(Guid noteId, Guid sourceId, CancellationToken ct = default);
+
+    // Relations (Phase 3)
+    Task<NoteResult> AddRelationAsync(Guid noteId, CreateNoteRelationRequest request, CancellationToken ct = default);
+    Task<IReadOnlyList<NoteRelationResponse>> GetRelationsAsync(Guid noteId, CancellationToken ct = default);
+    Task<bool> DeleteRelationAsync(Guid noteId, Guid relationId, CancellationToken ct = default);
 }

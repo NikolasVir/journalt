@@ -1,0 +1,15 @@
+meta {
+  name: Get Library Tree
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/libraries
+  body: none
+  auth: none
+}
+
+docs {
+  Returns the complete hierarchical tree of user libraries.
+}

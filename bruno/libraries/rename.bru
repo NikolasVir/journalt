@@ -1,0 +1,25 @@
+meta {
+  name: Rename Library
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/libraries/{{libraryId}}
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "name": "Software Engineering"
+  }
+}
+
+docs {
+  Renames a library (LIB-003). Rejects duplicate sibling names with 409 Conflict (LIB-004).
+}

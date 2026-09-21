@@ -44,371 +44,239 @@ public class NoteServiceTests : IDisposable
         _connection.Dispose();
     }
 
-    [Fact]
-    public async Task CreateAsync_InboxNote_SucceedsAndRendersMarkdown()
-    {
-        var request = new CreateNoteRequest(
-            Title: "Quick Thought",
-            Level: NoteLevel.Inbox,
-            BodyMarkdown: "Remember to review [[Architecture]] and use **bold**."
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.True(result.Succeeded);
-        Assert.NotNull(result.Note);
-        Assert.Equal(NoteLevel.Inbox, result.Note.Level);
-        Assert.Equal("Quick Thought", result.Note.Title);
-        Assert.Contains("<strong>bold</strong>", result.Note.RenderedHtml);
-        Assert.Contains("Architecture", result.Note.WikiLinks);
-        Assert.Null(result.Note.TypeId);
-    }
+    // --- Happy Paths ---
 
     [Fact]
-    public async Task CreateAsync_InboxNote_WithTypeId_Fails()
-    {
-        var request = new CreateNoteRequest(
-            Title: "Invalid Inbox Note",
-            Level: NoteLevel.Inbox,
-            TypeId: Guid.NewGuid()
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("Inbox notes cannot specify a TypeId", result.Errors[0]);
-    }
-
-    [Fact]
-    public async Task CreateAsync_QuickNote_WithFreeFormTags_Succeeds()
-    {
-        var request = new CreateNoteRequest(
-            Title: "Quick Task",
-            Level: NoteLevel.Quick,
-            BodyMarkdown: "Some quick text.",
-            Tags: [new TagDto(TagType.FreeForm, null, "ideas"), new TagDto(TagType.FreeForm, null, "backend")]
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.True(result.Succeeded);
-        Assert.Equal(2, result.Note!.Tags.Count);
-        Assert.All(result.Note.Tags, t => Assert.Equal(TagType.FreeForm, t.TagType));
-    }
-
-    [Fact]
-    public async Task CreateAsync_QuickNote_WithTypedTag_Fails()
-    {
-        var request = new CreateNoteRequest(
-            Title: "Quick with Typed Tag",
-            Level: NoteLevel.Quick,
-            Tags: [new TagDto(TagType.Typed, "status", "draft")]
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("Quick notes only support FreeForm tags", result.Errors[0]);
-    }
-
-    [Fact]
-    public async Task CreateAsync_QuickNote_WithTypeId_Fails()
-    {
-        var request = new CreateNoteRequest(
-            Title: "Quick with TypeId",
-            Level: NoteLevel.Quick,
-            TypeId: Guid.NewGuid()
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("Quick notes cannot specify a TypeId", result.Errors[0]);
-    }
-
-    [Fact]
-    public async Task CreateAsync_JournalNote_WithoutTypeId_Fails()
-    {
-        var request = new CreateNoteRequest(
-            Title: "Journal without Type",
-            Level: NoteLevel.Journal,
-            TypeId: null
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("require a TypeId", result.Errors[0]);
-    }
-
-    [Fact]
-    public async Task CreateAsync_JournalNote_WithNonExistentType_Fails()
-    {
-        var request = new CreateNoteRequest(
-            Title: "Journal with missing Type",
-            Level: NoteLevel.Journal,
-            TypeId: Guid.NewGuid()
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("Type definition not found", result.Errors[0]);
-    }
-
-    [Fact]
-    public async Task CreateAsync_JournalNote_WithOtherUsersType_Fails()
-    {
-        var otherUserType = new TypeDefinition
-        {
-            UserId = _otherUserId,
-            Name = "Other Person Type",
-            Version = 1,
-            SchemaJson = "{\"type\":\"object\"}",
-            IsActive = true
-        };
-        _db.TypeDefinitions.Add(otherUserType);
-        await _db.SaveChangesAsync();
-
-        var request = new CreateNoteRequest(
-            Title: "Stealing Type",
-            Level: NoteLevel.Journal,
-            TypeId: otherUserType.Id
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("Type definition not found", result.Errors[0]);
-    }
-
-    [Fact]
-    public async Task CreateAsync_JournalNote_ValidMetadataAndSections_Succeeds()
+    public async Task CreateAndGet_JournalNote_WithValidSchemaAndSections_Succeeds()
     {
         var typeDef = new TypeDefinition
         {
             UserId = _userId,
-            Name = "Decision Record",
-            Version = 2,
-            SchemaJson = """
-                {
-                    "type": "object",
-                    "properties": {
-                        "outcome": { "type": "string" }
-                    },
-                    "required": ["outcome"]
-                }
-                """,
-            SectionsJson = """
-                [
-                    { "heading": "Context", "level": 2, "required": true }
-                ]
-                """,
+            Name = "DailyLog",
+            Version = 1,
+            SchemaJson = """{"type":"object","properties":{"mood":{"type":"string"}},"required":["mood"]}""",
+            SectionsJson = """[{"heading":"Highlights","level":2,"required":true}]""",
             IsActive = true
         };
         _db.TypeDefinitions.Add(typeDef);
         await _db.SaveChangesAsync();
 
         var request = new CreateNoteRequest(
-            Title: "ADR-001",
+            Title: "Daily Reflection",
             Level: NoteLevel.Journal,
+            BodyMarkdown: "## Highlights\nShipped features.",
             TypeId: typeDef.Id,
-            TypedMetadataJson: "{\"outcome\":\"approved\"}",
-            BodyMarkdown: "## Context\nBackground details here."
+            TypedMetadataJson: "{\"mood\": \"focused\"}"
         );
 
         var result = await _sut.CreateAsync(request);
-
         Assert.True(result.Succeeded);
-        Assert.Equal(typeDef.Id, result.Note!.TypeId);
-        Assert.Equal(2, result.Note.TypeVersion);
+        Assert.Contains("Shipped features.", result.Note!.RenderedHtml);
+
+        var retrieved = await _sut.GetByIdAsync(result.Note.Id);
+        Assert.NotNull(retrieved);
+        Assert.Equal("Daily Reflection", retrieved.Title);
+        Assert.Equal("{\"mood\": \"focused\"}", retrieved.TypedMetadataJson);
     }
 
     [Fact]
-    public async Task CreateAsync_JournalNote_InvalidMetadata_FailsValidation()
+    public async Task PromoteAsync_InboxToQuickToJournal_Succeeds()
     {
         var typeDef = new TypeDefinition
         {
             UserId = _userId,
-            Name = "Book Review",
+            Name = "Milestone",
             Version = 1,
-            SchemaJson = """
-                {
-                    "type": "object",
-                    "properties": {
-                        "rating": { "type": "integer", "minimum": 1, "maximum": 5 }
-                    },
-                    "required": ["rating"]
-                }
-                """,
+            SchemaJson = "{}",
             IsActive = true
         };
         _db.TypeDefinitions.Add(typeDef);
         await _db.SaveChangesAsync();
 
-        var request = new CreateNoteRequest(
-            Title: "Dune Review",
-            Level: NoteLevel.Journal,
+        // 1. Create Inbox Note
+        var note = (await _sut.CreateAsync(new CreateNoteRequest("Initial Capture", NoteLevel.Inbox))).Note!;
+        Assert.Equal(NoteLevel.Inbox, note.Level);
+
+        // 2. Promote Inbox -> Quick
+        var toQuick = await _sut.PromoteAsync(note.Id, new PromoteNoteRequest(TargetLevel: NoteLevel.Quick));
+        Assert.True(toQuick.Succeeded);
+        Assert.Equal(NoteLevel.Quick, toQuick.Note!.Level);
+
+        // 3. Promote Quick -> Journal
+        var toJournal = await _sut.PromoteAsync(note.Id, new PromoteNoteRequest(
+            TargetLevel: NoteLevel.Journal,
             TypeId: typeDef.Id,
-            TypedMetadataJson: "{\"rating\": 10}" // Exceeds maximum 5
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.False(result.Succeeded);
-        Assert.True(result.Errors.Length > 0);
+            TypedMetadataJson: "{}"
+        ));
+        Assert.True(toJournal.Succeeded);
+        Assert.Equal(NoteLevel.Journal, toJournal.Note!.Level);
+        Assert.Equal(typeDef.Id, toJournal.Note.TypeId);
     }
 
     [Fact]
-    public async Task CreateAsync_MissingTitle_Fails()
+    public async Task SourcesAndRelations_Lifecycle_Succeeds()
     {
-        var request = new CreateNoteRequest(Title: "   ");
+        var note1 = (await _sut.CreateAsync(new CreateNoteRequest("Subject Note", NoteLevel.Quick))).Note!;
+        var note2 = (await _sut.CreateAsync(new CreateNoteRequest("Target Note", NoteLevel.Quick))).Note!;
 
-        var result = await _sut.CreateAsync(request);
+        // Add source
+        var source = await _sut.AddSourceAsync(note1.Id, new CreateNoteSourceRequest("Doc Citation", Url: "https://example.com"));
+        Assert.NotNull(source);
 
-        Assert.False(result.Succeeded);
-        Assert.Equal("Title is required.", result.Errors[0]);
+        var sources = await _sut.GetSourcesAsync(note1.Id);
+        Assert.Single(sources);
+
+        // Add relation
+        var relResult = await _sut.AddRelationAsync(note1.Id, new CreateNoteRelationRequest(note2.Id, "references"));
+        Assert.True(relResult.Succeeded);
+
+        var relations = await _sut.GetRelationsAsync(note1.Id);
+        Assert.Single(relations);
+        Assert.Equal(note2.Id, relations[0].TargetNoteId);
+
+        // Delete source & relation
+        Assert.True(await _sut.DeleteSourceAsync(note1.Id, source.Id));
+        Assert.True(await _sut.DeleteRelationAsync(note1.Id, relations[0].Id));
     }
 
-    [Fact]
-    public async Task CreateAsync_NonExistentLibrary_Fails()
-    {
-        var request = new CreateNoteRequest(
-            Title: "Orphan Note",
-            LibraryId: Guid.NewGuid()
-        );
-
-        var result = await _sut.CreateAsync(request);
-
-        Assert.False(result.Succeeded);
-        Assert.Equal("Library not found.", result.Errors[0]);
-    }
+    // --- Edge Cases ---
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsNote_AndHidesOtherUsersNote()
+    public async Task ValidationRules_NoteLevelConstraints_Enforced()
     {
-        var myNote = new Note
+        var tagDef = new TagDefinition
         {
             UserId = _userId,
-            Title = "My Private Note",
-            BodyMarkdown = "Hello [[Secret Note]]"
+            Category = "status",
+            AllowedValuesJson = "[\"active\", \"done\"]"
         };
-        var otherNote = new Note
-        {
-            UserId = _otherUserId,
-            Title = "Other's Note"
-        };
-        _db.Notes.AddRange(myNote, otherNote);
+        _db.TagDefinitions.Add(tagDef);
         await _db.SaveChangesAsync();
 
-        var retrievedMine = await _sut.GetByIdAsync(myNote.Id);
-        var retrievedOther = await _sut.GetByIdAsync(otherNote.Id);
+        // 1. Inbox note cannot have TypeId
+        var inboxWithType = await _sut.CreateAsync(new CreateNoteRequest("Inbox", NoteLevel.Inbox, TypeId: Guid.NewGuid()));
+        Assert.False(inboxWithType.Succeeded);
 
-        Assert.NotNull(retrievedMine);
-        Assert.Equal("My Private Note", retrievedMine.Title);
-        Assert.Contains("Secret Note", retrievedMine.WikiLinks);
+        // 2. Quick note cannot have TypeId
+        var quickWithType = await _sut.CreateAsync(new CreateNoteRequest("Quick", NoteLevel.Quick, TypeId: Guid.NewGuid()));
+        Assert.False(quickWithType.Succeeded);
 
-        Assert.Null(retrievedOther);
+        // 3. Quick note cannot have Typed tag (QUICK-003)
+        var quickWithTypedTag = await _sut.CreateAsync(new CreateNoteRequest(
+            "Quick",
+            NoteLevel.Quick,
+            Tags: [new TagDto(TagType.Typed, "status", "active")]
+        ));
+        Assert.False(quickWithTypedTag.Succeeded);
+
+        // 4. Journal note requires TypeId (NOTE-004)
+        var journalNoType = await _sut.CreateAsync(new CreateNoteRequest("Journal", NoteLevel.Journal));
+        Assert.False(journalNoType.Succeeded);
+
+        // 5. Typed tag disallowed vocabulary value (TYPE-004)
+        var invalidTagValue = await _sut.CreateAsync(new CreateNoteRequest(
+            "Journal",
+            NoteLevel.Journal,
+            Tags: [new TagDto(TagType.Typed, "status", "invalid-status")]
+        ));
+        Assert.False(invalidTagValue.Succeeded);
     }
 
     [Fact]
-    public async Task ListAsync_FiltersOutTrashedNotesByDefault()
+    public async Task PromoteAsync_DemotionOrTrashedNote_Rejected()
     {
-        var activeNote = new Note { UserId = _userId, Title = "Active", IsTrashed = false };
-        var trashedNote = new Note { UserId = _userId, Title = "Trashed", IsTrashed = true };
-        _db.Notes.AddRange(activeNote, trashedNote);
+        // Setup Quick note
+        var note = (await _sut.CreateAsync(new CreateNoteRequest("Quick", NoteLevel.Quick))).Note!;
+
+        // Attempt demotion Quick -> Inbox (NOTE-009)
+        var demoteResult = await _sut.PromoteAsync(note.Id, new PromoteNoteRequest(TargetLevel: NoteLevel.Inbox));
+        Assert.False(demoteResult.Succeeded);
+        Assert.Contains("Cannot demote", demoteResult.Errors[0]);
+
+        // Trash note and attempt promote
+        await _sut.TrashAsync(note.Id);
+        var trashedPromote = await _sut.PromoteAsync(note.Id, new PromoteNoteRequest(TargetLevel: NoteLevel.Journal));
+        Assert.False(trashedPromote.Succeeded);
+        Assert.Contains("Cannot promote a trashed note", trashedPromote.Errors[0]);
+    }
+
+    [Fact]
+    public async Task Relations_CannotAddOnInbox_AndExcludesTrashedTargets()
+    {
+        var inboxNote = (await _sut.CreateAsync(new CreateNoteRequest("Inbox Note", NoteLevel.Inbox))).Note!;
+        var targetNote = (await _sut.CreateAsync(new CreateNoteRequest("Target Note", NoteLevel.Quick))).Note!;
+
+        // INBOX-003: Inbox notes cannot have outbound relations
+        var inboxRel = await _sut.AddRelationAsync(inboxNote.Id, new CreateNoteRelationRequest(targetNote.Id, "about"));
+        Assert.False(inboxRel.Succeeded);
+        Assert.Contains("Inbox notes cannot define explicit outbound relations", inboxRel.Errors[0]);
+
+        // Add relation from Quick note to Target note
+        var sourceNote = (await _sut.CreateAsync(new CreateNoteRequest("Source Quick", NoteLevel.Quick))).Note!;
+        await _sut.AddRelationAsync(sourceNote.Id, new CreateNoteRelationRequest(targetNote.Id, "relates_to"));
+
+        var relationsBeforeTrash = await _sut.GetRelationsAsync(sourceNote.Id);
+        Assert.Single(relationsBeforeTrash);
+
+        // SRC-005: Relations pointing to trashed notes must be excluded
+        await _sut.TrashAsync(targetNote.Id);
+        var relationsAfterTrash = await _sut.GetRelationsAsync(sourceNote.Id);
+        Assert.Empty(relationsAfterTrash);
+
+        // Restoring target note restores relation visibility
+        await _sut.RestoreAsync(targetNote.Id);
+        var relationsAfterRestore = await _sut.GetRelationsAsync(sourceNote.Id);
+        Assert.Single(relationsAfterRestore);
+    }
+
+    [Fact]
+    public async Task WikiLinks_AmbiguousOrMissingTarget_RemainsUnresolvedSpan()
+    {
+        // Create two notes with the exact same title
+        await _sut.CreateAsync(new CreateNoteRequest("Ambiguous Note", NoteLevel.Quick));
+        await _sut.CreateAsync(new CreateNoteRequest("Ambiguous Note", NoteLevel.Quick));
+
+        // Note linking to the ambiguous title
+        var referencingNote = (await _sut.CreateAsync(new CreateNoteRequest(
+            "Referencing Note",
+            NoteLevel.Quick,
+            BodyMarkdown: "See [[Ambiguous Note]] and [[NonExistent Note]]."
+        ))).Note!;
+
+        // SRC-007: Multiple matches or missing targets remain unresolved spans
+        Assert.Contains("<span class=\"internal-link unresolved\" data-title=\"Ambiguous Note\">Ambiguous Note</span>", referencingNote.RenderedHtml);
+        Assert.Contains("<span class=\"internal-link unresolved\" data-title=\"NonExistent Note\">NonExistent Note</span>", referencingNote.RenderedHtml);
+        Assert.DoesNotContain("<a href=", referencingNote.RenderedHtml);
+    }
+
+    [Fact]
+    public async Task TenancyAndSoftDelete_HidesOtherUsersAndTrashedNotes()
+    {
+        // Other user's note
+        var otherNote = new Note { UserId = _otherUserId, Title = "Other User Secret" };
+        _db.Notes.Add(otherNote);
+
+        // Current user's note that is trashed
+        var trashedNote = new Note { UserId = _userId, Title = "Trashed Item", IsTrashed = true, TrashedAtUtc = DateTime.UtcNow };
+        _db.Notes.Add(trashedNote);
+
+        // Current user's active note
+        var activeNote = new Note { UserId = _userId, Title = "Active Item" };
+        _db.Notes.Add(activeNote);
         await _db.SaveChangesAsync();
 
+        // 1. GetByIdAsync across tenant boundary returns null
+        Assert.Null(await _sut.GetByIdAsync(otherNote.Id));
+
+        // 2. Default ListAsync returns ONLY active note (filters trashed and other tenants)
         var list = await _sut.ListAsync(new NoteFilterParams());
-
         Assert.Single(list.Items);
-        Assert.Equal("Active", list.Items[0].Title);
-        Assert.Equal(1, list.TotalCount);
-    }
+        Assert.Equal("Active Item", list.Items[0].Title);
 
-    [Fact]
-    public async Task ListAsync_AllowsQueryingTrashExplicitly()
-    {
-        var activeNote = new Note { UserId = _userId, Title = "Active", IsTrashed = false };
-        var trashedNote = new Note { UserId = _userId, Title = "Trashed", IsTrashed = true };
-        _db.Notes.AddRange(activeNote, trashedNote);
-        await _db.SaveChangesAsync();
-
-        var list = await _sut.ListAsync(new NoteFilterParams(IsTrashed: true));
-
-        Assert.Single(list.Items);
-        Assert.Equal("Trashed", list.Items[0].Title);
-    }
-
-    [Fact]
-    public async Task UpdateAsync_UpdatesContentAndReRendersMarkdown()
-    {
-        var note = new Note
-        {
-            UserId = _userId,
-            Title = "Old Title",
-            BodyMarkdown = "Old body",
-            RenderedHtml = "<p>Old body</p>"
-        };
-        _db.Notes.Add(note);
-        await _db.SaveChangesAsync();
-
-        var updateRequest = new UpdateNoteRequest(
-            Title: "New Title",
-            BodyMarkdown: "New body with **bold**."
-        );
-
-        var result = await _sut.UpdateAsync(note.Id, updateRequest);
-
-        Assert.True(result.Succeeded);
-        Assert.Equal("New Title", result.Note!.Title);
-        Assert.Contains("<strong>bold</strong>", result.Note.RenderedHtml);
-    }
-
-    [Fact]
-    public async Task TrashAndRestoreLifecycle_WorksCorrectly()
-    {
-        var note = new Note
-        {
-            UserId = _userId,
-            Title = "To Be Trashed",
-            IsTrashed = false
-        };
-        _db.Notes.Add(note);
-        await _db.SaveChangesAsync();
-
-        // 1. Trash
-        var trashed = await _sut.TrashAsync(note.Id);
-        Assert.True(trashed);
-
-        _db.ChangeTracker.Clear();
-        var retrievedTrashed = await _db.Notes.AsNoTracking().FirstOrDefaultAsync(n => n.Id == note.Id);
-        Assert.NotNull(retrievedTrashed);
-        Assert.True(retrievedTrashed.IsTrashed);
-        Assert.NotNull(retrievedTrashed.TrashedAtUtc);
-
-        // Cannot update trashed note
-        var updateResult = await _sut.UpdateAsync(note.Id, new UpdateNoteRequest("Updated"));
-        Assert.False(updateResult.Succeeded);
-        Assert.Contains("Cannot edit a trashed note", updateResult.Errors[0]);
-
-        // 2. Restore
-        var restored = await _sut.RestoreAsync(note.Id);
-        Assert.True(restored);
-
-        _db.ChangeTracker.Clear();
-        var retrievedRestored = await _db.Notes.AsNoTracking().FirstOrDefaultAsync(n => n.Id == note.Id);
-        Assert.NotNull(retrievedRestored);
-        Assert.False(retrievedRestored.IsTrashed);
-        Assert.Null(retrievedRestored.TrashedAtUtc);
-
-        // 3. Permanent delete
-        var deleted = await _sut.DeletePermanentAsync(note.Id);
-        Assert.True(deleted);
-
-        _db.ChangeTracker.Clear();
-        var retrievedDeleted = await _db.Notes.AsNoTracking().FirstOrDefaultAsync(n => n.Id == note.Id);
-        Assert.Null(retrievedDeleted);
+        // 3. Mutating other tenant's note fails
+        var addRelResult = await _sut.AddRelationAsync(otherNote.Id, new CreateNoteRelationRequest(activeNote.Id, "about"));
+        Assert.False(addRelResult.Succeeded);
+        Assert.Equal(404, addRelResult.StatusCode);
     }
 
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser

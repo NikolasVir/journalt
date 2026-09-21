@@ -1,0 +1,25 @@
+meta {
+  name: Update Tag Definition
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/tags/definitions/{{tagDefinitionId}}
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "allowedValuesJson": "[\"draft\", \"in-review\", \"published\", \"archived\"]"
+  }
+}
+
+docs {
+  Updates allowed vocabulary values for an existing tag category (TAG-001, TAG-003).
+}

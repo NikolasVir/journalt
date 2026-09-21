@@ -1,0 +1,19 @@
+meta {
+  name: Delete Tag Definition
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/tags/definitions/{{tagDefinitionId}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+docs {
+  Deletes a global tag category definition.
+}

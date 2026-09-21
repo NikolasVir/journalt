@@ -1,0 +1,33 @@
+meta {
+  name: Promote Note
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/notes/{{noteId}}/promote
+  body: json
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+body:json {
+  {
+    "targetLevel": "Quick",
+    "tags": [
+      {
+        "tagType": "FreeForm",
+        "value": "promoted"
+      }
+    ]
+  }
+}
+
+docs {
+  Promotes an Inbox note to Quick Note, or an Inbox/Quick Note to Journal (NOTE-006).
+  Preserves note ID, timestamps, sources, and relations.
+  Rejects demotions (NOTE-009).
+}
