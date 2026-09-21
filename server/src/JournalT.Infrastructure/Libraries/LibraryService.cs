@@ -31,7 +31,7 @@ public sealed class LibraryService(
         var nameExists = await _db.Libraries
             .AnyAsync(l => l.UserId == userId &&
                            l.ParentLibraryId == request.ParentLibraryId &&
-                           l.Name == trimmedName, ct);
+                           l.Name.ToLower() == trimmedName.ToLower(), ct);
 
         if (nameExists)
             return LibraryResult.Failure("A library with the same name already exists in this folder.", 409);
@@ -119,7 +119,7 @@ public sealed class LibraryService(
                 .AnyAsync(l => l.UserId == userId &&
                                l.Id != id &&
                                l.ParentLibraryId == library.ParentLibraryId &&
-                               l.Name == trimmedName, ct);
+                               l.Name.ToLower() == trimmedName.ToLower(), ct);
 
             if (siblingExists)
                 return LibraryResult.Failure("A sibling library with the same name already exists.", 409);
@@ -181,7 +181,7 @@ public sealed class LibraryService(
             .AnyAsync(l => l.UserId == userId &&
                            l.Id != id &&
                            l.ParentLibraryId == request.NewParentLibraryId &&
-                           l.Name == library.Name, ct);
+                           l.Name.ToLower() == library.Name.ToLower(), ct);
 
         if (siblingExists)
             return LibraryResult.Failure("A library with the same name already exists in the target destination.", 409);
