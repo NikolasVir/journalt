@@ -126,4 +126,19 @@ public class NotesController(INoteService noteService) : ControllerBase
         var deleted = await _noteService.DeleteRelationAsync(id, relationId, ct);
         return deleted ? NoContent() : NotFound();
     }
+
+    // Phase 4: Todo Hub
+    [HttpGet("todos/summary")]
+    public async Task<IActionResult> GetTodoSummary(CancellationToken ct)
+    {
+        var summary = await _noteService.GetTodoSummaryAsync(ct);
+        return Ok(summary);
+    }
+
+    [HttpPatch("{id:guid}/todo")]
+    public async Task<IActionResult> ToggleTodo(Guid id, CancellationToken ct)
+    {
+        var note = await _noteService.ToggleTodoAsync(id, ct);
+        return note is not null ? Ok(note) : NotFound();
+    }
 }

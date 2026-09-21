@@ -1,0 +1,15 @@
+meta {
+  name: Get Todos Summary
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/api/notes/todos/summary
+  body: none
+  auth: none
+}
+
+docs {
+  Returns an aggregated summary of pending and completed todos across Quick and Journal notes (TODO-001).
+}

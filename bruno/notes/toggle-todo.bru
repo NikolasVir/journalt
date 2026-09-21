@@ -1,0 +1,19 @@
+meta {
+  name: Toggle Todo State
+  type: http
+  seq: 17
+}
+
+patch {
+  url: {{baseUrl}}/api/notes/{{noteId}}/todo
+  body: none
+  auth: none
+}
+
+headers {
+  X-XSRF-TOKEN: {{csrfToken}}
+}
+
+docs {
+  Toggles a note's todo completion status, automatically setting or clearing the TodoCompletedAtUtc timestamp.
+}

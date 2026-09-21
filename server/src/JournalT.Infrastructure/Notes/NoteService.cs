@@ -151,14 +151,26 @@ public sealed class NoteService(
         if (filter.LibraryId.HasValue)
             query = query.Where(n => n.LibraryId == filter.LibraryId.Value);
 
+        if (filter.TypeId.HasValue)
+            query = query.Where(n => n.TypeId == filter.TypeId.Value);
+
         if (filter.IsTodo.HasValue)
             query = query.Where(n => n.IsTodo == filter.IsTodo.Value);
+
+        if (!string.IsNullOrWhiteSpace(filter.Tag))
+        {
+            var tagSearch = filter.Tag.Trim();
+            query = query.Where(n => n.Tags.Any(t =>
+                EF.Functions.Like(t.Value, $"%{tagSearch}%") ||
+                (t.Category != null && EF.Functions.Like(t.Category, $"%{tagSearch}%"))));
+        }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var search = filter.Search.Trim();
             query = query.Where(n => EF.Functions.Like(n.Title, $"%{search}%") ||
-                                     (n.Summary != null && EF.Functions.Like(n.Summary, $"%{search}%")));
+                                     (n.Summary != null && EF.Functions.Like(n.Summary, $"%{search}%")) ||
+                                     EF.Functions.Like(n.BodyMarkdown, $"%{search}%"));
         }
 
         var totalCount = await query.CountAsync(ct);
@@ -593,6 +605,64 @@ public sealed class NoteService(
         _db.NoteRelations.Remove(relation);
         await _db.SaveChangesAsync(ct);
         return true;
+    }
+
+    // Phase 4: Todo Hub
+    public async Task<NoteResponse?> ToggleTodoAsync(Guid id, CancellationToken ct = default)
+    {
+        var note = await _db.Notes
+            .Include(n => n.Tags)
+            .Include(n => n.Sources)
+            .Include(n => n.OutboundRelations)
+                .ThenInclude(r => r.TargetNote)
+            .FirstOrDefaultAsync(n => n.Id == id && n.UserId == _currentUser.UserId && !n.IsTrashed, ct);
+
+        if (note is null) return null;
+
+        if (note.IsTodo)
+        {
+            note.IsTodo = false;
+            note.TodoCompletedAtUtc = DateTime.UtcNow;
+        }
+        else
+        {
+            note.IsTodo = true;
+            note.TodoCompletedAtUtc = null;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        var wikiLinks = _markdownService.ExtractWikiLinks(note.BodyMarkdown);
+        return MapToResponse(note, wikiLinks);
+    }
+
+    public async Task<TodoSummaryResponse> GetTodoSummaryAsync(CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId;
+
+        var pendingQuery = _db.Notes
+            .AsNoTracking()
+            .Where(n => n.UserId == userId && !n.IsTrashed && n.IsTodo && (n.Level == NoteLevel.Quick || n.Level == NoteLevel.Journal));
+
+        var completedQuery = _db.Notes
+            .AsNoTracking()
+            .Where(n => n.UserId == userId && !n.IsTrashed && !n.IsTodo && n.TodoCompletedAtUtc != null && (n.Level == NoteLevel.Quick || n.Level == NoteLevel.Journal));
+
+        var pendingCount = await pendingQuery.CountAsync(ct);
+        var completedCount = await completedQuery.CountAsync(ct);
+
+        var pendingNotes = await pendingQuery
+            .OrderByDescending(n => n.UpdatedAtUtc)
+            .Take(50)
+            .Select(n => new NoteSummaryResponse(n.Id, n.Level, n.Title, n.Summary, n.LibraryId, n.TypeId, n.IsTodo, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc))
+            .ToListAsync(ct);
+
+        var completedNotes = await completedQuery
+            .OrderByDescending(n => n.TodoCompletedAtUtc)
+            .Take(20)
+            .Select(n => new NoteSummaryResponse(n.Id, n.Level, n.Title, n.Summary, n.LibraryId, n.TypeId, n.IsTodo, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc))
+            .ToListAsync(ct);
+
+        return new TodoSummaryResponse(pendingCount, completedCount, pendingNotes, completedNotes);
     }
 
     private async Task<string?> ValidateTagsAsync(Guid userId, NoteLevel level, List<TagDto>? tags, CancellationToken ct)

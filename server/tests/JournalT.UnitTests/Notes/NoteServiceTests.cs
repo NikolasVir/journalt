@@ -279,6 +279,52 @@ public class NoteServiceTests : IDisposable
         Assert.Equal(404, addRelResult.StatusCode);
     }
 
+    [Fact]
+    public async Task Search_MatchesBodyMarkdownAndTag_FiltersCorrectly()
+    {
+        // 1. Note matching keyword in body markdown (QUERY-001)
+        await _sut.CreateAsync(new CreateNoteRequest("Common Title", NoteLevel.Quick, BodyMarkdown: "Deep architectural insights about indexing"));
+        await _sut.CreateAsync(new CreateNoteRequest("Unrelated", NoteLevel.Quick, BodyMarkdown: "Just notes"));
+
+        var bodySearch = await _sut.ListAsync(new NoteFilterParams(Search: "architectural"));
+        Assert.Single(bodySearch.Items);
+        Assert.Equal("Common Title", bodySearch.Items[0].Title);
+
+        // 2. Tag filter matching (QUERY-002)
+        await _sut.CreateAsync(new CreateNoteRequest(
+            "Tagged Note",
+            NoteLevel.Quick,
+            Tags: [new TagDto(TagType.FreeForm, null, "performance")]
+        ));
+
+        var tagResults = await _sut.ListAsync(new NoteFilterParams(Tag: "performance"));
+        Assert.Single(tagResults.Items);
+        Assert.Equal("Tagged Note", tagResults.Items[0].Title);
+    }
+
+    [Fact]
+    public async Task TodoHub_ToggleAndSummary_TracksPendingAndCompleted()
+    {
+        var note = (await _sut.CreateAsync(new CreateNoteRequest("Fix memory leak", NoteLevel.Quick, IsTodo: true))).Note!;
+        Assert.True(note.IsTodo);
+        Assert.Null(note.TodoCompletedAtUtc);
+
+        // Initial summary
+        var initialSummary = await _sut.GetTodoSummaryAsync();
+        Assert.True(initialSummary.PendingCount >= 1);
+
+        // Toggle todo completion (PATCH /api/notes/{id}/todo)
+        var completedNote = await _sut.ToggleTodoAsync(note.Id);
+        Assert.NotNull(completedNote);
+        Assert.False(completedNote.IsTodo);
+        Assert.NotNull(completedNote.TodoCompletedAtUtc);
+
+        // Recheck summary
+        var updatedSummary = await _sut.GetTodoSummaryAsync();
+        Assert.True(updatedSummary.CompletedCount >= 1);
+        Assert.Contains(updatedSummary.RecentCompletedTodos, t => t.Id == note.Id);
+    }
+
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser
     {
         public Guid UserId { get; } = userId;

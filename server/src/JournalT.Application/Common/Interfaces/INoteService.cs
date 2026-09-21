@@ -25,4 +25,8 @@ public interface INoteService
     Task<NoteResult> AddRelationAsync(Guid noteId, CreateNoteRelationRequest request, CancellationToken ct = default);
     Task<IReadOnlyList<NoteRelationResponse>> GetRelationsAsync(Guid noteId, CancellationToken ct = default);
     Task<bool> DeleteRelationAsync(Guid noteId, Guid relationId, CancellationToken ct = default);
+
+    // Todo Hub (Phase 4)
+    Task<NoteResponse?> ToggleTodoAsync(Guid id, CancellationToken ct = default);
+    Task<TodoSummaryResponse> GetTodoSummaryAsync(CancellationToken ct = default);
 }
