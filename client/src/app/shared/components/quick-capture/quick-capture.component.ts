@@ -21,6 +21,27 @@ export interface QuickCapturePayload {
   tags?: string[];
 }
 
+function buildDefaultMetadata(schemaJson?: string | null): string {
+  if (!schemaJson) return '{}';
+  try {
+    const schema = JSON.parse(schemaJson) as { properties?: Record<string, { type?: string }> };
+    if (!schema || typeof schema !== 'object' || !schema.properties) return '{}';
+    const metadata: Record<string, unknown> = {};
+    for (const [key, prop] of Object.entries(schema.properties)) {
+      const type = prop?.type;
+      if (type === 'string') metadata[key] = '';
+      else if (type === 'number' || type === 'integer') metadata[key] = 0;
+      else if (type === 'boolean') metadata[key] = false;
+      else if (type === 'array') metadata[key] = [];
+      else if (type === 'object') metadata[key] = {};
+      else metadata[key] = null;
+    }
+    return JSON.stringify(metadata);
+  } catch {
+    return '{}';
+  }
+}
+
 @Component({
   selector: 'app-quick-capture',
   standalone: true,
@@ -117,12 +138,15 @@ export class QuickCaptureComponent implements OnInit {
 
     const isJournal = this.selectedLevel() === 'Journal';
     const typeId = isJournal ? (this.selectedTypeId() ?? undefined) : undefined;
+    const selectedTypeDef = isJournal && typeId ? this.typeDefinitions().find((t) => t.id === typeId) : null;
+    const typedMetadataJson = isJournal && selectedTypeDef ? buildDefaultMetadata(selectedTypeDef.schemaJson) : undefined;
 
     this.createNote.emit({
       title: title || (body.slice(0, 30) + '...'),
       bodyMarkdown: body,
       level: this.selectedLevel(),
       typeId,
+      typedMetadataJson,
       tags: tags.length > 0 ? tags : undefined
     });
 

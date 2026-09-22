@@ -79,6 +79,7 @@ public class AuthController(
         if (user is null)
             return Unauthorized();
 
+        AppendCsrfCookie();
         return Ok(user);
     }
 

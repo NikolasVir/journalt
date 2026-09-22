@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
 import { LayoutService } from '@layout/layout.service';
@@ -17,6 +18,7 @@ import { QuickCaptureComponent, QuickCapturePayload } from '@shared/components/q
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardPageComponent implements OnInit {
+  private readonly router = inject(Router);
   private readonly noteService = inject(NoteService);
   private readonly layoutService = inject(LayoutService);
   private readonly notification = inject(NotificationService);
@@ -60,11 +62,17 @@ export class DashboardPageComponent implements OnInit {
         level: payload.level,
         title: payload.title,
         bodyMarkdown: payload.bodyMarkdown,
+        typeId: payload.typeId,
+        typedMetadataJson: payload.typedMetadataJson,
         tags: payload.tags
       })
       .subscribe({
         next: (created) => {
           this.notes.update((list) => [created, ...list]);
+          this.notification.showSuccess('Note created successfully.');
+        },
+        error: (err: { error?: { detail?: string } }) => {
+          this.notification.showError(err.error?.detail ?? 'Failed to create note.');
         }
       });
   }
@@ -90,7 +98,7 @@ export class DashboardPageComponent implements OnInit {
 
   public handlePromoteNote(event: { note: NoteResponse; targetLevel: NoteLevel }): void {
     if (event.targetLevel === 'Journal') {
-      this.notification.showInfo('Promotion to Journal requires choosing a Type Schema in note details.');
+      void this.router.navigate(['/notes', event.note.id], { queryParams: { promoteTo: 'Journal' } });
       return;
     }
 
