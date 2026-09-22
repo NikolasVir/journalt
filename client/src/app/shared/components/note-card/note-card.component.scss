@@ -106,8 +106,18 @@
   &__tag {
     font-size: var(--font-size-xs);
 
+    :host-context(html.dark-theme) & {
+      --mat-chip-outline-color: var(--color-border-card);
+      --mat-chip-label-text-color: var(--color-text-secondary);
+    }
+
     &--typed {
       --mat-chip-label-text-color: var(--color-primary);
+
+      :host-context(html.dark-theme) & {
+        --mat-chip-outline-color: var(--color-border-card);
+        --mat-chip-label-text-color: var(--color-primary);
+      }
     }
   }
 

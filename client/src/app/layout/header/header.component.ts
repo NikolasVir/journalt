@@ -5,6 +5,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
+import { ThemeService } from '@core/services/theme.service';
 import { LayoutService } from '@layout/layout.service';
 
 @Component({
@@ -18,6 +19,7 @@ import { LayoutService } from '@layout/layout.service';
 export class HeaderComponent {
   protected readonly layoutService = inject(LayoutService);
   protected readonly authService = inject(AuthService);
+  protected readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
 
   public onSearchInput(event: Event): void {

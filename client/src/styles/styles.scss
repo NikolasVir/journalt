@@ -1,5 +1,36 @@
+@use '@angular/material' as mat;
 @use 'tokens';
 @use 'mixins' as *;
+
+html {
+  @include mat.theme((
+    color: (
+      theme-type: light,
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+  ));
+  color-scheme: light;
+}
+
+html.dark-theme {
+  @include mat.theme((
+    color: (
+      theme-type: dark,
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+  ));
+  color-scheme: dark;
+
+  --mat-sys-primary: #8ab4f8;
+  --mat-sys-on-primary: #202124;
+  --mat-sys-outline: #5f6368;
+  --mat-sys-outline-variant: #5f6368;
+  --mat-sys-surface: #202124;
+  --mat-sys-surface-container: #282a2c;
+  --mat-sys-surface-container-high: #2d2e30;
+}
 
 *,
 *::before,

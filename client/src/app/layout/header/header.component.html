@@ -41,6 +41,15 @@
     @if (authService.currentUser(); as user) {
       <span class="header-toolbar__username">{{ user.userName || user.email }}</span>
     }
+    <button
+      mat-icon-button
+      type="button"
+      (click)="themeService.toggleTheme()"
+      [matTooltip]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+      [attr.aria-label]="themeService.isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+    >
+      <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
     <a
       mat-icon-button
       routerLink="/settings"

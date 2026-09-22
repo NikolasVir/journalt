@@ -7,7 +7,7 @@
   --color-bg-surface-active: #e8eaed;
   --color-bg-input: #f1f3f4;
   --color-bg-input-focus: #ffffff;
-  --color-bg-nav-active: #feefc3;
+  --color-bg-nav-active: #e8f0fe;
   --color-bg-nav-hover: #f1f3f4;
 
   /* ── Ink & Text ─────────────────────────────────────────────────────── */
@@ -96,4 +96,57 @@
 
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.dark-theme {
+  /* ── Color Palette: Neutrals (Google Keep Exact Dark Palette) ───────── */
+  --color-bg-app: #202124;
+  --color-bg-surface: #202124;
+  --color-bg-surface-elevated: #282a2c;
+  --color-bg-surface-hover: #282a2c;
+  --color-bg-surface-active: #3c4043;
+  --color-bg-input: #282a2c;
+  --color-bg-input-focus: #202124;
+  --color-bg-nav-active: #283347; /* Blue container instead of Keep's amber #41331c */
+  --color-bg-nav-hover: #282a2c;
+
+  /* ── Ink & Text ─────────────────────────────────────────────────────── */
+  --color-text-primary: #e8eaed;
+  --color-text-secondary: #9aa0a6;
+  --color-text-muted: #80868b;
+  --color-text-inverse: #202124;
+
+  /* ── Borders & Outlines ─────────────────────────────────────────────── */
+  --color-border-subtle: transparent; /* Keep has seamless sidebar without line */
+  --color-border-card: #5f6368;
+  --color-border-card-hover: #e8eaed;
+  --color-border-focus: #8ab4f8;
+
+  /* ── Brand & Accent (Google Blue, non-yellow) ───────────────────────── */
+  --color-primary: #8ab4f8;
+  --color-primary-hover: #aecbfa;
+  --color-primary-light: #283347;
+  --color-primary-contrast: #202124;
+
+  /* ── JournalT Lifecycle Badges (Non-yellow harmonious Keep style) ────── */
+  --color-level-inbox: #9aa0a6;
+  --color-level-inbox-bg: rgba(154, 160, 166, 0.15);
+  --color-level-quick: #8ab4f8;
+  --color-level-quick-bg: rgba(138, 180, 248, 0.15);
+  --color-level-journal: #81c995;
+  --color-level-journal-bg: rgba(129, 201, 149, 0.15);
+
+  /* ── Semantic States ─────────────────────────────────────────────────── */
+  --color-success: #81c995;
+  --color-success-bg: rgba(129, 201, 149, 0.15);
+  --color-warning: #8ab4f8;
+  --color-warning-bg: rgba(138, 180, 248, 0.15);
+  --color-danger: #f28b82;
+  --color-danger-bg: rgba(242, 139, 130, 0.15);
+
+  /* ── Shadows (Google Keep Dark Shadows) ───────────────────────────────── */
+  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.6), 0 2px 6px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 1px 3px 0 rgba(0, 0, 0, 0.6), 0 4px 8px 3px rgba(0, 0, 0, 0.3);
+  --shadow-search: 0 1px 2px 0 rgba(0, 0, 0, 0.6), 0 2px 6px 2px rgba(0, 0, 0, 0.3);
+  --shadow-dropdown: 0 1px 2px 0 rgba(0, 0, 0, 0.6), 0 2px 6px 2px rgba(0, 0, 0, 0.3);
 }
