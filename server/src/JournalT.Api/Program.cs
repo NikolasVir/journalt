@@ -14,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
+builder.Services.AddHealthChecks();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ValidateCookieAntiforgeryFilter>();
@@ -61,9 +62,11 @@ app.UseStatusCodePages();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+}
 
-    // Auto-apply migrations so deleting journalt.db + dotnet run is enough to reset.
-    using var scope = app.Services.CreateScope();
+// Auto-apply SQLite migrations on startup
+using (var scope = app.Services.CreateScope())
+{
     var db = scope.ServiceProvider.GetRequiredService<JournalTDbContext>();
     db.Database.Migrate();
 }
@@ -73,6 +76,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
 
 app.Run();
