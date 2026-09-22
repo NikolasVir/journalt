@@ -41,6 +41,24 @@
         </div>
       }
 
+      @if (form.controls.level.value === 'Journal') {
+        @if (typeDefinitions().length > 0) {
+          <mat-form-field appearance="outline" class="note-form__field">
+            <mat-label>Journal Type Definition</mat-label>
+            <mat-select formControlName="typeId" aria-label="Select Journal Type">
+              @for (type of typeDefinitions(); track type.id) {
+                <mat-option [value]="type.id">{{ type.name }} (v{{ type.version }})</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          <div class="note-form__type-notice">
+            <mat-icon>info</mat-icon>
+            <span>No active type definitions found. <a routerLink="/types">Create a type definition</a> first.</span>
+          </div>
+        }
+      }
+
       <mat-form-field appearance="outline" class="note-form__field">
         <mat-label>Content (Markdown)</mat-label>
         <textarea

@@ -56,6 +56,30 @@
     margin-bottom: var(--spacing-xs);
   }
 
+  &__type-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--color-bg-input);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xs);
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--color-primary);
+    }
+
+    a {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
+  }
+
   &__label {
     font-size: var(--font-size-xs);
     color: var(--color-text-secondary);

@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { QuickCaptureComponent } from './quick-capture.component';
+import { TypeDefinitionService } from '../../../core/services/type-definition.service';
 
 describe('QuickCaptureComponent', () => {
   let component: QuickCaptureComponent;
@@ -7,7 +9,15 @@ describe('QuickCaptureComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [QuickCaptureComponent]
+      imports: [QuickCaptureComponent],
+      providers: [
+        {
+          provide: TypeDefinitionService,
+          useValue: {
+            list: () => of([])
+          }
+        }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(QuickCaptureComponent);

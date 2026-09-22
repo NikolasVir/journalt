@@ -52,6 +52,30 @@
         ></textarea>
       </mat-form-field>
 
+      @if (selectedLevel() === 'Journal') {
+        @if (typeDefinitions().length > 0) {
+          <mat-form-field appearance="outline" class="capture-card__field">
+            <mat-label>Journal Type</mat-label>
+            <mat-select
+              [value]="selectedTypeId()"
+              (selectionChange)="onTypeChange($event.value)"
+              aria-label="Select Journal Type"
+            >
+              @for (type of typeDefinitions(); track type.id) {
+                <mat-option [value]="type.id">
+                  {{ type.name }} (v{{ type.version }})
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          <div class="capture-card__type-notice">
+            <mat-icon>info</mat-icon>
+            <span>No active type definitions found. <a routerLink="/types">Create a type</a> first.</span>
+          </div>
+        }
+      }
+
       @if (selectedLevel() !== 'Inbox') {
         <mat-form-field appearance="outline" class="capture-card__field">
           <mat-label>Tags</mat-label>
