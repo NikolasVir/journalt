@@ -1,0 +1,75 @@
+@use 'mixins' as *;
+
+:host {
+  display: block;
+  width: 100%;
+  max-width: var(--capture-max-width);
+  margin: 0 auto;
+}
+
+.capture-card {
+  width: 100%;
+  background-color: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-fast);
+
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  &__collapsed {
+    @include flex-between;
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+  }
+
+  &__placeholder {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    font-weight: var(--font-weight-medium);
+  }
+
+  &__actions {
+    @include flex-center;
+    gap: var(--spacing-2xs);
+  }
+
+  &__pill {
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-xs);
+    height: 32px;
+    line-height: 32px;
+    padding: 0 var(--spacing-sm);
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: var(--spacing-2xs);
+    }
+  }
+
+  &__expanded {
+    @include flex-column;
+    padding: var(--spacing-md);
+    gap: var(--spacing-xs);
+  }
+
+  &__field {
+    width: 100%;
+  }
+
+  &__footer {
+    @include flex-between;
+    padding-top: var(--spacing-xs);
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  &__buttons {
+    @include flex-center;
+    gap: var(--spacing-xs);
+    margin-left: auto;
+  }
+}

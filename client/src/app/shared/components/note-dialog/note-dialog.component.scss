@@ -1,0 +1,85 @@
+@use 'mixins' as *;
+
+.dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  @include flex-center;
+  padding: var(--spacing-md);
+  backdrop-filter: blur(2px);
+}
+
+.dialog-panel {
+  width: 100%;
+  max-width: var(--capture-max-width);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-dropdown);
+  @include flex-column;
+  overflow: hidden;
+  max-height: 90vh;
+
+  &__header {
+    @include flex-between;
+    padding: var(--spacing-md) var(--spacing-md) 0;
+    gap: var(--spacing-sm);
+  }
+
+  &__title-field {
+    flex: 1;
+  }
+
+  &__level-badge {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    padding: var(--spacing-2xs) var(--spacing-xs);
+    border-radius: var(--radius-sm);
+
+    &--inbox {
+      color: var(--color-level-inbox);
+      background-color: var(--color-level-inbox-bg);
+    }
+
+    &--quick {
+      color: var(--color-level-quick);
+      background-color: var(--color-level-quick-bg);
+    }
+
+    &--journal {
+      color: var(--color-level-journal);
+      background-color: var(--color-level-journal-bg);
+    }
+  }
+
+  &__body {
+    padding: var(--spacing-xs) var(--spacing-md);
+    overflow-y: auto;
+    @include custom-scrollbar;
+    @include flex-column;
+    gap: var(--spacing-xs);
+  }
+
+  &__body-field {
+    width: 100%;
+  }
+
+  &__tags-field {
+    width: 100%;
+  }
+
+  &__actions {
+    @include flex-between;
+    padding: var(--spacing-xs) var(--spacing-md) var(--spacing-sm);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  &__action-group {
+    @include flex-center;
+    gap: var(--spacing-xs);
+  }
+}

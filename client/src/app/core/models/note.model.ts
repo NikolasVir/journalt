@@ -1,0 +1,136 @@
+export type NoteLevel = 'Inbox' | 'Quick' | 'Journal';
+
+export interface WikiLinkWarning {
+  title: string;
+  reason: string;
+}
+
+export interface TagDto {
+  tagType?: 'FreeForm' | 'Typed';
+  category?: string | null;
+  value: string;
+}
+
+export function formatTag(tag: TagDto): string {
+  return tag.category ? `${tag.category}:${tag.value}` : tag.value;
+}
+
+export interface NoteSourceResponse {
+  id: string;
+  noteId: string;
+  citation: string;
+  url?: string | null;
+  createdAtUtc: string;
+}
+
+export interface NoteRelationResponse {
+  id: string;
+  sourceNoteId: string;
+  targetNoteId: string;
+  targetNoteTitle: string;
+  role: string;
+  context?: string | null;
+  createdAtUtc: string;
+}
+
+export interface NoteResponse {
+  id: string;
+  userId: string;
+  level: NoteLevel;
+  title: string;
+  summary?: string | null;
+  bodyMarkdown: string;
+  renderedHtml: string;
+  libraryId?: string | null;
+  typeId?: string | null;
+  typeVersion?: number | null;
+  typedMetadataJson?: string | null;
+  isTodo: boolean;
+  todoCompletedAtUtc?: string | null;
+  isTrashed: boolean;
+  trashedAtUtc?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  tags?: TagDto[] | null;
+  wikiLinks?: string[] | null;
+  sources?: NoteSourceResponse[] | null;
+  outboundRelations?: NoteRelationResponse[] | null;
+  unresolvedWikiLinks?: WikiLinkWarning[] | null;
+}
+
+export interface NoteSummaryResponse {
+  id: string;
+  level: NoteLevel;
+  title: string;
+  summary?: string | null;
+  bodyMarkdown?: string | null;
+  renderedHtml?: string | null;
+  libraryId?: string | null;
+  typeId?: string | null;
+  isTodo: boolean;
+  todoCompletedAtUtc?: string | null;
+  isTrashed: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  tags?: TagDto[] | null;
+}
+
+export interface CreateNoteRequest {
+  level: NoteLevel;
+  title: string;
+  summary?: string | null;
+  bodyMarkdown?: string;
+  libraryId?: string | null;
+  typeId?: string | null;
+  typedMetadataJson?: string | null;
+  isTodo?: boolean;
+  tags?: (TagDto | string)[];
+}
+
+export interface UpdateNoteRequest {
+  title?: string;
+  summary?: string | null;
+  bodyMarkdown?: string;
+  libraryId?: string | null;
+  typeId?: string | null;
+  typedMetadataJson?: string | null;
+  isTodo?: boolean;
+  tags?: (TagDto | string)[];
+}
+
+export interface PromoteNoteRequest {
+  targetLevel: NoteLevel;
+  typeId?: string | null;
+  typedMetadataJson?: string | null;
+  resolvedConflictPayload?: string | null;
+}
+
+export interface NoteFilterParams {
+  level?: NoteLevel;
+  libraryId?: string;
+  typeId?: string;
+  isTodo?: boolean;
+  isTrashed?: boolean;
+  search?: string;
+  tag?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface TodoSummaryResponse {
+  totalTodos: number;
+  completedTodos: number;
+  pendingTodos: number;
+  recentTodos: NoteSummaryResponse[];
+}
+
+export interface CreateNoteSourceRequest {
+  citation: string;
+  url?: string | null;
+}
+
+export interface CreateNoteRelationRequest {
+  targetNoteId: string;
+  role: string;
+  context?: string | null;
+}

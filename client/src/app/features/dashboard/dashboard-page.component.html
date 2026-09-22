@@ -1,0 +1,43 @@
+<div class="dashboard">
+  <!-- Google Keep-style Quick Capture -->
+  <app-quick-capture
+    [defaultLevel]="'Quick'"
+    (createNote)="handleCreateNote($event)"
+  />
+
+  <!-- Notes Grid -->
+  <section class="dashboard__section" aria-label="Notes">
+    @if (isLoading()) {
+      <div class="dashboard__loading">
+        <p>Loading notes...</p>
+      </div>
+    } @else if (filteredNotes().length > 0) {
+      <div class="dashboard__grid">
+        @for (note of filteredNotes(); track note.id) {
+          <app-note-card
+            [note]="note"
+            (cardClick)="openNoteDialog($event)"
+            (toggleTodo)="handleToggleTodo($event)"
+            (trashNote)="handleTrashNote($event)"
+            (promoteNote)="handlePromoteNote($event)"
+          />
+        }
+      </div>
+    } @else {
+      <div class="dashboard__empty">
+        <mat-icon class="dashboard__empty-icon">lightbulb</mat-icon>
+        <p class="dashboard__empty-title">Notes you add appear here</p>
+        <p class="dashboard__empty-subtitle">Capture thoughts as Inbox, Quick, or Journal notes above.</p>
+      </div>
+    }
+  </section>
+
+  <!-- Google Keep-style In-place Dialog Editor -->
+  <app-note-dialog
+    [note]="selectedNote()"
+    (close)="selectedNote.set(null)"
+    (save)="handleSaveDialog($event)"
+    (trash)="handleTrashNote(selectedNote()!)"
+    (promote)="handlePromoteNote({ note: selectedNote()!, targetLevel: $event.targetLevel })"
+  />
+</div>

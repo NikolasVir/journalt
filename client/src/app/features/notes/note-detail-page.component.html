@@ -1,0 +1,102 @@
+<div class="note-editor">
+  <header class="note-editor__header">
+    <a mat-button routerLink="/dashboard" class="note-editor__back-btn">
+      <mat-icon>arrow_back</mat-icon>
+      <span>Back to notes</span>
+    </a>
+    <h1 class="note-editor__heading">
+      {{ noteId() ? 'Edit Note' : 'New Note' }}
+    </h1>
+  </header>
+
+  @if (errorMessage(); as error) {
+    <div class="note-editor__alert" role="alert">
+      {{ error }}
+    </div>
+  }
+
+  <mat-card appearance="outlined" class="note-card-form">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="note-form" novalidate>
+      <mat-form-field appearance="outline" class="note-form__field">
+        <mat-label>Title</mat-label>
+        <input
+          matInput
+          formControlName="title"
+          placeholder="Title"
+          autocomplete="off"
+        />
+        @if (form.controls.title.invalid && form.controls.title.touched) {
+          <mat-error>Title is required.</mat-error>
+        }
+      </mat-form-field>
+
+      @if (!noteId()) {
+        <div class="note-form__level-section">
+          <label class="note-form__label">Note Level</label>
+          <mat-radio-group formControlName="level" class="note-form__radio-group">
+            <mat-radio-button value="Inbox">Inbox</mat-radio-button>
+            <mat-radio-button value="Quick">Quick</mat-radio-button>
+            <mat-radio-button value="Journal">Journal</mat-radio-button>
+          </mat-radio-group>
+        </div>
+      }
+
+      <mat-form-field appearance="outline" class="note-form__field">
+        <mat-label>Content (Markdown)</mat-label>
+        <textarea
+          matInput
+          formControlName="bodyMarkdown"
+          rows="12"
+          placeholder="Write in Markdown..."
+        ></textarea>
+      </mat-form-field>
+
+      @if (form.controls.level.value !== 'Inbox') {
+        <mat-form-field appearance="outline" class="note-form__field">
+          <mat-label>Tags</mat-label>
+          <input
+            matInput
+            formControlName="tagsInput"
+            placeholder="Comma-separated tags (e.g. dev, ideas)"
+          />
+        </mat-form-field>
+      }
+
+      <div class="note-form__checkbox">
+        <mat-checkbox formControlName="isTodo" color="primary">
+          Track as Todo
+        </mat-checkbox>
+      </div>
+
+      <mat-card-actions class="note-form__actions">
+        @if (noteId()) {
+          <button
+            mat-button
+            color="warn"
+            type="button"
+            (click)="onDelete()"
+          >
+            <mat-icon>delete_outline</mat-icon>
+            <span>Move to Trash</span>
+          </button>
+        }
+
+        <div class="note-form__buttons">
+          <a mat-button routerLink="/dashboard">Cancel</a>
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            [disabled]="form.invalid || isSaving()"
+          >
+            @if (isSaving()) {
+              <span>Saving...</span>
+            } @else {
+              <span>Save Note</span>
+            }
+          </button>
+        </div>
+      </mat-card-actions>
+    </form>
+  </mat-card>
+</div>

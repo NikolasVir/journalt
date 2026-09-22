@@ -1,0 +1,26 @@
+@use 'mixins' as *;
+
+.shell {
+  min-height: 100vh;
+  @include flex-column;
+  background-color: var(--color-bg-app);
+
+  &__body {
+    display: flex;
+    flex: 1;
+    min-height: calc(100vh - var(--header-height));
+  }
+
+  &__content {
+    flex: 1;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    max-width: var(--feed-max-width);
+    margin: 0 auto;
+    width: 100%;
+    outline: none;
+
+    @include respond-to('mobile') {
+      padding: var(--spacing-sm);
+    }
+  }
+}

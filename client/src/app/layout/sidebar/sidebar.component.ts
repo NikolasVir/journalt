@@ -1,0 +1,61 @@
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { LayoutService } from '@layout/layout.service';
+
+interface NavItem {
+  label: string;
+  route: string;
+  icon: string;
+  exact?: boolean;
+}
+
+@Component({
+  selector: 'app-sidebar',
+  standalone: true,
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    MatListModule,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    MatDividerModule,
+    MatTooltipModule
+  ],
+  templateUrl: './sidebar.component.html',
+  styleUrl: './sidebar.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class SidebarComponent {
+  protected readonly layoutService = inject(LayoutService);
+  private readonly router = inject(Router);
+
+  protected readonly mainNavItems: NavItem[] = [
+    { label: 'Notes', route: '/dashboard', icon: 'lightbulb', exact: true },
+    { label: 'Inbox', route: '/notes/inbox', icon: 'inbox' },
+    { label: 'Quick Notes', route: '/notes/quick', icon: 'edit_note' },
+    { label: 'Journal', route: '/notes/journal', icon: 'menu_book' },
+    { label: 'Todos', route: '/todos', icon: 'check_circle' }
+  ];
+
+  protected readonly secondaryNavItems: NavItem[] = [
+    { label: 'Libraries', route: '/libraries', icon: 'folder' },
+    { label: 'Types', route: '/types', icon: 'schema' },
+    { label: 'Tags', route: '/tags', icon: 'label' }
+  ];
+
+  protected readonly systemNavItems: NavItem[] = [
+    { label: 'Trash', route: '/trash', icon: 'delete' },
+    { label: 'Settings', route: '/settings', icon: 'settings' }
+  ];
+
+  public createNote(level: 'Inbox' | 'Quick' | 'Journal'): void {
+    void this.router.navigate(['/notes', 'new'], { queryParams: { level } });
+  }
+}

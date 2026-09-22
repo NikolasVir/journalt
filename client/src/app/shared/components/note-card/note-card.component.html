@@ -1,0 +1,68 @@
+<mat-card
+  appearance="outlined"
+  class="note-card"
+  [class.note-card--todo-done]="note().isTodo && note().todoCompletedAtUtc"
+  (click)="onCardClick()"
+  tabindex="0"
+  role="button"
+  [attr.aria-label]="note().title"
+>
+  <mat-card-header class="note-card__header">
+    <mat-card-title class="note-card__title">
+      {{ note().title || 'Untitled Note' }}
+    </mat-card-title>
+    <span class="note-card__level-badge" [class]="'note-card__level-badge--' + note().level.toLowerCase()">
+      {{ note().level }}
+    </span>
+  </mat-card-header>
+
+  <mat-card-content class="note-card__content">
+    @if (note().renderedHtml) {
+      <div class="note-card__body" [innerHTML]="note().renderedHtml"></div>
+    } @else if (note().bodyMarkdown) {
+      <p class="note-card__body-text">{{ note().bodyMarkdown }}</p>
+    }
+
+    @if ((note().tags?.length ?? 0) > 0) {
+      <mat-chip-set class="note-card__tags">
+        @for (tag of note().tags ?? []; track tag.value) {
+          <mat-chip class="note-card__tag" [class.note-card__tag--typed]="tag.tagType === 'Typed'">
+            #{{ formatTag(tag) }}
+          </mat-chip>
+        }
+      </mat-chip-set>
+    }
+  </mat-card-content>
+
+  <mat-card-actions align="end" class="note-card__actions">
+    <button
+      mat-icon-button
+      [color]="note().isTodo ? 'primary' : undefined"
+      (click)="onToggleTodo($event)"
+      [matTooltip]="note().isTodo ? 'Mark todo completed/pending' : 'Flag as Todo'"
+      aria-label="Toggle Todo"
+    >
+      <mat-icon>{{ note().isTodo ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+    </button>
+
+    @if (nextPromoteLevel(); as nextLevel) {
+      <button
+        mat-icon-button
+        (click)="onPromote($event)"
+        [matTooltip]="'Promote to ' + nextLevel"
+        aria-label="Promote note"
+      >
+        <mat-icon>arrow_upward</mat-icon>
+      </button>
+    }
+
+    <button
+      mat-icon-button
+      (click)="onTrash($event)"
+      matTooltip="Delete note"
+      aria-label="Delete note"
+    >
+      <mat-icon>delete_outline</mat-icon>
+    </button>
+  </mat-card-actions>
+</mat-card>

@@ -1,0 +1,94 @@
+<aside
+  class="sidebar"
+  [class.sidebar--collapsed]="layoutService.isSidebarCollapsed()"
+  aria-label="Navigation drawer"
+>
+  <div class="sidebar__action">
+    <button
+      mat-flat-button
+      color="primary"
+      class="sidebar__create-btn"
+      [matMenuTriggerFor]="createMenu"
+      [matTooltip]="layoutService.isSidebarCollapsed() ? 'New Note' : ''"
+      aria-label="Create new note"
+    >
+      <mat-icon>add</mat-icon>
+      @if (!layoutService.isSidebarCollapsed()) {
+        <span>New Note</span>
+      }
+    </button>
+
+    <mat-menu #createMenu="matMenu">
+      <button mat-menu-item (click)="createNote('Inbox')">
+        <mat-icon>inbox</mat-icon>
+        <span>Inbox Note</span>
+      </button>
+      <button mat-menu-item (click)="createNote('Quick')">
+        <mat-icon>edit_note</mat-icon>
+        <span>Quick Note</span>
+      </button>
+      <button mat-menu-item (click)="createNote('Journal')">
+        <mat-icon>menu_book</mat-icon>
+        <span>Journal Note</span>
+      </button>
+    </mat-menu>
+  </div>
+
+  <mat-nav-list class="sidebar__nav">
+    @for (item of mainNavItems; track item.route) {
+      <a
+        mat-list-item
+        [routerLink]="item.route"
+        [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+        routerLinkActive
+        #rla="routerLinkActive"
+        [activated]="rla.isActive"
+        [matTooltip]="layoutService.isSidebarCollapsed() ? item.label : ''"
+        matTooltipPosition="right"
+      >
+        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+        @if (!layoutService.isSidebarCollapsed()) {
+          <span matListItemTitle>{{ item.label }}</span>
+        }
+      </a>
+    }
+
+    <mat-divider class="sidebar__divider" />
+
+    @for (item of secondaryNavItems; track item.route) {
+      <a
+        mat-list-item
+        [routerLink]="item.route"
+        routerLinkActive
+        #rlaSec="routerLinkActive"
+        [activated]="rlaSec.isActive"
+        [matTooltip]="layoutService.isSidebarCollapsed() ? item.label : ''"
+        matTooltipPosition="right"
+      >
+        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+        @if (!layoutService.isSidebarCollapsed()) {
+          <span matListItemTitle>{{ item.label }}</span>
+        }
+      </a>
+    }
+
+    <mat-divider class="sidebar__divider" />
+
+    @for (item of systemNavItems; track item.route) {
+      <a
+        mat-list-item
+        [routerLink]="item.route"
+        routerLinkActive
+        #rlaSys="routerLinkActive"
+        [activated]="rlaSys.isActive"
+        [matTooltip]="layoutService.isSidebarCollapsed() ? item.label : ''"
+        matTooltipPosition="right"
+      >
+        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+        @if (!layoutService.isSidebarCollapsed()) {
+          <span matListItemTitle>{{ item.label }}</span>
+        }
+      </a>
+    }
+  </mat-nav-list>
+</aside>

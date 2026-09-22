@@ -1,0 +1,47 @@
+<div class="notes-page">
+  <header class="notes-page__header">
+    <h1 class="notes-page__title">{{ pageTitle() }}</h1>
+    <p class="notes-page__subtitle">{{ pageSubtitle() }}</p>
+  </header>
+
+  <!-- Quick Capture defaulted to current level -->
+  <app-quick-capture
+    [defaultLevel]="currentLevel() ?? 'Quick'"
+    (createNote)="handleCreateNote($event)"
+  />
+
+  <section class="notes-page__section" aria-label="Notes Feed">
+    @if (isLoading()) {
+      <div class="notes-page__loading">
+        <p>Loading {{ pageTitle() }}...</p>
+      </div>
+    } @else if (filteredNotes().length > 0) {
+      <div class="notes-page__grid">
+        @for (note of filteredNotes(); track note.id) {
+          <app-note-card
+            [note]="note"
+            (cardClick)="openNoteDialog($event)"
+            (toggleTodo)="handleToggleTodo($event)"
+            (trashNote)="handleTrashNote($event)"
+            (promoteNote)="handlePromoteNote($event)"
+          />
+        }
+      </div>
+    } @else {
+      <div class="notes-page__empty">
+        <mat-icon class="notes-page__empty-icon">menu_book</mat-icon>
+        <p class="notes-page__empty-title">No notes in {{ pageTitle() }}</p>
+        <p class="notes-page__empty-subtitle">Use the capture bar above to add notes to this section.</p>
+      </div>
+    }
+  </section>
+
+  <!-- In-place Keep Dialog Editor -->
+  <app-note-dialog
+    [note]="selectedNote()"
+    (close)="selectedNote.set(null)"
+    (save)="handleSaveDialog($event)"
+    (trash)="handleTrashNote(selectedNote()!)"
+    (promote)="handlePromoteNote({ note: selectedNote()!, targetLevel: $event.targetLevel })"
+  />
+</div>

@@ -1,0 +1,58 @@
+@use 'mixins' as *;
+
+.dashboard {
+  @include flex-column;
+  gap: var(--spacing-xl);
+  width: 100%;
+
+  &__section {
+    width: 100%;
+  }
+
+  &__loading {
+    @include flex-center;
+    padding: var(--spacing-2xl) 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  &__grid {
+    column-count: 3;
+    column-gap: var(--spacing-md);
+    width: 100%;
+
+    @include respond-to('tablet') {
+      column-count: 2;
+    }
+
+    @include respond-to('mobile') {
+      column-count: 1;
+    }
+  }
+
+  &__empty {
+    @include flex-column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-2xl) var(--spacing-md);
+    color: var(--color-text-muted);
+
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+    }
+  }
+
+  &__empty-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+  }
+
+  &__empty-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+}

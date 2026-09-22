@@ -1,0 +1,61 @@
+<mat-toolbar class="header-toolbar">
+  <div class="header-toolbar__left">
+    <button
+      mat-icon-button
+      (click)="layoutService.toggleSidebar()"
+      matTooltip="Main menu"
+      aria-label="Toggle navigation"
+    >
+      <mat-icon>menu</mat-icon>
+    </button>
+    <a routerLink="/dashboard" class="header-toolbar__brand">
+      <span class="header-toolbar__title">JournalT</span>
+    </a>
+  </div>
+
+  <div class="header-toolbar__search">
+    <div class="search-box">
+      <mat-icon class="search-box__icon">search</mat-icon>
+      <input
+        type="text"
+        class="search-box__input"
+        placeholder="Search notes, tags, libraries..."
+        [value]="layoutService.searchQuery()"
+        (input)="onSearchInput($event)"
+        aria-label="Search notes"
+      />
+      @if (layoutService.searchQuery().length > 0) {
+        <button
+          mat-icon-button
+          class="search-box__clear-btn"
+          (click)="clearSearch()"
+          aria-label="Clear search"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="header-toolbar__right">
+    @if (authService.currentUser(); as user) {
+      <span class="header-toolbar__username">{{ user.userName || user.email }}</span>
+    }
+    <a
+      mat-icon-button
+      routerLink="/settings"
+      matTooltip="Settings"
+      aria-label="Settings"
+    >
+      <mat-icon>settings</mat-icon>
+    </a>
+    <button
+      mat-icon-button
+      (click)="onLogout()"
+      matTooltip="Sign out"
+      aria-label="Sign out"
+    >
+      <mat-icon>logout</mat-icon>
+    </button>
+  </div>
+</mat-toolbar>

@@ -1,0 +1,89 @@
+<mat-card appearance="outlined" class="capture-card" [class.capture-card--expanded]="isExpanded()">
+  @if (!isExpanded()) {
+    <div class="capture-card__collapsed" (click)="expand()">
+      <span class="capture-card__placeholder">Take a note...</span>
+      <div class="capture-card__actions" (click)="$event.stopPropagation()">
+        <button
+          mat-button
+          class="capture-card__pill capture-card__pill--inbox"
+          (click)="expand('Inbox')"
+        >
+          <mat-icon>inbox</mat-icon>
+          <span>Inbox</span>
+        </button>
+        <button
+          mat-button
+          class="capture-card__pill capture-card__pill--quick"
+          (click)="expand('Quick')"
+        >
+          <mat-icon>edit_note</mat-icon>
+          <span>Quick</span>
+        </button>
+        <button
+          mat-button
+          class="capture-card__pill capture-card__pill--journal"
+          (click)="expand('Journal')"
+        >
+          <mat-icon>menu_book</mat-icon>
+          <span>Journal</span>
+        </button>
+      </div>
+    </div>
+  } @else {
+    <mat-card-content class="capture-card__expanded">
+      <mat-form-field appearance="outline" class="capture-card__field">
+        <mat-label>Title</mat-label>
+        <input
+          matInput
+          placeholder="Title"
+          [value]="title()"
+          (input)="title.set($any($event.target).value)"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="capture-card__field">
+        <mat-label>Take a note...</mat-label>
+        <textarea
+          matInput
+          rows="4"
+          placeholder="Note content (Markdown supported)..."
+          [value]="bodyMarkdown()"
+          (input)="bodyMarkdown.set($any($event.target).value)"
+        ></textarea>
+      </mat-form-field>
+
+      @if (selectedLevel() !== 'Inbox') {
+        <mat-form-field appearance="outline" class="capture-card__field">
+          <mat-label>Tags</mat-label>
+          <input
+            matInput
+            placeholder="Comma-separated tags..."
+            [value]="tagsInput()"
+            (input)="tagsInput.set($any($event.target).value)"
+          />
+        </mat-form-field>
+      }
+
+      <div class="capture-card__footer">
+        <mat-button-toggle-group
+          [value]="selectedLevel()"
+          (change)="selectLevel($event.value)"
+          aria-label="Note Level"
+        >
+          <mat-button-toggle value="Inbox">Inbox</mat-button-toggle>
+          <mat-button-toggle value="Quick">Quick</mat-button-toggle>
+          <mat-button-toggle value="Journal">Journal</mat-button-toggle>
+        </mat-button-toggle-group>
+
+        <div class="capture-card__buttons">
+          <button mat-button type="button" (click)="collapse()">
+            Close
+          </button>
+          <button mat-flat-button color="primary" type="button" (click)="submit()">
+            Save
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  }
+</mat-card>

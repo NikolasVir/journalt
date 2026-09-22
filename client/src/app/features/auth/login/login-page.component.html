@@ -1,0 +1,79 @@
+<mat-card appearance="outlined" class="auth-card">
+  <mat-card-header class="auth-card__header">
+    <mat-card-title class="auth-card__title">Sign In</mat-card-title>
+    <mat-card-subtitle class="auth-card__subtitle">Access your personal knowledge base in JournalT</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content class="auth-card__content">
+    @if (errorMessage(); as error) {
+      <div class="auth-card__alert" role="alert">
+        {{ error }}
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="auth-form" novalidate>
+      <mat-form-field appearance="outline" class="auth-form__field">
+        <mat-label>Email</mat-label>
+        <input
+          matInput
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          placeholder="Enter your email"
+        />
+        @if (form.controls.email.invalid && form.controls.email.touched) {
+          <mat-error>Please enter a valid email address.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="auth-form__field">
+        <mat-label>Password</mat-label>
+        <input
+          matInput
+          [type]="hidePassword() ? 'password' : 'text'"
+          formControlName="password"
+          autocomplete="current-password"
+          placeholder="Enter your password"
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="hidePassword.set(!hidePassword())"
+          [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
+          [attr.aria-pressed]="!hidePassword()"
+        >
+          <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        @if (form.controls.password.invalid && form.controls.password.touched) {
+          <mat-error>Password is required.</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="auth-form__checkbox">
+        <mat-checkbox formControlName="rememberMe" color="primary">
+          Remember me
+        </mat-checkbox>
+      </div>
+
+      <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        class="auth-form__submit-btn"
+        [disabled]="isSubmitting()"
+      >
+        @if (isSubmitting()) {
+          <span>Signing in...</span>
+        } @else {
+          <span>Sign In</span>
+        }
+      </button>
+    </form>
+  </mat-card-content>
+
+  <mat-card-actions class="auth-card__footer">
+    <span>Don't have an account?</span>
+    <a routerLink="/auth/register">Create account</a>
+  </mat-card-actions>
+</mat-card>

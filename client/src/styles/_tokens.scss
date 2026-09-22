@@ -1,0 +1,99 @@
+:root {
+  /* ── Color Palette: Neutrals (Google Keep Clean Light Theme) ───────── */
+  --color-bg-app: #ffffff;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-elevated: #ffffff;
+  --color-bg-surface-hover: #f1f3f4;
+  --color-bg-surface-active: #e8eaed;
+  --color-bg-input: #f1f3f4;
+  --color-bg-input-focus: #ffffff;
+  --color-bg-nav-active: #feefc3;
+  --color-bg-nav-hover: #f1f3f4;
+
+  /* ── Ink & Text ─────────────────────────────────────────────────────── */
+  --color-text-primary: #202124;
+  --color-text-secondary: #5f6368;
+  --color-text-muted: #80868b;
+  --color-text-inverse: #ffffff;
+
+  /* ── Borders & Outlines ─────────────────────────────────────────────── */
+  --color-border-subtle: #f1f3f4;
+  --color-border-card: #e0e0e0;
+  --color-border-card-hover: #dadce0;
+  --color-border-focus: #1a73e8;
+
+  /* ── Brand & Accent ─────────────────────────────────────────────────── */
+  --color-primary: #1a73e8;
+  --color-primary-hover: #1557b0;
+  --color-primary-light: #e8f0fe;
+  --color-primary-contrast: #ffffff;
+
+  /* ── JournalT Lifecycle Badges ───────────────────────────────────────── */
+  --color-level-inbox: #b45309;
+  --color-level-inbox-bg: #fef3c7;
+  --color-level-quick: #0369a1;
+  --color-level-quick-bg: #e0f2fe;
+  --color-level-journal: #047857;
+  --color-level-journal-bg: #d1fae5;
+
+  /* ── Semantic States ─────────────────────────────────────────────────── */
+  --color-success: #137333;
+  --color-success-bg: #e6f4ea;
+  --color-warning: #b06000;
+  --color-warning-bg: #fef7e0;
+  --color-danger: #c5221f;
+  --color-danger-bg: #fce8e6;
+
+  /* ── Spacing Scale ───────────────────────────────────────────────────── */
+  --spacing-2xs: 0.125rem; /* 2px */
+  --spacing-xs:  0.25rem;  /* 4px */
+  --spacing-sm:  0.5rem;   /* 8px */
+  --spacing-md:  1rem;     /* 16px */
+  --spacing-lg:  1.5rem;   /* 24px */
+  --spacing-xl:  2rem;     /* 32px */
+  --spacing-2xl: 3rem;     /* 48px */
+
+  /* ── Radii ───────────────────────────────────────────────────────────── */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  /* ── Typography Scale ────────────────────────────────────────────────── */
+  --font-family-sans: "Google Sans", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --font-size-xs:   0.75rem;   /* 12px */
+  --font-size-sm:   0.875rem;  /* 14px */
+  --font-size-base: 1rem;      /* 16px */
+  --font-size-lg:   1.125rem;  /* 18px */
+  --font-size-xl:   1.25rem;   /* 20px */
+  --font-size-2xl:  1.5rem;    /* 24px */
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ── Layout Dimensions ───────────────────────────────────────────────── */
+  --header-height: 64px;
+  --sidebar-width-expanded: 260px;
+  --sidebar-width-collapsed: 72px;
+  --search-max-width: 720px;
+  --capture-max-width: 600px;
+  --feed-max-width: 1280px;
+
+  /* ── Shadows & Transitions ───────────────────────────────────────────── */
+  --shadow-card: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  --shadow-card-hover: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+  --shadow-search: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+  --shadow-dropdown: 0 2px 6px 2px rgba(60, 64, 67, 0.15), 0 1px 2px 0 rgba(60, 64, 67, 0.3);
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
