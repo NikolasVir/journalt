@@ -188,12 +188,16 @@ public sealed class NoteService(
                 n.Level,
                 n.Title,
                 n.Summary,
+                n.BodyMarkdown,
+                n.RenderedHtml,
                 n.LibraryId,
                 n.TypeId,
                 n.IsTodo,
+                n.TodoCompletedAtUtc,
                 n.IsTrashed,
                 n.CreatedAtUtc,
-                n.UpdatedAtUtc
+                n.UpdatedAtUtc,
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList()
             ))
             .ToListAsync(ct);
 
@@ -658,13 +662,17 @@ public sealed class NoteService(
         var pendingNotes = await pendingQuery
             .OrderByDescending(n => n.UpdatedAtUtc)
             .Take(50)
-            .Select(n => new NoteSummaryResponse(n.Id, n.Level, n.Title, n.Summary, n.LibraryId, n.TypeId, n.IsTodo, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc))
+            .Select(n => new NoteSummaryResponse(
+                n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList()))
             .ToListAsync(ct);
 
         var completedNotes = await completedQuery
             .OrderByDescending(n => n.TodoCompletedAtUtc)
             .Take(20)
-            .Select(n => new NoteSummaryResponse(n.Id, n.Level, n.Title, n.Summary, n.LibraryId, n.TypeId, n.IsTodo, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc))
+            .Select(n => new NoteSummaryResponse(
+                n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList()))
             .ToListAsync(ct);
 
         return new TodoSummaryResponse(pendingCount, completedCount, pendingNotes, completedNotes);

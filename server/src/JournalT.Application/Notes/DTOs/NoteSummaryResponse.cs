@@ -7,10 +7,14 @@ public sealed record NoteSummaryResponse(
     NoteLevel Level,
     string Title,
     string? Summary,
+    string? BodyMarkdown,
+    string? RenderedHtml,
     Guid? LibraryId,
     Guid? TypeId,
     bool IsTodo,
+    DateTime? TodoCompletedAtUtc,
     bool IsTrashed,
     DateTime CreatedAtUtc,
-    DateTime UpdatedAtUtc
+    DateTime UpdatedAtUtc,
+    IReadOnlyList<TagDto>? Tags = null
 );
