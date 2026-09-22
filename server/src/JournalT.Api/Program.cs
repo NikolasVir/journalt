@@ -73,10 +73,17 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 
+// Serve static files for Angular client
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
+
+// SPA fallback: any unmapped route returns index.html for Angular client routing
+app.MapFallbackToFile("index.html").AllowAnonymous();
 
 app.Run();

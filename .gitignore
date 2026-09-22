@@ -12,3 +12,4 @@ appsettings.Development.json
 node_modules/
 dist/
 .angular/
+server/src/JournalT.Api/wwwroot/

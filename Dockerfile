@@ -1,4 +1,16 @@
-# ── Build stage ───────────────────────────────────────────────────────────────
+# ── Stage 1: Build Angular Client ─────────────────────────────────────────────
+FROM node:22-alpine AS client-build
+WORKDIR /client
+
+# Install dependencies first (layer-cache friendly)
+COPY client/package*.json ./
+RUN npm ci
+
+# Copy client source and build production bundle
+COPY client/ ./
+RUN npm run build
+
+# ── Stage 2: Build .NET Backend ───────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -7,13 +19,16 @@ COPY server/JournalT.slnx ./server/
 COPY server/src/ ./server/src/
 RUN dotnet restore server/JournalT.slnx
 
-# Publish
+# Publish backend
 RUN dotnet publish server/src/JournalT.Api/JournalT.Api.csproj \
     --configuration Release \
     --no-restore \
     --output /app/publish
 
-# ── Runtime stage ─────────────────────────────────────────────────────────────
+# Copy compiled Angular client into Kestrel's wwwroot directory
+COPY --from=client-build /client/dist/client/browser/ /app/publish/wwwroot/
+
+# ── Stage 3: Runtime ──────────────────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
