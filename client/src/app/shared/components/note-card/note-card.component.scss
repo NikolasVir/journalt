@@ -17,7 +17,8 @@
   border-color: var(--color-border-card);
   height: 100%;
 
-  &:hover {
+  &:hover,
+  &:focus-within {
     box-shadow: var(--shadow-card-hover);
     border-color: var(--color-border-card-hover);
 
@@ -123,7 +124,7 @@
 
   &__actions {
     padding: 0 var(--spacing-xs) var(--spacing-2xs);
-    opacity: 0.85;
+    opacity: 0;
     transition: opacity var(--transition-fast);
   }
 }

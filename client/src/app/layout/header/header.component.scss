@@ -5,31 +5,39 @@
   background-color: var(--color-bg-surface);
   border-bottom: 1px solid var(--color-border-card);
   padding: 0 var(--spacing-sm);
-  @include flex-between;
+  display: flex;
+  align-items: center;
   position: sticky;
   top: 0;
   z-index: 100;
 
   &__left {
-    @include flex-center;
-    gap: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    min-width: 232px;
+    gap: var(--spacing-xs);
+    padding-left: var(--spacing-xs);
   }
 
   &__brand {
     text-decoration: none;
     color: inherit;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
   }
 
   &__title {
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-medium);
-    letter-spacing: -0.02em;
+    font-size: 22px;
+    font-weight: var(--font-weight-regular);
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary);
   }
 
   &__search {
-    flex: 1;
+    flex: 1 1 var(--search-max-width);
     max-width: var(--search-max-width);
-    margin: 0 var(--spacing-lg);
+    margin-right: auto;
 
     @include respond-to('mobile') {
       display: none;
@@ -37,13 +45,20 @@
   }
 
   &__right {
-    @include flex-center;
+    display: flex;
+    align-items: center;
     gap: var(--spacing-2xs);
+    margin-left: auto;
+    padding-right: var(--spacing-xs);
   }
 
   &__username {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary);
+    padding: var(--spacing-2xs) var(--spacing-sm);
+    border-radius: var(--radius-pill);
+    background-color: rgba(255, 255, 255, 0.05);
     margin-right: var(--spacing-xs);
 
     @include respond-to('mobile') {
@@ -53,11 +68,14 @@
 }
 
 .search-box {
-  @include flex-center;
+  display: flex;
+  align-items: center;
   background-color: var(--color-bg-input);
   border-radius: var(--radius-md);
-  padding: var(--spacing-2xs) var(--spacing-sm);
+  height: 48px;
+  padding: 0 var(--spacing-xs) 0 var(--spacing-sm);
   width: 100%;
+  max-width: var(--search-max-width);
   transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
 
   &:focus-within {
@@ -67,7 +85,11 @@
 
   &__icon {
     color: var(--color-text-muted);
-    margin-right: var(--spacing-xs);
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    margin-right: var(--spacing-sm);
+    user-select: none;
   }
 
   &__input {
@@ -76,22 +98,25 @@
     outline: none;
     background: transparent;
     font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    font-weight: var(--font-weight-regular);
     color: var(--color-text-primary);
 
     &::placeholder {
       color: var(--color-text-muted);
+      opacity: 1;
     }
   }
 
   &__clear-btn {
-    width: 32px;
-    height: 32px;
-    line-height: 32px;
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
 
     mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
     }
   }
 }

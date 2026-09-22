@@ -21,13 +21,14 @@
 
   &__collapsed {
     @include flex-between;
-    padding: var(--spacing-sm) var(--spacing-md);
+    min-height: 46px;
+    padding: 0 var(--spacing-md);
     cursor: pointer;
   }
 
   &__placeholder {
     font-size: var(--font-size-sm);
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
     font-weight: var(--font-weight-medium);
   }
 

@@ -21,7 +21,7 @@ import { QuickCaptureComponent, QuickCapturePayload } from '@shared/components/q
 export class NotesPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly noteService = inject(NoteService);
-  private readonly layoutService = inject(LayoutService);
+  protected readonly layoutService = inject(LayoutService);
   private readonly notification = inject(NotificationService);
 
   private readonly routeData = toSignal(this.route.data);

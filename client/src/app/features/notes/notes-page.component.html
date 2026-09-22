@@ -1,8 +1,10 @@
 <div class="notes-page">
-  <header class="notes-page__header">
-    <h1 class="notes-page__title">{{ pageTitle() }}</h1>
-    <p class="notes-page__subtitle">{{ pageSubtitle() }}</p>
-  </header>
+  @if (currentLevel() || layoutService.searchQuery()) {
+    <header class="notes-page__header">
+      <h1 class="notes-page__title">{{ pageTitle() }}</h1>
+      <p class="notes-page__subtitle">{{ pageSubtitle() }}</p>
+    </header>
+  }
 
   <!-- Quick Capture defaulted to current level -->
   <app-quick-capture
