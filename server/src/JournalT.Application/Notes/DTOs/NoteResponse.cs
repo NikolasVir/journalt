@@ -2,6 +2,11 @@ namespace JournalT.Application.Notes.DTOs;
 
 using JournalT.Domain.Enums;
 
+/// <summary>Describes a wiki-link that could not be resolved at render time.</summary>
+/// <param name="Title">The raw title token from the [[...]] syntax.</param>
+/// <param name="Reason">Human-readable reason: "not_found" or "ambiguous".</param>
+public sealed record WikiLinkWarning(string Title, string Reason);
+
 public sealed record NoteResponse(
     Guid Id,
     Guid UserId,
@@ -23,5 +28,7 @@ public sealed record NoteResponse(
     IReadOnlyList<TagDto> Tags,
     IReadOnlyList<string> WikiLinks,
     IReadOnlyList<NoteSourceResponse>? Sources = null,
-    IReadOnlyList<NoteRelationResponse>? OutboundRelations = null
+    IReadOnlyList<NoteRelationResponse>? OutboundRelations = null,
+    /// <summary>Wiki-links that could not be resolved (not_found or ambiguous). Does not prevent saving.</summary>
+    IReadOnlyList<WikiLinkWarning>? UnresolvedWikiLinks = null
 );

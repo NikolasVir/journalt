@@ -161,7 +161,7 @@ public class NoteServiceTests : IDisposable
         var quickWithType = await _sut.CreateAsync(new CreateNoteRequest("Quick", NoteLevel.Quick, TypeId: Guid.NewGuid()));
         Assert.False(quickWithType.Succeeded);
 
-        // 3. Quick note cannot have Typed tag (QUICK-003)
+        // 3. Quick note cannot have Typed tag
         var quickWithTypedTag = await _sut.CreateAsync(new CreateNoteRequest(
             "Quick",
             NoteLevel.Quick,
@@ -169,11 +169,11 @@ public class NoteServiceTests : IDisposable
         ));
         Assert.False(quickWithTypedTag.Succeeded);
 
-        // 4. Journal note requires TypeId (NOTE-004)
+        // 4. Journal note requires TypeId
         var journalNoType = await _sut.CreateAsync(new CreateNoteRequest("Journal", NoteLevel.Journal));
         Assert.False(journalNoType.Succeeded);
 
-        // 5. Typed tag disallowed vocabulary value (TYPE-004)
+        // 5. Typed tag disallowed vocabulary value
         var invalidTagValue = await _sut.CreateAsync(new CreateNoteRequest(
             "Journal",
             NoteLevel.Journal,
@@ -188,7 +188,7 @@ public class NoteServiceTests : IDisposable
         // Setup Quick note
         var note = (await _sut.CreateAsync(new CreateNoteRequest("Quick", NoteLevel.Quick))).Note!;
 
-        // Attempt demotion Quick -> Inbox (NOTE-009)
+        // Attempt demotion Quick -> Inbox
         var demoteResult = await _sut.PromoteAsync(note.Id, new PromoteNoteRequest(TargetLevel: NoteLevel.Inbox));
         Assert.False(demoteResult.Succeeded);
         Assert.Contains("Cannot demote", demoteResult.Errors[0]);
@@ -206,7 +206,7 @@ public class NoteServiceTests : IDisposable
         var inboxNote = (await _sut.CreateAsync(new CreateNoteRequest("Inbox Note", NoteLevel.Inbox))).Note!;
         var targetNote = (await _sut.CreateAsync(new CreateNoteRequest("Target Note", NoteLevel.Quick))).Note!;
 
-        // INBOX-003: Inbox notes cannot have outbound relations
+        // Inbox notes cannot have outbound relations
         var inboxRel = await _sut.AddRelationAsync(inboxNote.Id, new CreateNoteRelationRequest(targetNote.Id, "about"));
         Assert.False(inboxRel.Succeeded);
         Assert.Contains("Inbox notes cannot define explicit outbound relations", inboxRel.Errors[0]);
@@ -218,7 +218,7 @@ public class NoteServiceTests : IDisposable
         var relationsBeforeTrash = await _sut.GetRelationsAsync(sourceNote.Id);
         Assert.Single(relationsBeforeTrash);
 
-        // SRC-005: Relations pointing to trashed notes must be excluded
+        // Relations pointing to trashed notes must be excluded
         await _sut.TrashAsync(targetNote.Id);
         var relationsAfterTrash = await _sut.GetRelationsAsync(sourceNote.Id);
         Assert.Empty(relationsAfterTrash);
@@ -243,11 +243,24 @@ public class NoteServiceTests : IDisposable
             BodyMarkdown: "See [[Ambiguous Note]] and [[NonExistent Note]]."
         ))).Note!;
 
-        // SRC-007: Multiple matches or missing targets remain unresolved spans
+        // Multiple matches or missing targets remain unresolved spans
         Assert.Contains("<span class=\"internal-link unresolved\" data-title=\"Ambiguous Note\">Ambiguous Note</span>", referencingNote.RenderedHtml);
         Assert.Contains("<span class=\"internal-link unresolved\" data-title=\"NonExistent Note\">NonExistent Note</span>", referencingNote.RenderedHtml);
         Assert.DoesNotContain("<a href=", referencingNote.RenderedHtml);
+
+        // UnresolvedWikiLinks must carry typed warnings (not_found / ambiguous)
+        Assert.NotNull(referencingNote.UnresolvedWikiLinks);
+        Assert.Equal(2, referencingNote.UnresolvedWikiLinks!.Count);
+
+        var ambiguousWarning = referencingNote.UnresolvedWikiLinks.SingleOrDefault(w => w.Title == "Ambiguous Note");
+        Assert.NotNull(ambiguousWarning);
+        Assert.Equal("ambiguous", ambiguousWarning!.Reason);
+
+        var notFoundWarning = referencingNote.UnresolvedWikiLinks.SingleOrDefault(w => w.Title == "NonExistent Note");
+        Assert.NotNull(notFoundWarning);
+        Assert.Equal("not_found", notFoundWarning!.Reason);
     }
+
 
     [Fact]
     public async Task TenancyAndSoftDelete_HidesOtherUsersAndTrashedNotes()
@@ -282,7 +295,7 @@ public class NoteServiceTests : IDisposable
     [Fact]
     public async Task Search_MatchesBodyMarkdownAndTag_FiltersCorrectly()
     {
-        // 1. Note matching keyword in body markdown (QUERY-001)
+        // 1. Note matching keyword in body markdown
         await _sut.CreateAsync(new CreateNoteRequest("Common Title", NoteLevel.Quick, BodyMarkdown: "Deep architectural insights about indexing"));
         await _sut.CreateAsync(new CreateNoteRequest("Unrelated", NoteLevel.Quick, BodyMarkdown: "Just notes"));
 
@@ -290,7 +303,7 @@ public class NoteServiceTests : IDisposable
         Assert.Single(bodySearch.Items);
         Assert.Equal("Common Title", bodySearch.Items[0].Title);
 
-        // 2. Tag filter matching (QUERY-002)
+        // 2. Tag filter matching
         await _sut.CreateAsync(new CreateNoteRequest(
             "Tagged Note",
             NoteLevel.Quick,

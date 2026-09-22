@@ -11,4 +11,7 @@ public interface ITypeDefinitionService
     Task<IReadOnlyList<TypeDefinitionResponse>> ListAsync(bool includeInactive = false, CancellationToken ct = default);
     Task<bool> ToggleActiveAsync(Guid id, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
+
+    Task<IReadOnlyList<TypeMigrationPreviewItem>> PreviewMigrationAsync(Guid sourceTypeId, Guid targetTypeVersionId, CancellationToken ct = default);
+    Task<TypeMigrationResult> MigrateNotesAsync(Guid sourceTypeId, TypeMigrationRequest request, CancellationToken ct = default);
 }

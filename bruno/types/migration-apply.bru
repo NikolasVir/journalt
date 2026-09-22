@@ -1,0 +1,18 @@
+meta {
+  name: migration-apply
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/types/{{typeId}}/migrations
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "targetTypeVersionId": "{{targetVersionId}}",
+    "noteIds": []
+  }
+}

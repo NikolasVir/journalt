@@ -1,0 +1,11 @@
+meta {
+  name: migration-preview
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/types/{{typeId}}/migrations/preview?targetVersionId={{targetVersionId}}
+  body: none
+  auth: none
+}

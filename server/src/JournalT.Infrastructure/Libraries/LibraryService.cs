@@ -153,7 +153,7 @@ public sealed class LibraryService(
         if (request.NewParentLibraryId == id)
             return LibraryResult.Failure("Cannot move a library into itself.");
 
-        // Descendant cycle check (LIB-006)
+        // Descendant cycle check
         if (request.NewParentLibraryId.HasValue)
         {
             var targetParentExists = await _db.Libraries

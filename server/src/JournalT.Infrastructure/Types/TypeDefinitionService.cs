@@ -172,7 +172,7 @@ public class TypeDefinitionService(
 
         if (typeDef is null) return false;
 
-        // TYPE-014: If existing notes use this type, deactivate instead of hard-deleting
+        // If existing notes use this type, deactivate instead of hard-deleting
         var inUse = await _db.Notes.AnyAsync(n => n.TypeId == id, ct);
         if (inUse)
         {
@@ -185,6 +185,136 @@ public class TypeDefinitionService(
 
         await _db.SaveChangesAsync(ct);
         return true;
+    }
+
+    // Migration preview — shows which notes pass/fail the target version schema
+    public async Task<IReadOnlyList<TypeMigrationPreviewItem>> PreviewMigrationAsync(
+        Guid sourceTypeId, Guid targetTypeVersionId, CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId;
+
+        var targetType = await _db.TypeDefinitions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == targetTypeVersionId && t.UserId == userId, ct);
+
+        if (targetType is null)
+            return [];
+
+        // Only notes currently on the source type (any version other than the target)
+        var notes = await _db.Notes
+            .AsNoTracking()
+            .Where(n => n.UserId == userId && n.TypeId == sourceTypeId && n.Id != targetTypeVersionId && !n.IsTrashed)
+            .Select(n => new { n.Id, n.Title, n.TypeVersion, n.TypedMetadataJson, n.BodyMarkdown })
+            .ToListAsync(ct);
+
+        var results = new List<TypeMigrationPreviewItem>(notes.Count);
+
+        foreach (var note in notes)
+        {
+            var errors = new List<string>();
+
+            var metadataJson = string.IsNullOrWhiteSpace(note.TypedMetadataJson) ? "{}" : note.TypedMetadataJson;
+            var metaValidation = _validationService.ValidateNoteMetadata(metadataJson, targetType.SchemaJson);
+            if (!metaValidation.IsValid)
+                errors.AddRange(metaValidation.Errors.Select(e => $"{e.Path}: {e.Message}"));
+
+            var sectionsValid = true;
+            if (!string.IsNullOrWhiteSpace(targetType.SectionsJson))
+            {
+                var secValidation = _validationService.ValidateNoteSections(
+                    note.BodyMarkdown ?? string.Empty, targetType.SectionsJson);
+                if (!secValidation.IsValid)
+                {
+                    sectionsValid = false;
+                    errors.AddRange(secValidation.Errors.Select(e => $"{e.Path}: {e.Message}"));
+                }
+            }
+
+            results.Add(new TypeMigrationPreviewItem(
+                NoteId: note.Id,
+                NoteTitle: note.Title,
+                CurrentTypeVersion: note.TypeVersion ?? 0,
+                TargetTypeVersion: targetType.Version,
+                MetadataValid: metaValidation.IsValid,
+                SectionsValid: sectionsValid,
+                ValidationErrors: errors
+            ));
+        }
+
+        return results;
+    }
+
+    // Apply migration — updates TypeId+TypeVersion on approved notes
+    public async Task<TypeMigrationResult> MigrateNotesAsync(
+        Guid sourceTypeId, TypeMigrationRequest request, CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId;
+
+        var targetType = await _db.TypeDefinitions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == request.TargetTypeVersionId && t.UserId == userId, ct);
+
+        if (targetType is null)
+            return TypeMigrationResult.NotFound("Target type version not found.");
+
+        // Verify target type belongs to the same logical type name as source
+        var sourceType = await _db.TypeDefinitions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == sourceTypeId && t.UserId == userId, ct);
+
+        if (sourceType is null)
+            return TypeMigrationResult.NotFound("Source type not found.");
+
+        if (!string.Equals(sourceType.Name, targetType.Name, StringComparison.OrdinalIgnoreCase))
+            return TypeMigrationResult.Failure("Target type version must belong to the same type name as the source.");
+
+        // Determine which notes to migrate
+        var query = _db.Notes
+            .Where(n => n.UserId == userId && n.TypeId == sourceTypeId && !n.IsTrashed);
+
+        if (request.NoteIds != null && request.NoteIds.Count > 0)
+            query = query.Where(n => request.NoteIds.Contains(n.Id));
+
+        var notes = await query.ToListAsync(ct);
+
+        if (notes.Count == 0)
+            return TypeMigrationResult.Success([]);
+
+        var migratedIds = new List<Guid>(notes.Count);
+        var errors = new List<string>();
+
+        foreach (var note in notes)
+        {
+            var metadataJson = string.IsNullOrWhiteSpace(note.TypedMetadataJson) ? "{}" : note.TypedMetadataJson;
+            var metaValidation = _validationService.ValidateNoteMetadata(metadataJson, targetType.SchemaJson);
+            if (!metaValidation.IsValid)
+            {
+                errors.Add($"Note '{note.Title}' ({note.Id}): metadata invalid under target schema — " +
+                    string.Join("; ", metaValidation.Errors.Select(e => $"{e.Path}: {e.Message}")));
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(targetType.SectionsJson))
+            {
+                var secValidation = _validationService.ValidateNoteSections(
+                    note.BodyMarkdown ?? string.Empty, targetType.SectionsJson);
+                if (!secValidation.IsValid)
+                {
+                    errors.Add($"Note '{note.Title}' ({note.Id}): sections invalid under target schema — " +
+                        string.Join("; ", secValidation.Errors.Select(e => $"{e.Path}: {e.Message}")));
+                    continue;
+                }
+            }
+
+            note.TypeId = targetType.Id;
+            note.TypeVersion = targetType.Version;
+            migratedIds.Add(note.Id);
+        }
+
+        await _db.SaveChangesAsync(ct);
+
+        // Return success even when some notes were skipped due to validation — partial success is intentional
+        return TypeMigrationResult.Success(migratedIds);
     }
 
     private static TypeDefinitionResponse MapToResponse(TypeDefinition t) =>

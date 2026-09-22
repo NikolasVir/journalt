@@ -162,7 +162,7 @@ public class TypeDefinitionServiceTests : IDisposable
         var deleted = await _sut.DeleteAsync(typeDef.Id);
         Assert.True(deleted);
 
-        // Record still exists in DB but IsActive is false (TYPE-014)
+        // Record still exists in DB but IsActive is false
         var dbRecord = await _db.TypeDefinitions.FindAsync(typeDef.Id);
         Assert.NotNull(dbRecord);
         Assert.False(dbRecord.IsActive);

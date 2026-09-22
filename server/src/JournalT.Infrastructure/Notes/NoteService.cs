@@ -65,7 +65,7 @@ public sealed class NoteService(
             }
         }
 
-        // Tag validation (TYPE-004 & QUICK-003)
+        // Tag validation
         var tagValidationError = await ValidateTagsAsync(userId, request.Level, request.Tags, ct);
         if (tagValidationError != null)
             return NoteResult.Failure(tagValidationError);
@@ -80,7 +80,7 @@ public sealed class NoteService(
         }
 
         var body = request.BodyMarkdown ?? string.Empty;
-        var (renderedHtml, wikiLinks) = await RenderWithWikiLinkResolutionAsync(userId, body, ct);
+        var (renderedHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, body, ct);
 
         var note = new Note
         {
@@ -116,8 +116,9 @@ public sealed class NoteService(
         _db.Notes.Add(note);
         await _db.SaveChangesAsync(ct);
 
-        return NoteResult.Success(MapToResponse(note, wikiLinks), 201);
+        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings), 201);
     }
+
 
     public async Task<NoteResponse?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
@@ -132,9 +133,10 @@ public sealed class NoteService(
 
         if (note is null) return null;
 
-        var wikiLinks = _markdownService.ExtractWikiLinks(note.BodyMarkdown);
-        return MapToResponse(note, wikiLinks);
+        var (_, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, note.BodyMarkdown, ct);
+        return MapToResponse(note, wikiLinks, wikiWarnings);
     }
+
 
     public async Task<PagedResult<NoteSummaryResponse>> ListAsync(NoteFilterParams filter, CancellationToken ct = default)
     {
@@ -253,7 +255,7 @@ public sealed class NoteService(
             }
         }
 
-        var (renderedHtml, wikiLinks) = await RenderWithWikiLinkResolutionAsync(userId, body, ct);
+        var (renderedHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, body, ct);
 
         note.Title = request.Title.Trim();
         note.Summary = string.IsNullOrWhiteSpace(request.Summary) ? null : request.Summary.Trim();
@@ -291,8 +293,9 @@ public sealed class NoteService(
 
         await _db.SaveChangesAsync(ct);
 
-        return NoteResult.Success(MapToResponse(note, wikiLinks));
+        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings));
     }
+
 
     public async Task<bool> TrashAsync(Guid id, CancellationToken ct = default)
     {
@@ -332,7 +335,7 @@ public sealed class NoteService(
         return true;
     }
 
-    // Phase 3: Note Promotion (NOTE-006, NOTE-007, NOTE-008, NOTE-009)
+    // Note Promotion
     public async Task<NoteResult> PromoteAsync(Guid id, PromoteNoteRequest request, CancellationToken ct = default)
     {
         var userId = _currentUser.UserId;
@@ -349,7 +352,7 @@ public sealed class NoteService(
         if (note.IsTrashed)
             return NoteResult.Failure("Cannot promote a trashed note. Restore it first.");
 
-        // NOTE-009: Unidirectional progression only
+        // Unidirectional progression only
         if (request.TargetLevel <= note.Level)
             return NoteResult.Failure($"Cannot demote or promote to current level (current: {note.Level}, requested: {request.TargetLevel}).");
 
@@ -357,7 +360,7 @@ public sealed class NoteService(
         if (request.TargetLevel == NoteLevel.Journal)
         {
             if (!request.TypeId.HasValue)
-                return NoteResult.Failure("Promotion to Journal requires a TypeId (NOTE-004).");
+                return NoteResult.Failure("Promotion to Journal requires a TypeId.");
 
             typeDef = await _db.TypeDefinitions
                 .AsNoTracking()
@@ -417,11 +420,12 @@ public sealed class NoteService(
         note.Level = request.TargetLevel;
         await _db.SaveChangesAsync(ct);
 
-        var wikiLinks = _markdownService.ExtractWikiLinks(note.BodyMarkdown);
-        return NoteResult.Success(MapToResponse(note, wikiLinks));
+        var (_, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, note.BodyMarkdown, ct);
+        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings));
     }
 
-    // Phase 3: Sources Management (SRC-001)
+
+    // Sources Management
     public async Task<NoteSourceResponse?> AddSourceAsync(Guid noteId, CreateNoteSourceRequest request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.Title))
@@ -489,7 +493,7 @@ public sealed class NoteService(
         return true;
     }
 
-    // Phase 3: Relations Management (INBOX-003, VAL-003, TYPE-008)
+    // Relations Management
     public async Task<NoteResult> AddRelationAsync(Guid noteId, CreateNoteRelationRequest request, CancellationToken ct = default)
     {
         var userId = _currentUser.UserId;
@@ -500,9 +504,9 @@ public sealed class NoteService(
         if (sourceNote is null)
             return NoteResult.NotFound("Source note not found.");
 
-        // INBOX-003: Inbox Notes shall not define explicit outbound relations
+        // Inbox notes cannot define explicit outbound relations
         if (sourceNote.Level == NoteLevel.Inbox)
-            return NoteResult.Failure("Inbox notes cannot define explicit outbound relations (INBOX-003). Promote the note first.");
+            return NoteResult.Failure("Inbox notes cannot define explicit outbound relations. Promote the note first.");
 
         if (request.TargetNoteId == noteId)
             return NoteResult.Failure("A note cannot define a relation to itself.");
@@ -510,13 +514,13 @@ public sealed class NoteService(
         if (string.IsNullOrWhiteSpace(request.Role))
             return NoteResult.Failure("Relation role is required.");
 
-        // VAL-003: Target note must exist and belong to user
+        // Target note must exist and belong to user
         var targetNote = await _db.Notes
             .AsNoTracking()
             .FirstOrDefaultAsync(n => n.Id == request.TargetNoteId && n.UserId == userId, ct);
 
         if (targetNote is null)
-            return NoteResult.Failure("Target note not found or belongs to another user (VAL-003).");
+            return NoteResult.Failure("Target note not found or belongs to another user.");
 
         var role = request.Role.Trim().ToLowerInvariant();
 
@@ -631,9 +635,10 @@ public sealed class NoteService(
         }
 
         await _db.SaveChangesAsync(ct);
-        var wikiLinks = _markdownService.ExtractWikiLinks(note.BodyMarkdown);
-        return MapToResponse(note, wikiLinks);
+        var (_, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(_currentUser.UserId, note.BodyMarkdown, ct);
+        return MapToResponse(note, wikiLinks, wikiWarnings);
     }
+
 
     public async Task<TodoSummaryResponse> GetTodoSummaryAsync(CancellationToken ct = default)
     {
@@ -670,7 +675,7 @@ public sealed class NoteService(
         if (tags is null || tags.Count == 0) return null;
 
         if (level == NoteLevel.Quick && tags.Any(t => t.TagType == TagType.Typed))
-            return "Quick notes only support FreeForm tags (QUICK-003).";
+            return "Quick notes only support FreeForm tags.";
 
         var typedTags = tags.Where(t => t.TagType == TagType.Typed).ToList();
         if (typedTags.Count > 0)
@@ -710,11 +715,12 @@ public sealed class NoteService(
         return null;
     }
 
-    private async Task<(string RenderedHtml, IReadOnlyList<string> WikiLinks)> RenderWithWikiLinkResolutionAsync(
+    private async Task<(string RenderedHtml, IReadOnlyList<string> WikiLinks, IReadOnlyList<WikiLinkWarning> Warnings)> RenderWithWikiLinkResolutionAsync(
         Guid userId, string bodyMarkdown, CancellationToken ct)
     {
         var wikiLinks = _markdownService.ExtractWikiLinks(bodyMarkdown);
         Dictionary<string, Guid>? resolvedLinks = null;
+        var warnings = new List<WikiLinkWarning>();
 
         if (wikiLinks.Count > 0)
         {
@@ -732,14 +738,27 @@ public sealed class NoteService(
                 {
                     resolvedLinks[title] = matchingNotes[0];
                 }
+                else if (matchingNotes.Count == 0)
+                {
+                    // target note does not exist — report as unresolved warning
+                    warnings.Add(new WikiLinkWarning(title, "not_found"));
+                }
+                else
+                {
+                    // ambiguous title (multiple notes share the same title)
+                    warnings.Add(new WikiLinkWarning(title, "ambiguous"));
+                }
             }
         }
 
         var renderResult = _markdownService.Render(bodyMarkdown, resolvedLinks);
-        return (renderResult.RenderedHtml, wikiLinks);
+        return (renderResult.RenderedHtml, wikiLinks, warnings);
     }
 
-    private static NoteResponse MapToResponse(Note note, IReadOnlyList<string> wikiLinks) =>
+    private static NoteResponse MapToResponse(
+        Note note,
+        IReadOnlyList<string> wikiLinks,
+        IReadOnlyList<WikiLinkWarning>? warnings = null) =>
         new(
             note.Id,
             note.UserId,
@@ -763,6 +782,7 @@ public sealed class NoteService(
             Sources: note.Sources.Select(s => new NoteSourceResponse(
                 s.Id, s.NoteId, s.Title, s.Description, s.Url, s.CreatedAtUtc, s.UpdatedAtUtc)).ToList(),
             OutboundRelations: note.OutboundRelations.Select(r => new NoteRelationResponse(
-                r.Id, r.SourceNoteId, r.TargetNoteId, r.TargetNote?.Title ?? string.Empty, r.Role, r.Context, r.CreatedAtUtc, r.UpdatedAtUtc)).ToList()
+                r.Id, r.SourceNoteId, r.TargetNoteId, r.TargetNote?.Title ?? string.Empty, r.Role, r.Context, r.CreatedAtUtc, r.UpdatedAtUtc)).ToList(),
+            UnresolvedWikiLinks: warnings ?? []
         );
 }
