@@ -1,5 +1,10 @@
 @if (note(); as n) {
-  <div class="dialog-backdrop" (click)="onBackdropClick($event)">
+  <div
+    class="dialog-backdrop"
+    (pointerdown)="onBackdropPointerDown($event)"
+    (pointercancel)="onBackdropPointerCancel()"
+    (click)="onBackdropClick($event)"
+  >
     <div class="dialog-panel" role="dialog" aria-modal="true" [attr.aria-label]="n.title">
       <div class="dialog-panel__header">
         <mat-form-field

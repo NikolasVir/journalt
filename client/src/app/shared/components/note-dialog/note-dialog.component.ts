@@ -69,6 +69,7 @@ export class NoteDialogComponent {
   protected readonly renderedHtml = signal<string>('');
 
   private lastRenderedBody = '';
+  private pointerDownOnBackdrop = false;
 
   constructor() {
     effect(() => {
@@ -182,8 +183,19 @@ export class NoteDialogComponent {
     this.legacyTags.set([]);
   }
 
+  public onBackdropPointerDown(event: PointerEvent): void {
+    this.pointerDownOnBackdrop = event.target === event.currentTarget;
+  }
+
+  public onBackdropPointerCancel(): void {
+    this.pointerDownOnBackdrop = false;
+  }
+
   public onBackdropClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('dialog-backdrop')) {
+    const shouldClose = this.pointerDownOnBackdrop && event.target === event.currentTarget;
+    this.pointerDownOnBackdrop = false;
+
+    if (shouldClose) {
       this.onClose();
     }
   }
