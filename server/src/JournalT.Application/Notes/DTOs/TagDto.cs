@@ -5,5 +5,5 @@ using JournalT.Domain.Enums;
 public sealed record TagDto(
     TagType TagType,
     string? Category,
-    string Value
+    string? Value
 );

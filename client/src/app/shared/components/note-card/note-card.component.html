@@ -11,7 +11,10 @@
     <mat-card-title class="note-card__title">
       {{ note().title || 'Untitled Note' }}
     </mat-card-title>
-    <span class="note-card__level-badge" [class]="'note-card__level-badge--' + note().level.toLowerCase()">
+    <span
+      class="note-card__level-badge"
+      [class]="'note-card__level-badge--' + note().level.toLowerCase()"
+    >
       {{ note().level }}
     </span>
   </mat-card-header>
@@ -25,7 +28,7 @@
 
     @if ((note().tags?.length ?? 0) > 0) {
       <mat-chip-set class="note-card__tags">
-        @for (tag of note().tags ?? []; track tag.value) {
+        @for (tag of note().tags ?? []; track formatTag(tag)) {
           <mat-chip class="note-card__tag" [class.note-card__tag--typed]="tag.tagType === 'Typed'">
             #{{ formatTag(tag) }}
           </mat-chip>

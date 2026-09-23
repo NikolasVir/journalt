@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,7 +20,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { formatTag, NoteResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
 import { NotificationService } from '@core/services/notification.service';
-import { NoteDialogComponent, NoteDialogSavePayload } from '@shared/components/note-dialog/note-dialog.component';
+import {
+  NoteDialogComponent,
+  NoteDialogSavePayload,
+} from '@shared/components/note-dialog/note-dialog.component';
 
 @Component({
   selector: 'app-todos-page',
@@ -30,7 +40,7 @@ import { NoteDialogComponent, NoteDialogSavePayload } from '@shared/components/n
     MatChipsModule,
     MatTabsModule,
     MatTooltipModule,
-    NoteDialogComponent
+    NoteDialogComponent,
   ],
   template: `
     <div class="todos-page">
@@ -45,11 +55,15 @@ import { NoteDialogComponent, NoteDialogSavePayload } from '@shared/components/n
       <div class="todos-page__stats">
         <mat-card appearance="outlined" class="stat-card">
           <span class="stat-card__label">Pending</span>
-          <span class="stat-card__value stat-card__value--pending">{{ pendingTodos().length }}</span>
+          <span class="stat-card__value stat-card__value--pending">{{
+            pendingTodos().length
+          }}</span>
         </mat-card>
         <mat-card appearance="outlined" class="stat-card">
           <span class="stat-card__label">Completed</span>
-          <span class="stat-card__value stat-card__value--completed">{{ completedTodos().length }}</span>
+          <span class="stat-card__value stat-card__value--completed">{{
+            completedTodos().length
+          }}</span>
         </mat-card>
         <mat-card appearance="outlined" class="stat-card">
           <span class="stat-card__label">Total Tasks</span>
@@ -120,7 +134,7 @@ import { NoteDialogComponent, NoteDialogSavePayload } from '@shared/components/n
 
                       @if ((todo.tags?.length ?? 0) > 0) {
                         <mat-chip-set class="todo-card__chips">
-                          @for (tag of todo.tags ?? []; track tag.value) {
+                          @for (tag of todo.tags ?? []; track formatTag(tag)) {
                             <mat-chip class="todo-card__chip">#{{ formatTag(tag) }}</mat-chip>
                           }
                         </mat-chip-set>
@@ -182,7 +196,7 @@ import { NoteDialogComponent, NoteDialogSavePayload } from '@shared/components/n
                       </span>
                       @if (todo.todoCompletedAtUtc) {
                         <span class="todo-card__done-date">
-                          Done {{ todo.todoCompletedAtUtc | date:'mediumDate' }}
+                          Done {{ todo.todoCompletedAtUtc | date: 'mediumDate' }}
                         </span>
                       }
                     </div>
@@ -441,7 +455,7 @@ import { NoteDialogComponent, NoteDialogSavePayload } from '@shared/components/n
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TodosPageComponent implements OnInit {
   private readonly noteService = inject(NoteService);
@@ -455,11 +469,11 @@ export class TodosPageComponent implements OnInit {
   protected readonly selectedTodo = signal<NoteResponse | null>(null);
 
   protected readonly pendingTodos = computed(() =>
-    this.allTodos().filter((t) => !t.todoCompletedAtUtc)
+    this.allTodos().filter((t) => !t.todoCompletedAtUtc),
   );
 
   protected readonly completedTodos = computed(() =>
-    this.allTodos().filter((t) => !!t.todoCompletedAtUtc)
+    this.allTodos().filter((t) => !!t.todoCompletedAtUtc),
   );
 
   public ngOnInit(): void {
@@ -476,7 +490,7 @@ export class TodosPageComponent implements OnInit {
       error: () => {
         this.isLoading.set(false);
         this.notification.showError('Failed to load todos.');
-      }
+      },
     });
   }
 
@@ -489,7 +503,7 @@ export class TodosPageComponent implements OnInit {
       .create({
         level: 'Quick',
         title,
-        isTodo: true
+        isTodo: true,
       })
       .subscribe({
         next: (created) => {
@@ -501,7 +515,7 @@ export class TodosPageComponent implements OnInit {
         error: () => {
           this.isCreating.set(false);
           this.notification.showError('Failed to create task.');
-        }
+        },
       });
   }
 
@@ -514,7 +528,7 @@ export class TodosPageComponent implements OnInit {
       },
       error: () => {
         this.notification.showError('Failed to update task state.');
-      }
+      },
     });
   }
 
@@ -526,7 +540,7 @@ export class TodosPageComponent implements OnInit {
       },
       error: () => {
         this.notification.showError('Failed to trash task.');
-      }
+      },
     });
   }
 
@@ -540,7 +554,7 @@ export class TodosPageComponent implements OnInit {
         title: payload.title,
         bodyMarkdown: payload.bodyMarkdown,
         isTodo: payload.isTodo,
-        tags: payload.tags
+        tags: payload.tags,
       })
       .subscribe({
         next: (updated) => {
@@ -550,7 +564,7 @@ export class TodosPageComponent implements OnInit {
         },
         error: () => {
           this.notification.showError('Failed to save task.');
-        }
+        },
       });
   }
 }

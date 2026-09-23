@@ -27,6 +27,10 @@
   }
 
   &__alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
     background-color: var(--color-danger-bg);
     color: var(--color-danger);

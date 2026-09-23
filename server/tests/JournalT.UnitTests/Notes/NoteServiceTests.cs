@@ -263,6 +263,91 @@ public class NoteServiceTests : IDisposable
 
 
     [Fact]
+    public async Task JournalTags_MustUseRegisteredTypedValues_AndAreCanonicalized()
+    {
+        var openType = new TypeDefinition
+        {
+            UserId = _userId,
+            Name = "LearningNote",
+            Version = 1,
+            SchemaJson = "{}",
+            IsActive = true
+        };
+        var topicDefinition = new TagDefinition
+        {
+            UserId = _userId,
+            Category = "topic",
+            KnownValuesJson = "[\"Mathematics\",\"Systems\"]"
+        };
+        var statusDefinition = new TagDefinition
+        {
+            UserId = _userId,
+            Category = "status",
+            AllowedValuesJson = "[\"active\"]"
+        };
+        _db.TagDefinitions.Add(topicDefinition);
+        _db.TagDefinitions.Add(statusDefinition);
+        _db.TypeDefinitions.Add(openType);
+        await _db.SaveChangesAsync();
+
+        var freeFormResult = await _sut.CreateAsync(new CreateNoteRequest(
+            "Invalid free-form tag",
+            NoteLevel.Journal,
+            TypeId: openType.Id,
+            TypedMetadataJson: "{}",
+            Tags: [new TagDto(TagType.FreeForm, null, "mathematics")]
+        ));
+        Assert.False(freeFormResult.Succeeded);
+        Assert.Contains("only support registered typed tags", freeFormResult.Errors[0]);
+
+        var unknownResult = await _sut.CreateAsync(new CreateNoteRequest(
+            "Unknown value",
+            NoteLevel.Journal,
+            TypeId: openType.Id,
+            TypedMetadataJson: "{}",
+            Tags: [new TagDto(TagType.Typed, "topic", "Biology")]
+        ));
+        Assert.False(unknownResult.Succeeded);
+        Assert.Contains("not registered", unknownResult.Errors[0]);
+
+        var closedCategoryOnlyResult = await _sut.CreateAsync(new CreateNoteRequest(
+            "Closed category without value",
+            NoteLevel.Journal,
+            TypeId: openType.Id,
+            TypedMetadataJson: "{}",
+            Tags: [new TagDto(TagType.Typed, "status", null)]
+        ));
+        Assert.False(closedCategoryOnlyResult.Succeeded);
+        Assert.Contains("is closed and requires a value", closedCategoryOnlyResult.Errors[0]);
+
+        var categoryOnlyResult = await _sut.CreateAsync(new CreateNoteRequest(
+            "Open category without value",
+            NoteLevel.Journal,
+            TypeId: openType.Id,
+            TypedMetadataJson: "{}",
+            Tags: [new TagDto(TagType.Typed, "topic", null)]
+        ));
+        Assert.True(categoryOnlyResult.Succeeded);
+        var categoryOnlyTag = Assert.Single(categoryOnlyResult.Note!.Tags!);
+        Assert.Equal("topic", categoryOnlyTag.Category);
+        Assert.Null(categoryOnlyTag.Value);
+
+        var validResult = await _sut.CreateAsync(new CreateNoteRequest(
+            "Valid typed tag",
+            NoteLevel.Journal,
+            TypeId: openType.Id,
+            TypedMetadataJson: "{}",
+            Tags: [new TagDto(TagType.Typed, "topic", "mathematics")]
+        ));
+
+        Assert.True(validResult.Succeeded);
+        var tag = Assert.Single(validResult.Note!.Tags!);
+        Assert.Equal(TagType.Typed, tag.TagType);
+        Assert.Equal("topic", tag.Category);
+        Assert.Equal("Mathematics", tag.Value);
+    }
+
+    [Fact]
     public async Task TenancyAndSoftDelete_HidesOtherUsersAndTrashedNotes()
     {
         // Other user's note

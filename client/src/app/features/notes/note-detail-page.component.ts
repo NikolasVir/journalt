@@ -10,10 +10,11 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
+import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
 import { SectionDefinition, TypeDefinitionResponse } from '@core/models/type-definition.model';
 import { NoteService } from '@core/services/note.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
+import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 
 interface NoteForm {
   title: FormControl<string>;
@@ -22,6 +23,7 @@ interface NoteForm {
   typeId: FormControl<string | null>;
   isTodo: FormControl<boolean>;
   tagsInput: FormControl<string>;
+  typedTags: FormControl<TagDto[]>;
 }
 
 function buildDefaultMetadata(schemaJson?: string | null): string {
@@ -59,11 +61,12 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule
+    MatTooltipModule,
+    TypedTagSelectorComponent,
   ],
   templateUrl: './note-detail-page.component.html',
   styleUrl: './note-detail-page.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NoteDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -75,6 +78,8 @@ export class NoteDetailPageComponent implements OnInit {
   protected readonly isSaving = signal<boolean>(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly typeDefinitions = signal<TypeDefinitionResponse[]>([]);
+  protected readonly legacyTags = signal<TagDto[]>([]);
+  protected readonly promotionTarget = signal<NoteLevel | null>(null);
 
   protected readonly form = new FormGroup<NoteForm>({
     title: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -82,7 +87,8 @@ export class NoteDetailPageComponent implements OnInit {
     level: new FormControl<NoteLevel>('Quick', { nonNullable: true }),
     typeId: new FormControl<string | null>(null),
     isTodo: new FormControl(false, { nonNullable: true }),
-    tagsInput: new FormControl('', { nonNullable: true })
+    tagsInput: new FormControl('', { nonNullable: true }),
+    typedTags: new FormControl<TagDto[]>([], { nonNullable: true }),
   });
 
   public ngOnInit(): void {
@@ -93,15 +99,27 @@ export class NoteDetailPageComponent implements OnInit {
     this.typeService.list(false).subscribe({
       next: (types) => {
         this.typeDefinitions.set(types);
-        if (this.form.controls.level.value === 'Journal' && !this.form.controls.typeId.value && types.length > 0) {
+        if (
+          this.form.controls.level.value === 'Journal' &&
+          !this.form.controls.typeId.value &&
+          types.length > 0
+        ) {
           this.form.controls.typeId.setValue(types[0].id);
         }
-      }
+      },
     });
 
     this.form.controls.level.valueChanges.subscribe((lvl) => {
-      if (lvl === 'Journal' && !this.form.controls.typeId.value && this.typeDefinitions().length > 0) {
-        this.form.controls.typeId.setValue(this.typeDefinitions()[0].id);
+      if (lvl === 'Journal') {
+        if (this.form.controls.tagsInput.value.trim()) {
+          this.form.controls.tagsInput.setValue('', { emitEvent: false });
+          this.errorMessage.set(
+            'Draft free-form tags were removed. Select registered Journal tags instead.',
+          );
+        }
+        if (!this.form.controls.typeId.value && this.typeDefinitions().length > 0) {
+          this.form.controls.typeId.setValue(this.typeDefinitions()[0].id);
+        }
       }
     });
 
@@ -113,7 +131,7 @@ export class NoteDetailPageComponent implements OnInit {
             const sections = JSON.parse(selected.sectionsJson) as SectionDefinition[];
             if (Array.isArray(sections) && sections.length > 0) {
               this.form.controls.bodyMarkdown.setValue(
-                sections.map((s) => `## ${s.title}\n\n`).join('')
+                sections.map((s) => `## ${s.title}\n\n`).join(''),
               );
             }
           } catch {
@@ -127,6 +145,7 @@ export class NoteDetailPageComponent implements OnInit {
       this.noteId.set(id);
       this.loadNote(id);
       if (promoteTo) {
+        this.promotionTarget.set(promoteTo);
         this.form.controls.level.setValue(promoteTo);
       }
     } else if (requestedLevel) {
@@ -137,36 +156,90 @@ export class NoteDetailPageComponent implements OnInit {
   private loadNote(id: string): void {
     this.noteService.getById(id).subscribe({
       next: (note: NoteResponse) => {
+        const tags = note.tags ?? [];
+        const typedTags = tags.filter((tag) => tag.tagType === 'Typed');
+        const nonTypedTags = tags.filter((tag) => tag.tagType !== 'Typed');
+        const isPromotingToJournal = this.promotionTarget() === 'Journal';
+
         this.form.patchValue({
           title: note.title,
           bodyMarkdown: note.bodyMarkdown,
           level: note.level,
           typeId: note.typeId ?? null,
           isTodo: note.isTodo,
-          tagsInput: (note.tags ?? []).map(formatTag).filter(Boolean).join(', ')
+          tagsInput:
+            note.level === 'Quick' && !isPromotingToJournal
+              ? tags.map(formatTag).filter(Boolean).join(', ')
+              : '',
+          typedTags,
         });
+
+        if (note.level === 'Journal' || isPromotingToJournal) {
+          this.legacyTags.set(nonTypedTags);
+          if (nonTypedTags.length > 0) {
+            this.errorMessage.set(
+              'This note contains legacy free-form tags. Remove them explicitly or replace them with registered Journal tags before saving.',
+            );
+          }
+        } else if (tags.some((tag) => tag.tagType === 'Typed')) {
+          this.errorMessage.set(
+            'This Quick Note contains legacy typed tags. Replace them with free-form tags before saving.',
+          );
+        }
       },
       error: () => {
         this.errorMessage.set('Note not found.');
-      }
+      },
     });
   }
 
   public onSubmit(): void {
     if (this.form.invalid || this.isSaving()) return;
+    if (this.legacyTags().length > 0) {
+      this.errorMessage.set('Resolve the legacy tags before saving this Journal note.');
+      return;
+    }
 
     this.isSaving.set(true);
     this.errorMessage.set(null);
 
     const val = this.form.getRawValue();
-    const tags = val.tagsInput
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
     const isJournal = val.level === 'Journal';
-    const typeId = isJournal ? (val.typeId || undefined) : undefined;
+    const tags: (TagDto | string)[] = isJournal
+      ? val.typedTags
+      : val.tagsInput
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean);
+    const typeId = isJournal ? val.typeId || undefined : undefined;
     const id = this.noteId();
+    const selectedTypeDef =
+      isJournal && typeId ? this.typeDefinitions().find((type) => type.id === typeId) : null;
+
+    if (id && this.promotionTarget() === 'Journal') {
+      const typedMetadataJson = selectedTypeDef
+        ? buildDefaultMetadata(selectedTypeDef.schemaJson)
+        : undefined;
+
+      this.noteService
+        .promote(id, {
+          targetLevel: 'Journal',
+          typeId,
+          typedMetadataJson,
+          tags: val.typedTags,
+        })
+        .subscribe({
+          next: () => {
+            this.isSaving.set(false);
+            void this.router.navigate(['/dashboard']);
+          },
+          error: (err: { error?: { detail?: string } }) => {
+            this.isSaving.set(false);
+            this.errorMessage.set(err.error?.detail ?? 'Failed to promote note.');
+          },
+        });
+      return;
+    }
 
     if (id) {
       this.noteService
@@ -175,7 +248,7 @@ export class NoteDetailPageComponent implements OnInit {
           bodyMarkdown: val.bodyMarkdown,
           typeId,
           isTodo: val.isTodo,
-          tags
+          tags,
         })
         .subscribe({
           next: () => {
@@ -185,11 +258,11 @@ export class NoteDetailPageComponent implements OnInit {
           error: (err: { error?: { detail?: string } }) => {
             this.isSaving.set(false);
             this.errorMessage.set(err.error?.detail ?? 'Failed to save note.');
-          }
+          },
         });
     } else {
-      const selectedTypeDef = isJournal && typeId ? this.typeDefinitions().find((t) => t.id === typeId) : null;
-      const typedMetadataJson = isJournal && selectedTypeDef ? buildDefaultMetadata(selectedTypeDef.schemaJson) : undefined;
+      const typedMetadataJson =
+        isJournal && selectedTypeDef ? buildDefaultMetadata(selectedTypeDef.schemaJson) : undefined;
 
       this.noteService
         .create({
@@ -199,7 +272,7 @@ export class NoteDetailPageComponent implements OnInit {
           typeId,
           typedMetadataJson,
           isTodo: val.isTodo,
-          tags
+          tags,
         })
         .subscribe({
           next: () => {
@@ -209,9 +282,14 @@ export class NoteDetailPageComponent implements OnInit {
           error: (err: { error?: { detail?: string } }) => {
             this.isSaving.set(false);
             this.errorMessage.set(err.error?.detail ?? 'Failed to create note.');
-          }
+          },
         });
     }
+  }
+
+  public removeLegacyTags(): void {
+    this.legacyTags.set([]);
+    this.errorMessage.set(null);
   }
 
   public onDelete(): void {
@@ -221,7 +299,7 @@ export class NoteDetailPageComponent implements OnInit {
     this.noteService.trash(id).subscribe({
       next: () => {
         void this.router.navigate(['/dashboard']);
-      }
+      },
     });
   }
 }

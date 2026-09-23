@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, OnInit, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  input,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -8,9 +17,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
-import { NoteLevel } from '@core/models/note.model';
+import { NoteLevel, TagDto } from '@core/models/note.model';
 import { SectionDefinition, TypeDefinitionResponse } from '@core/models/type-definition.model';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
+import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 
 export interface QuickCapturePayload {
   title: string;
@@ -18,7 +28,7 @@ export interface QuickCapturePayload {
   level: NoteLevel;
   typeId?: string;
   typedMetadataJson?: string;
-  tags?: string[];
+  tags?: (TagDto | string)[];
 }
 
 function buildDefaultMetadata(schemaJson?: string | null): string {
@@ -54,11 +64,12 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    MatButtonToggleModule
+    MatButtonToggleModule,
+    TypedTagSelectorComponent,
   ],
   templateUrl: './quick-capture.component.html',
   styleUrl: './quick-capture.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuickCaptureComponent implements OnInit {
   private readonly typeService = inject(TypeDefinitionService);
@@ -71,6 +82,7 @@ export class QuickCaptureComponent implements OnInit {
   protected readonly title = signal<string>('');
   protected readonly bodyMarkdown = signal<string>('');
   protected readonly tagsInput = signal<string>('');
+  protected readonly typedTags = signal<TagDto[]>([]);
   protected readonly typeDefinitions = signal<TypeDefinitionResponse[]>([]);
   protected readonly selectedTypeId = signal<string | null>(null);
 
@@ -91,7 +103,7 @@ export class QuickCaptureComponent implements OnInit {
         if (this.selectedLevel() === 'Journal') {
           this.ensureDefaultTypeSelected();
         }
-      }
+      },
     });
   }
 
@@ -113,6 +125,7 @@ export class QuickCaptureComponent implements OnInit {
   public selectLevel(level: NoteLevel): void {
     this.selectedLevel.set(level);
     if (level === 'Journal') {
+      this.tagsInput.set('');
       this.ensureDefaultTypeSelected();
     }
   }
@@ -131,23 +144,26 @@ export class QuickCaptureComponent implements OnInit {
       return;
     }
 
-    const tags = this.tagsInput()
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
     const isJournal = this.selectedLevel() === 'Journal';
+    const tags: (TagDto | string)[] = isJournal
+      ? this.typedTags()
+      : this.tagsInput()
+          .split(',')
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0);
     const typeId = isJournal ? (this.selectedTypeId() ?? undefined) : undefined;
-    const selectedTypeDef = isJournal && typeId ? this.typeDefinitions().find((t) => t.id === typeId) : null;
-    const typedMetadataJson = isJournal && selectedTypeDef ? buildDefaultMetadata(selectedTypeDef.schemaJson) : undefined;
+    const selectedTypeDef =
+      isJournal && typeId ? this.typeDefinitions().find((t) => t.id === typeId) : null;
+    const typedMetadataJson =
+      isJournal && selectedTypeDef ? buildDefaultMetadata(selectedTypeDef.schemaJson) : undefined;
 
     this.createNote.emit({
-      title: title || (body.slice(0, 30) + '...'),
+      title: title || body.slice(0, 30) + '...',
       bodyMarkdown: body,
       level: this.selectedLevel(),
       typeId,
       typedMetadataJson,
-      tags: tags.length > 0 ? tags : undefined
+      tags: tags.length > 0 ? tags : undefined,
     });
 
     this.collapse();
@@ -180,6 +196,7 @@ export class QuickCaptureComponent implements OnInit {
     this.title.set('');
     this.bodyMarkdown.set('');
     this.tagsInput.set('');
+    this.typedTags.set([]);
     this.selectedLevel.set(this.defaultLevel());
     if (this.defaultLevel() === 'Journal') {
       this.ensureDefaultTypeSelected();

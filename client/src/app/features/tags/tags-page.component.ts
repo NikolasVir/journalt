@@ -24,7 +24,7 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
     MatInputModule,
     MatFormFieldModule,
     MatChipsModule,
-    MatTooltipModule
+    MatTooltipModule,
   ],
   template: `
     <div class="tags-page">
@@ -32,7 +32,7 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
         <div class="tags-page__header-text">
           <h1 class="tags-page__title">Tag Registry</h1>
           <p class="tags-page__subtitle">
-            Universal semantic categories and closed vocabularies for tagging notes.
+            Universal semantic categories and selectable values for Journal notes.
           </p>
         </div>
 
@@ -51,7 +51,7 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
       @if (showCreateModal()) {
         <mat-card appearance="outlined" class="create-card">
           <mat-card-header>
-            <mat-card-title class="create-card__title">Define Controlled Tag Category</mat-card-title>
+            <mat-card-title class="create-card__title">Define Tag Category</mat-card-title>
           </mat-card-header>
 
           <mat-card-content class="create-card__content">
@@ -66,14 +66,16 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Allowed Values (comma-separated)</mat-label>
+              <mat-label>Closed Vocabulary (comma-separated)</mat-label>
               <input
                 matInput
                 placeholder="e.g. urgent, high, medium, low"
                 [ngModel]="newAllowedValues()"
                 (ngModelChange)="newAllowedValues.set($event)"
               />
-              <mat-hint>Comma-separated list of allowed values for this tag category.</mat-hint>
+              <mat-hint
+                >Leave blank to create an open category whose values are registered later.</mat-hint
+              >
             </mat-form-field>
           </mat-card-content>
 
@@ -96,19 +98,34 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
         <mat-card appearance="outlined" class="create-card">
           <mat-card-header>
             <mat-card-title class="create-card__title">
-              Update Allowed Values for "{{ def.category }}"
+              Manage Values for "{{ def.category }}"
             </mat-card-title>
           </mat-card-header>
 
           <mat-card-content class="create-card__content">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Allowed Values (comma-separated)</mat-label>
-              <input
-                matInput
-                [ngModel]="editAllowedValues()"
-                (ngModelChange)="editAllowedValues.set($event)"
-              />
-            </mat-form-field>
+            @if (def.allowedValuesJson) {
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Closed Vocabulary (comma-separated)</mat-label>
+                <input
+                  matInput
+                  [ngModel]="editAllowedValues()"
+                  (ngModelChange)="editAllowedValues.set($event)"
+                />
+                <mat-hint>Values currently used by notes cannot be removed.</mat-hint>
+              </mat-form-field>
+            } @else {
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Registered Values (comma-separated)</mat-label>
+                <input
+                  matInput
+                  [ngModel]="editKnownValues()"
+                  (ngModelChange)="editKnownValues.set($event)"
+                />
+                <mat-hint>
+                  Select this open category to add it as a tag, or register values below.
+                </mat-hint>
+              </mat-form-field>
+            }
           </mat-card-content>
 
           <mat-card-actions class="create-card__actions">
@@ -136,7 +153,7 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
           <mat-icon class="tags-page__empty-icon">label_off</mat-icon>
           <p class="tags-page__empty-title">No tag definitions found</p>
           <p class="tags-page__empty-desc">
-            Define categories with closed vocabularies (e.g. status: [open, done]).
+            Define a closed category or register values for an open category.
           </p>
           <button
             mat-stroked-button
@@ -162,8 +179,8 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
                     <button
                       mat-icon-button
                       (click)="openEdit(def)"
-                      matTooltip="Edit allowed values"
-                      aria-label="Edit allowed values"
+                      matTooltip="Manage selectable values"
+                      aria-label="Manage selectable values"
                     >
                       <mat-icon>edit</mat-icon>
                     </button>
@@ -178,21 +195,36 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
                   </div>
                 </div>
                 <mat-card-subtitle class="tag-card__subtitle">
-                  Created {{ def.createdAtUtc | date:'mediumDate' }}
+                  Created {{ def.createdAtUtc | date: 'mediumDate' }}
                 </mat-card-subtitle>
               </mat-card-header>
 
               <mat-card-content class="tag-card__content">
-                @if (parseAllowedValues(def.allowedValuesJson); as values) {
+                <div class="tag-card__mode-row">
+                  <span class="tag-card__mode">{{
+                    def.allowedValuesJson ? 'Closed vocabulary' : 'Open category'
+                  }}</span>
+                  <button mat-button type="button" (click)="openEdit(def)">
+                    <mat-icon>edit</mat-icon>
+                    Manage values
+                  </button>
+                </div>
+                @if (selectableValues(def); as values) {
                   @if (values.length > 0) {
-                    <span class="tag-card__values-label">Allowed Values:</span>
+                    <span class="tag-card__values-label">Selectable Values:</span>
                     <mat-chip-set class="tag-card__chips">
                       @for (val of values; track val) {
                         <mat-chip class="tag-card__chip">{{ val }}</mat-chip>
                       }
                     </mat-chip-set>
                   } @else {
-                    <span class="tag-card__values-empty">Free-form values (no restriction)</span>
+                    <span class="tag-card__values-empty">
+                      {{
+                        def.allowedValuesJson
+                          ? 'No values registered yet'
+                          : 'No values registered — this category can be used as a tag'
+                      }}
+                    </span>
                   }
                 }
               </mat-card-content>
@@ -341,6 +373,23 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
         padding-top: var(--spacing-sm);
       }
 
+      &__mode-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-sm);
+      }
+
+      &__mode {
+        padding: var(--spacing-3xs, 2px) var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        background: var(--color-bg-input);
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+      }
+
       &__values-label {
         font-size: var(--font-size-xs);
         font-weight: var(--font-weight-medium);
@@ -375,7 +424,7 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TagsPageComponent implements OnInit {
   private readonly tagService = inject(TagDefinitionService);
@@ -391,6 +440,7 @@ export class TagsPageComponent implements OnInit {
 
   protected readonly editingTagDef = signal<TagDefinitionResponse | null>(null);
   protected readonly editAllowedValues = signal<string>('');
+  protected readonly editKnownValues = signal<string>('');
 
   public ngOnInit(): void {
     this.loadTags();
@@ -406,7 +456,7 @@ export class TagsPageComponent implements OnInit {
       error: () => {
         this.isLoading.set(false);
         this.notification.showError('Failed to load tag definitions.');
-      }
+      },
     });
   }
 
@@ -418,6 +468,10 @@ export class TagsPageComponent implements OnInit {
     } catch {
       return [];
     }
+  }
+
+  public selectableValues(def: TagDefinitionResponse): string[] {
+    return this.parseAllowedValues(def.allowedValuesJson ?? def.knownValuesJson);
   }
 
   public cancelCreate(): void {
@@ -441,7 +495,7 @@ export class TagsPageComponent implements OnInit {
     this.tagService
       .create({
         category,
-        allowedValues: values.length > 0 ? values : undefined
+        allowedValues: values.length > 0 ? values : undefined,
       })
       .subscribe({
         next: () => {
@@ -453,29 +507,32 @@ export class TagsPageComponent implements OnInit {
         error: () => {
           this.isSubmitting.set(false);
           this.notification.showError('Failed to create tag definition.');
-        }
+        },
       });
   }
 
   public openEdit(def: TagDefinitionResponse): void {
     this.editingTagDef.set(def);
-    const values = this.parseAllowedValues(def.allowedValuesJson);
-    this.editAllowedValues.set(values.join(', '));
+    this.editAllowedValues.set(this.parseAllowedValues(def.allowedValuesJson).join(', '));
+    this.editKnownValues.set(this.parseAllowedValues(def.knownValuesJson).join(', '));
   }
 
   public saveEditTagDefinition(): void {
     const def = this.editingTagDef();
     if (!def || this.isSubmitting()) return;
 
-    const values = this.editAllowedValues()
+    const input = def.allowedValuesJson ? this.editAllowedValues() : this.editKnownValues();
+    const values = input
       .split(',')
       .map((v) => v.trim())
       .filter((v) => v.length > 0);
+    const isClosed = !!def.allowedValuesJson;
 
     this.isSubmitting.set(true);
     this.tagService
       .update(def.id, {
-        allowedValues: values.length > 0 ? values : undefined
+        allowedValues: isClosed && values.length > 0 ? values : undefined,
+        knownValues: !isClosed && values.length > 0 ? values : undefined,
       })
       .subscribe({
         next: () => {
@@ -487,7 +544,7 @@ export class TagsPageComponent implements OnInit {
         error: () => {
           this.isSubmitting.set(false);
           this.notification.showError('Failed to update tag definition.');
-        }
+        },
       });
   }
 
@@ -501,7 +558,7 @@ export class TagsPageComponent implements OnInit {
       },
       error: () => {
         this.notification.showError('Failed to delete tag definition.');
-      }
+      },
     });
   }
 }

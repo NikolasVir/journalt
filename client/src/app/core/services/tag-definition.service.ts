@@ -4,11 +4,12 @@ import { Observable } from 'rxjs';
 import {
   CreateTagDefinitionRequest,
   TagDefinitionResponse,
-  UpdateTagDefinitionRequest
+  TagOptionResponse,
+  UpdateTagDefinitionRequest,
 } from '../models/tag-definition.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TagDefinitionService {
   private readonly http = inject(HttpClient);
@@ -18,6 +19,10 @@ export class TagDefinitionService {
     return this.http.get<TagDefinitionResponse[]>(this.baseUrl);
   }
 
+  public options(): Observable<TagOptionResponse[]> {
+    return this.http.get<TagOptionResponse[]>(`${this.baseUrl}/options`);
+  }
+
   public getById(id: string): Observable<TagDefinitionResponse> {
     return this.http.get<TagDefinitionResponse>(`${this.baseUrl}/${id}`);
   }
@@ -25,14 +30,27 @@ export class TagDefinitionService {
   public create(request: CreateTagDefinitionRequest): Observable<TagDefinitionResponse> {
     const payload = {
       category: request.category,
-      allowedValuesJson: request.allowedValuesJson ?? (request.allowedValues ? JSON.stringify(request.allowedValues) : null)
+      allowedValuesJson:
+        request.allowedValuesJson ??
+        (request.allowedValues ? JSON.stringify(request.allowedValues) : null),
+      knownValuesJson:
+        request.knownValuesJson ??
+        (request.knownValues ? JSON.stringify(request.knownValues) : null),
     };
     return this.http.post<TagDefinitionResponse>(this.baseUrl, payload);
   }
 
-  public update(id: string, request: UpdateTagDefinitionRequest): Observable<TagDefinitionResponse> {
+  public update(
+    id: string,
+    request: UpdateTagDefinitionRequest,
+  ): Observable<TagDefinitionResponse> {
     const payload = {
-      allowedValuesJson: request.allowedValuesJson ?? (request.allowedValues ? JSON.stringify(request.allowedValues) : null)
+      allowedValuesJson:
+        request.allowedValuesJson ??
+        (request.allowedValues ? JSON.stringify(request.allowedValues) : null),
+      knownValuesJson:
+        request.knownValuesJson ??
+        (request.knownValues ? JSON.stringify(request.knownValues) : null),
     };
     return this.http.put<TagDefinitionResponse>(`${this.baseUrl}/${id}`, payload);
   }

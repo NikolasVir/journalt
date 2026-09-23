@@ -1,0 +1,84 @@
+<div class="typed-tags" aria-label="Journal tags">
+  <div class="typed-tags__header">
+    <span class="typed-tags__label">Journal Tags</span>
+    <a mat-button routerLink="/tags" class="typed-tags__manage">
+      <mat-icon>tune</mat-icon>
+      Manage tag definitions
+    </a>
+  </div>
+
+  @if (isLoading()) {
+    <div class="typed-tags__status">
+      <mat-icon class="typed-tags__spinner">sync</mat-icon>
+      Loading tags...
+    </div>
+  } @else if (loadError()) {
+    <div class="typed-tags__status typed-tags__status--error" role="alert">
+      <span>{{ loadError() }}</span>
+      <button mat-stroked-button type="button" (click)="loadOptions()">Retry</button>
+    </div>
+  } @else if (categories().length === 0) {
+    <div class="typed-tags__empty">
+      <mat-icon>label_off</mat-icon>
+      <div>
+        <strong>No selectable tags are registered.</strong>
+        <span>Add a category and at least one value in the Tag Registry.</span>
+      </div>
+      <a mat-stroked-button routerLink="/tags">Open Tag Registry</a>
+    </div>
+  } @else {
+    <div class="typed-tags__controls">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Category</mat-label>
+        <mat-select
+          [value]="activeCategory()"
+          (selectionChange)="selectCategory($event.value)"
+          aria-label="Tag category"
+        >
+          @for (category of categories(); track category) {
+            <mat-option [value]="category">{{ category }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (activeOption()?.values?.length) {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Add a value</mat-label>
+          <input
+            matInput
+            autocomplete="off"
+            placeholder="Type to filter registered values"
+            [value]="valueSearch()"
+            [matAutocomplete]="valueAutocomplete"
+            (input)="updateSearch($event)"
+            (keydown.enter)="$event.preventDefault()"
+            aria-label="Filter tag values"
+          />
+          <mat-autocomplete #valueAutocomplete (optionSelected)="addValue($event.option.value)">
+            @for (value of filteredValues(); track value) {
+              <mat-option [value]="value">{{ value }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      } @else if (activeOption() && !activeOption()!.isClosed) {
+        <div class="typed-tags__category-added">
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ activeOption()!.category }} is added as a category-only tag.</span>
+        </div>
+      }
+    </div>
+
+    @if (selectedTags().length > 0) {
+      <mat-chip-grid class="typed-tags__chips" aria-label="Selected Journal tags">
+        @for (tag of selectedTags(); track tagKey(tag)) {
+          <mat-chip-row [removable]="true" (removed)="removeTag(tag)">
+            {{ formatTag(tag) }}
+            <mat-icon matChipRemove aria-label="Remove tag">cancel</mat-icon>
+          </mat-chip-row>
+        }
+      </mat-chip-grid>
+    } @else {
+      <div class="typed-tags__unselected">No Journal tags selected.</div>
+    }
+  }
+</div>

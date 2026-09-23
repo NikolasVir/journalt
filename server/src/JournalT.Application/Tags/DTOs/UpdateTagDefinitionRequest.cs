@@ -1,5 +1,6 @@
 namespace JournalT.Application.Tags.DTOs;
 
 public sealed record UpdateTagDefinitionRequest(
-    string? AllowedValuesJson = null
+    string? AllowedValuesJson = null,
+    string? KnownValuesJson = null
 );

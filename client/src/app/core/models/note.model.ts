@@ -8,11 +8,12 @@ export interface WikiLinkWarning {
 export interface TagDto {
   tagType?: 'FreeForm' | 'Typed';
   category?: string | null;
-  value: string;
+  value: string | null;
 }
 
 export function formatTag(tag: TagDto): string {
-  return tag.category ? `${tag.category}:${tag.value}` : tag.value;
+  if (!tag.category) return tag.value ?? '';
+  return tag.value ? `${tag.category}:${tag.value}` : tag.category;
 }
 
 export interface NoteSourceResponse {
@@ -102,6 +103,8 @@ export interface PromoteNoteRequest {
   targetLevel: NoteLevel;
   typeId?: string | null;
   typedMetadataJson?: string | null;
+  libraryId?: string | null;
+  tags?: TagDto[];
   resolvedConflictPayload?: string | null;
 }
 

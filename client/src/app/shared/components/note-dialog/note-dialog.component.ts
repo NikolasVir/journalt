@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -6,16 +16,17 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
-import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
+import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
 import { MarkdownEnhancerService } from '@core/services/markdown-enhancer.service';
 import { NoteService } from '@core/services/note.service';
+import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 
 export interface NoteDialogSavePayload {
   id: string;
   title: string;
   bodyMarkdown: string;
   isTodo: boolean;
-  tags: string[];
+  tags: (TagDto | string)[];
 }
 
 @Component({
@@ -27,11 +38,12 @@ export interface NoteDialogSavePayload {
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule
+    MatTooltipModule,
+    TypedTagSelectorComponent,
   ],
   templateUrl: './note-dialog.component.html',
   styleUrl: './note-dialog.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NoteDialogComponent {
   private readonly router = inject(Router);
@@ -50,6 +62,8 @@ export class NoteDialogComponent {
   protected readonly editTitle = signal<string>('');
   protected readonly editBody = signal<string>('');
   protected readonly editTags = signal<string>('');
+  protected readonly editTypedTags = signal<TagDto[]>([]);
+  protected readonly legacyTags = signal<TagDto[]>([]);
   protected readonly editIsTodo = signal<boolean>(false);
   protected readonly viewMode = signal<'rendered' | 'markdown'>('rendered');
   protected readonly renderedHtml = signal<string>('');
@@ -62,9 +76,14 @@ export class NoteDialogComponent {
       if (current) {
         this.editTitle.set(current.title ?? '');
         this.editBody.set(current.bodyMarkdown ?? '');
+        const tags = current.tags ?? [];
+        const typedTags = tags.filter((tag) => tag.tagType === 'Typed');
+        const nonTypedTags = tags.filter((tag) => tag.tagType !== 'Typed');
         this.editTags.set(
-          (current.tags ?? []).map(formatTag).filter(Boolean).join(', ')
+          current.level === 'Quick' ? tags.map(formatTag).filter(Boolean).join(', ') : '',
         );
+        this.editTypedTags.set(current.level === 'Journal' ? typedTags : []);
+        this.legacyTags.set(current.level === 'Journal' ? nonTypedTags : []);
         this.editIsTodo.set(current.isTodo ?? false);
 
         const html = current.renderedHtml ?? '';
@@ -108,7 +127,7 @@ export class NoteDialogComponent {
             },
             error: () => {
               // fallback: keep existing renderedHtml
-            }
+            },
           });
         }
       }
@@ -138,20 +157,29 @@ export class NoteDialogComponent {
   public onClose(): void {
     const current = this.note();
     if (current) {
-      const tags = (this.editTags() ?? '')
-        .split(',')
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0);
+      if (current.level === 'Journal' && this.legacyTags().length > 0) return;
+
+      const tags: (TagDto | string)[] =
+        current.level === 'Journal'
+          ? this.editTypedTags()
+          : (this.editTags() ?? '')
+              .split(',')
+              .map((tag) => tag.trim())
+              .filter(Boolean);
 
       this.save.emit({
         id: current.id,
         title: (this.editTitle() ?? '').trim() || current.title,
         bodyMarkdown: (this.editBody() ?? '').trim(),
         isTodo: this.editIsTodo(),
-        tags
+        tags,
       });
     }
     this.close.emit();
+  }
+
+  public removeLegacyTags(): void {
+    this.legacyTags.set([]);
   }
 
   public onBackdropClick(event: MouseEvent): void {

@@ -28,6 +28,13 @@ public class TagDefinitionsController(ITagDefinitionService tagDefinitionService
         return Ok(list);
     }
 
+    [HttpGet("options")]
+    public async Task<IActionResult> Options(CancellationToken ct)
+    {
+        var options = await _tagDefinitionService.ListOptionsAsync(ct);
+        return Ok(options);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {

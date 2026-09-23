@@ -3,6 +3,7 @@ namespace JournalT.UnitTests.Tags;
 using JournalT.Application.Common.Interfaces;
 using JournalT.Application.Tags.DTOs;
 using JournalT.Domain.Entities;
+using JournalT.Domain.Enums;
 using JournalT.Infrastructure.Persistence;
 using JournalT.Infrastructure.Tags;
 using Microsoft.Data.Sqlite;
@@ -71,6 +72,57 @@ public class TagDefinitionServiceTests : IDisposable
 
         Assert.False(result.Succeeded);
         Assert.Contains("valid JSON array", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task ListOptions_OpenAndClosedCategories_ExposeSelectableValues()
+    {
+        await _sut.CreateAsync(new CreateTagDefinitionRequest(
+            "topic",
+            KnownValuesJson: "[\"math\",\"systems\"]"
+        ));
+        await _sut.CreateAsync(new CreateTagDefinitionRequest(
+            "status",
+            AllowedValuesJson: "[\"draft\",\"active\"]"
+        ));
+
+        var options = await _sut.ListOptionsAsync();
+
+        Assert.Equal(2, options.Count);
+        var topic = options.Single(option => option.Category == "topic");
+        Assert.False(topic.IsClosed);
+        Assert.Equal(["math", "systems"], topic.Values);
+
+        var status = options.Single(option => option.Category == "status");
+        Assert.True(status.IsClosed);
+        Assert.Equal(["draft", "active"], status.Values);
+    }
+
+    [Fact]
+    public async Task Update_RemovingKnownValueUsedByNote_ReturnsConflict()
+    {
+        var definition = (await _sut.CreateAsync(new CreateTagDefinitionRequest(
+            "topic",
+            KnownValuesJson: "[\"math\",\"systems\"]"
+        ))).TagDefinition!;
+        var note = new Note { UserId = _userId, Title = "Math note" };
+        _db.Notes.Add(note);
+        _db.NoteTags.Add(new NoteTag
+        {
+            NoteId = note.Id,
+            TagType = TagType.Typed,
+            Category = "topic",
+            Value = "math"
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.UpdateAsync(definition.Id, new UpdateTagDefinitionRequest(
+            KnownValuesJson: "[\"systems\"]"
+        ));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(409, result.StatusCode);
+        Assert.Contains("still used by notes", result.Errors[0]);
     }
 
     [Fact]

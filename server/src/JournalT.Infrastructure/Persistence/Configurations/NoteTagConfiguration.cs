@@ -21,7 +21,6 @@ public class NoteTagConfiguration : IEntityTypeConfiguration<NoteTag>
             .HasMaxLength(100);
 
         builder.Property(t => t.Value)
-            .IsRequired()
             .HasMaxLength(100);
 
         builder.HasOne(t => t.Note)

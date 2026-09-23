@@ -1,0 +1,15 @@
+meta {
+  name: List Selectable Tag Options
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/tags/definitions/options
+  body: none
+  auth: none
+}
+
+docs {
+  Lists tag categories and their selectable Journal values. Closed categories expose their allowed vocabulary; open categories expose their explicitly registered known values.
+}

@@ -12,7 +12,7 @@ import {
   PromoteNoteRequest,
   TagDto,
   TodoSummaryResponse,
-  UpdateNoteRequest
+  UpdateNoteRequest,
 } from '../models/note.model';
 import { PagedResult } from '../models/paged-result.model';
 
@@ -24,24 +24,24 @@ function toTagDto(tag: TagDto | string): TagDto {
       return {
         tagType: 'Typed',
         category: raw.slice(0, idx),
-        value: raw.slice(idx + 1)
+        value: raw.slice(idx + 1),
       };
     }
     return {
       tagType: 'FreeForm',
       category: null,
-      value: raw
+      value: raw,
     };
   }
   return {
     tagType: tag.tagType ?? (tag.category ? 'Typed' : 'FreeForm'),
     category: tag.category ?? null,
-    value: tag.value
+    value: tag.value,
   };
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class NoteService {
   private readonly http = inject(HttpClient);
@@ -54,7 +54,8 @@ export class NoteService {
       if (filter.libraryId) params = params.set('libraryId', filter.libraryId);
       if (filter.typeId) params = params.set('typeId', filter.typeId);
       if (filter.isTodo !== undefined) params = params.set('isTodo', filter.isTodo.toString());
-      if (filter.isTrashed !== undefined) params = params.set('isTrashed', filter.isTrashed.toString());
+      if (filter.isTrashed !== undefined)
+        params = params.set('isTrashed', filter.isTrashed.toString());
       if (filter.search) params = params.set('search', filter.search);
       if (filter.tag) params = params.set('tag', filter.tag);
       if (filter.page) params = params.set('page', filter.page.toString());
@@ -70,7 +71,11 @@ export class NoteService {
   public create(request: CreateNoteRequest): Observable<NoteResponse> {
     const payload = {
       ...request,
-      tags: request.tags ? request.tags.map(toTagDto).filter((t) => t.value.length > 0) : null
+      tags: request.tags
+        ? request.tags
+            .map(toTagDto)
+            .filter((tag) => (tag.tagType === 'Typed' ? !!tag.category : !!tag.value))
+        : null,
     };
     return this.http.post<NoteResponse>(this.baseUrl, payload);
   }
@@ -78,7 +83,11 @@ export class NoteService {
   public update(id: string, request: UpdateNoteRequest): Observable<NoteResponse> {
     const payload = {
       ...request,
-      tags: request.tags ? request.tags.map(toTagDto).filter((t) => t.value.length > 0) : null
+      tags: request.tags
+        ? request.tags
+            .map(toTagDto)
+            .filter((tag) => (tag.tagType === 'Typed' ? !!tag.category : !!tag.value))
+        : null,
     };
     return this.http.put<NoteResponse>(`${this.baseUrl}/${id}`, payload);
   }
@@ -107,7 +116,10 @@ export class NoteService {
     return this.http.get<TodoSummaryResponse>(`${this.baseUrl}/todos/summary`);
   }
 
-  public addSource(noteId: string, request: CreateNoteSourceRequest): Observable<NoteSourceResponse> {
+  public addSource(
+    noteId: string,
+    request: CreateNoteSourceRequest,
+  ): Observable<NoteSourceResponse> {
     return this.http.post<NoteSourceResponse>(`${this.baseUrl}/${noteId}/sources`, request);
   }
 
@@ -119,7 +131,10 @@ export class NoteService {
     return this.http.delete<void>(`${this.baseUrl}/${noteId}/sources/${sourceId}`);
   }
 
-  public addRelation(noteId: string, request: CreateNoteRelationRequest): Observable<NoteRelationResponse> {
+  public addRelation(
+    noteId: string,
+    request: CreateNoteRelationRequest,
+  ): Observable<NoteRelationResponse> {
     return this.http.post<NoteRelationResponse>(`${this.baseUrl}/${noteId}/relations`, request);
   }
 

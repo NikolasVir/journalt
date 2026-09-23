@@ -11,7 +11,12 @@
 
   @if (errorMessage(); as error) {
     <div class="note-editor__alert" role="alert">
-      {{ error }}
+      <span>{{ error }}</span>
+      @if (legacyTags().length > 0) {
+        <button mat-stroked-button type="button" (click)="removeLegacyTags()">
+          Remove legacy tags
+        </button>
+      }
     </div>
   }
 
@@ -19,12 +24,7 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="note-form" novalidate>
       <mat-form-field appearance="outline" class="note-form__field">
         <mat-label>Title</mat-label>
-        <input
-          matInput
-          formControlName="title"
-          placeholder="Title"
-          autocomplete="off"
-        />
+        <input matInput formControlName="title" placeholder="Title" autocomplete="off" />
         @if (form.controls.title.invalid && form.controls.title.touched) {
           <mat-error>Title is required.</mat-error>
         }
@@ -54,7 +54,10 @@
         } @else {
           <div class="note-form__type-notice">
             <mat-icon>info</mat-icon>
-            <span>No active type definitions found. <a routerLink="/types">Create a type definition</a> first.</span>
+            <span
+              >No active type definitions found.
+              <a routerLink="/types">Create a type definition</a> first.</span
+            >
           </div>
         }
       }
@@ -69,31 +72,30 @@
         ></textarea>
       </mat-form-field>
 
-      @if (form.controls.level.value !== 'Inbox') {
+      @if (form.controls.level.value === 'Journal') {
+        <app-typed-tag-selector
+          [selectedTags]="form.controls.typedTags.value"
+          (selectedTagsChange)="form.controls.typedTags.setValue($event)"
+        />
+      } @else if (form.controls.level.value === 'Quick') {
         <mat-form-field appearance="outline" class="note-form__field">
-          <mat-label>Tags</mat-label>
+          <mat-label>Free-form tags</mat-label>
           <input
             matInput
             formControlName="tagsInput"
             placeholder="Comma-separated tags (e.g. dev, ideas)"
           />
+          <mat-hint>Quick Note tags are intentionally unconstrained.</mat-hint>
         </mat-form-field>
       }
 
       <div class="note-form__checkbox">
-        <mat-checkbox formControlName="isTodo" color="primary">
-          Track as Todo
-        </mat-checkbox>
+        <mat-checkbox formControlName="isTodo" color="primary"> Track as Todo </mat-checkbox>
       </div>
 
       <mat-card-actions class="note-form__actions">
         @if (noteId()) {
-          <button
-            mat-button
-            color="warn"
-            type="button"
-            (click)="onDelete()"
-          >
+          <button mat-button color="warn" type="button" (click)="onDelete()">
             <mat-icon>delete_outline</mat-icon>
             <span>Move to Trash</span>
           </button>

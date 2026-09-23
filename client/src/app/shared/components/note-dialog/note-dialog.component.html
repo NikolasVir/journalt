@@ -2,7 +2,11 @@
   <div class="dialog-backdrop" (click)="onBackdropClick($event)">
     <div class="dialog-panel" role="dialog" aria-modal="true" [attr.aria-label]="n.title">
       <div class="dialog-panel__header">
-        <mat-form-field appearance="outline" class="dialog-panel__title-field" subscriptSizing="dynamic">
+        <mat-form-field
+          appearance="outline"
+          class="dialog-panel__title-field"
+          subscriptSizing="dynamic"
+        >
           <input
             matInput
             placeholder="Title"
@@ -35,7 +39,10 @@
             </button>
           </div>
 
-          <span class="dialog-panel__level-badge" [class]="'dialog-panel__level-badge--' + n.level.toLowerCase()">
+          <span
+            class="dialog-panel__level-badge"
+            [class]="'dialog-panel__level-badge--' + n.level.toLowerCase()"
+          >
             {{ n.level }}
           </span>
         </div>
@@ -68,9 +75,26 @@
           </mat-form-field>
         }
 
-        @if (n.level !== 'Inbox') {
-          <mat-form-field appearance="outline" class="dialog-panel__tags-field" subscriptSizing="dynamic">
-            <mat-label>Tags</mat-label>
+        @if (n.level === 'Journal') {
+          @if (legacyTags().length > 0) {
+            <div class="dialog-panel__tag-conflict" role="alert">
+              <span>Legacy free-form tags must be removed before saving.</span>
+              <button mat-stroked-button type="button" (click)="removeLegacyTags()">
+                Remove legacy tags
+              </button>
+            </div>
+          }
+          <app-typed-tag-selector
+            [selectedTags]="editTypedTags()"
+            (selectedTagsChange)="editTypedTags.set($event)"
+          />
+        } @else if (n.level === 'Quick') {
+          <mat-form-field
+            appearance="outline"
+            class="dialog-panel__tags-field"
+            subscriptSizing="dynamic"
+          >
+            <mat-label>Free-form tags</mat-label>
             <input
               matInput
               placeholder="Comma-separated tags..."
@@ -94,11 +118,7 @@
           </button>
 
           @if (nextPromoteLevel; as nextLevel) {
-            <button
-              mat-button
-              (click)="onPromote()"
-              [matTooltip]="'Promote to ' + nextLevel"
-            >
+            <button mat-button (click)="onPromote()" [matTooltip]="'Promote to ' + nextLevel">
               <mat-icon>arrow_upward</mat-icon>
               <span>Promote to {{ nextLevel }}</span>
             </button>
@@ -114,13 +134,7 @@
           </button>
         </div>
 
-        <button
-          mat-button
-          type="button"
-          (click)="onClose()"
-        >
-          Close
-        </button>
+        <button mat-button type="button" (click)="onClose()">Close</button>
       </div>
     </div>
   </div>

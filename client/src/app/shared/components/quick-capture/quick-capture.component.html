@@ -62,23 +62,29 @@
               aria-label="Select Journal Type"
             >
               @for (type of typeDefinitions(); track type.id) {
-                <mat-option [value]="type.id">
-                  {{ type.name }} (v{{ type.version }})
-                </mat-option>
+                <mat-option [value]="type.id"> {{ type.name }} (v{{ type.version }}) </mat-option>
               }
             </mat-select>
           </mat-form-field>
         } @else {
           <div class="capture-card__type-notice">
             <mat-icon>info</mat-icon>
-            <span>No active type definitions found. <a routerLink="/types">Create a type</a> first.</span>
+            <span
+              >No active type definitions found.
+              <a routerLink="/types">Create a type</a> first.</span
+            >
           </div>
         }
       }
 
-      @if (selectedLevel() !== 'Inbox') {
+      @if (selectedLevel() === 'Journal') {
+        <app-typed-tag-selector
+          [selectedTags]="typedTags()"
+          (selectedTagsChange)="typedTags.set($event)"
+        />
+      } @else if (selectedLevel() === 'Quick') {
         <mat-form-field appearance="outline" class="capture-card__field">
-          <mat-label>Tags</mat-label>
+          <mat-label>Free-form tags</mat-label>
           <input
             matInput
             placeholder="Comma-separated tags..."
@@ -100,12 +106,8 @@
         </mat-button-toggle-group>
 
         <div class="capture-card__buttons">
-          <button mat-button type="button" (click)="collapse()">
-            Close
-          </button>
-          <button mat-flat-button color="primary" type="button" (click)="submit()">
-            Save
-          </button>
+          <button mat-button type="button" (click)="collapse()">Close</button>
+          <button mat-flat-button color="primary" type="button" (click)="submit()">Save</button>
         </div>
       </div>
     </mat-card-content>

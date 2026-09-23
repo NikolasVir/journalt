@@ -1,5 +1,6 @@
 namespace JournalT.Infrastructure.Notes;
 
+using System.Text.Json;
 using JournalT.Application.Common.Interfaces;
 using JournalT.Application.Common.Models;
 using JournalT.Application.Markdown;
@@ -65,8 +66,8 @@ public sealed class NoteService(
             }
         }
 
-        // Tag validation
-        var tagValidationError = await ValidateTagsAsync(userId, request.Level, request.Tags, ct);
+        // Tag validation and canonicalization
+        var (normalizedTags, tagValidationError) = await ValidateTagsAsync(userId, request.Level, request.Tags, ct);
         if (tagValidationError != null)
             return NoteResult.Failure(tagValidationError);
 
@@ -99,16 +100,16 @@ public sealed class NoteService(
             IsTrashed = false,
         };
 
-        if (request.Tags != null && request.Tags.Count > 0)
+        if (normalizedTags != null && normalizedTags.Count > 0)
         {
-            foreach (var tag in request.Tags)
+            foreach (var tag in normalizedTags)
             {
                 note.Tags.Add(new NoteTag
                 {
                     NoteId = note.Id,
                     TagType = request.Level == NoteLevel.Quick ? TagType.FreeForm : tag.TagType,
                     Category = string.IsNullOrWhiteSpace(tag.Category) ? null : tag.Category.Trim().ToLowerInvariant(),
-                    Value = tag.Value.Trim(),
+                    Value = tag.Value,
                 });
             }
         }
@@ -163,7 +164,7 @@ public sealed class NoteService(
         {
             var tagSearch = filter.Tag.Trim();
             query = query.Where(n => n.Tags.Any(t =>
-                EF.Functions.Like(t.Value, $"%{tagSearch}%") ||
+                (t.Value != null && EF.Functions.Like(t.Value, $"%{tagSearch}%")) ||
                 (t.Category != null && EF.Functions.Like(t.Category, $"%{tagSearch}%"))));
         }
 
@@ -231,7 +232,7 @@ public sealed class NoteService(
                 return NoteResult.Failure("Library not found.");
         }
 
-        var tagValidationError = await ValidateTagsAsync(userId, note.Level, request.Tags, ct);
+        var (normalizedTags, tagValidationError) = await ValidateTagsAsync(userId, note.Level, request.Tags, ct);
         if (tagValidationError != null)
             return NoteResult.Failure(tagValidationError);
 
@@ -283,14 +284,14 @@ public sealed class NoteService(
             var existingTags = await _db.NoteTags.Where(t => t.NoteId == note.Id).ToListAsync(ct);
             _db.NoteTags.RemoveRange(existingTags);
 
-            foreach (var tag in request.Tags)
+            foreach (var tag in normalizedTags ?? [])
             {
                 _db.NoteTags.Add(new NoteTag
                 {
                     NoteId = note.Id,
                     TagType = note.Level == NoteLevel.Quick ? TagType.FreeForm : tag.TagType,
                     Category = string.IsNullOrWhiteSpace(tag.Category) ? null : tag.Category.Trim().ToLowerInvariant(),
-                    Value = tag.Value.Trim(),
+                    Value = tag.Value,
                 });
             }
         }
@@ -391,7 +392,7 @@ public sealed class NoteService(
         }
 
         var tagsToValidate = request.Tags ?? note.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList();
-        var tagError = await ValidateTagsAsync(userId, request.TargetLevel, tagsToValidate, ct);
+        var (normalizedTags, tagError) = await ValidateTagsAsync(userId, request.TargetLevel, tagsToValidate, ct);
         if (tagError != null)
             return NoteResult.Failure(tagError);
 
@@ -409,14 +410,14 @@ public sealed class NoteService(
             var existingTags = await _db.NoteTags.Where(t => t.NoteId == note.Id).ToListAsync(ct);
             _db.NoteTags.RemoveRange(existingTags);
 
-            foreach (var tag in request.Tags)
+            foreach (var tag in normalizedTags ?? [])
             {
                 _db.NoteTags.Add(new NoteTag
                 {
                     NoteId = note.Id,
                     TagType = request.TargetLevel == NoteLevel.Quick ? TagType.FreeForm : tag.TagType,
                     Category = string.IsNullOrWhiteSpace(tag.Category) ? null : tag.Category.Trim().ToLowerInvariant(),
-                    Value = tag.Value.Trim(),
+                    Value = tag.Value,
                 });
             }
         }
@@ -678,49 +679,100 @@ public sealed class NoteService(
         return new TodoSummaryResponse(pendingCount, completedCount, pendingNotes, completedNotes);
     }
 
-    private async Task<string?> ValidateTagsAsync(Guid userId, NoteLevel level, List<TagDto>? tags, CancellationToken ct)
+    private async Task<(List<TagDto>? Tags, string? Error)> ValidateTagsAsync(
+        Guid userId,
+        NoteLevel level,
+        List<TagDto>? tags,
+        CancellationToken ct)
     {
-        if (tags is null || tags.Count == 0) return null;
+        if (tags is null || tags.Count == 0)
+            return (null, null);
 
-        if (level == NoteLevel.Quick && tags.Any(t => t.TagType == TagType.Typed))
-            return "Quick notes only support FreeForm tags.";
-
-        var typedTags = tags.Where(t => t.TagType == TagType.Typed).ToList();
-        if (typedTags.Count > 0)
-        {
-            var categories = typedTags
-                .Select(t => t.Category?.Trim().ToLowerInvariant())
-                .Where(c => !string.IsNullOrEmpty(c))
-                .Distinct()
-                .ToList();
-
-            var definitions = await _db.TagDefinitions
-                .AsNoTracking()
-                .Where(td => td.UserId == userId && categories.Contains(td.Category))
-                .ToDictionaryAsync(td => td.Category, ct);
-
-            foreach (var tag in typedTags)
+        var normalizedTags = tags
+            .Select(tag => tag with
             {
-                var cat = tag.Category?.Trim().ToLowerInvariant();
-                if (string.IsNullOrEmpty(cat) || !definitions.TryGetValue(cat, out var def))
-                    return $"Tag category '{tag.Category}' is not defined.";
+                Category = string.IsNullOrWhiteSpace(tag.Category) ? null : tag.Category.Trim().ToLowerInvariant(),
+                Value = string.IsNullOrWhiteSpace(tag.Value) ? null : tag.Value.Trim()
+            })
+            .ToList();
 
-                if (!string.IsNullOrWhiteSpace(def.AllowedValuesJson))
-                {
-                    try
-                    {
-                        var allowed = System.Text.Json.JsonSerializer.Deserialize<string[]>(def.AllowedValuesJson);
-                        if (allowed != null && !allowed.Contains(tag.Value.Trim(), StringComparer.OrdinalIgnoreCase))
-                        {
-                            return $"Tag value '{tag.Value}' is not in the allowed vocabulary for category '{cat}'. Allowed: {string.Join(", ", allowed)}";
-                        }
-                    }
-                    catch { }
-                }
-            }
+        if (normalizedTags.Any(tag => tag.TagType == TagType.FreeForm && tag.Value is null))
+            return (null, "Free-form tag values cannot be empty.");
+
+        if (level == NoteLevel.Quick && normalizedTags.Any(t => t.TagType == TagType.Typed))
+            return (null, "Quick notes only support free-form tags.");
+
+        if (level == NoteLevel.Journal && normalizedTags.Any(t => t.TagType != TagType.Typed))
+            return (null, "Journal notes only support registered typed tags.");
+
+        if (normalizedTags
+            .GroupBy(t => new { t.TagType, t.Category, Value = t.Value?.ToLowerInvariant() ?? "<category-only>" })
+            .Any(group => group.Count() > 1))
+        {
+            return (null, "A tag cannot be selected more than once.");
         }
 
-        return null;
+        var typedTags = normalizedTags
+            .Select((tag, index) => (Tag: tag, Index: index))
+            .Where(item => item.Tag.TagType == TagType.Typed)
+            .ToList();
+
+        if (typedTags.Count == 0)
+            return (normalizedTags, null);
+
+        var categories = typedTags
+            .Select(item => item.Tag.Category)
+            .Where(category => !string.IsNullOrEmpty(category))
+            .Distinct()
+            .ToList();
+
+        var definitions = await _db.TagDefinitions
+            .AsNoTracking()
+            .Where(definition => definition.UserId == userId && categories.Contains(definition.Category))
+            .ToDictionaryAsync(definition => definition.Category, ct);
+
+        foreach (var item in typedTags)
+        {
+            var tag = item.Tag;
+            var category = tag.Category;
+            if (string.IsNullOrEmpty(category) || !definitions.TryGetValue(category, out var definition))
+                return (null, $"Tag category '{tag.Category}' is not defined.");
+
+            if (tag.Value is null)
+            {
+                if (!string.IsNullOrWhiteSpace(definition.AllowedValuesJson))
+                    return (null, $"Tag category '{category}' is closed and requires a value.");
+
+                normalizedTags[item.Index] = tag with { Value = null };
+                continue;
+            }
+
+            var valuesJson = definition.AllowedValuesJson ?? definition.KnownValuesJson;
+            IReadOnlyList<string> values;
+            try
+            {
+                values = string.IsNullOrWhiteSpace(valuesJson)
+                    ? []
+                    : JsonSerializer.Deserialize<string[]>(valuesJson) ?? [];
+            }
+            catch
+            {
+                return (null, $"Tag category '{category}' has an invalid value registry.");
+            }
+
+            var canonicalValue = values.FirstOrDefault(value =>
+                string.Equals(value.Trim(), tag.Value, StringComparison.OrdinalIgnoreCase));
+            if (canonicalValue is null)
+            {
+                return (null, string.IsNullOrWhiteSpace(definition.AllowedValuesJson)
+                    ? $"Tag value '{tag.Value}' is not registered for category '{category}'."
+                    : $"Tag value '{tag.Value}' is not in the vocabulary for category '{category}'. Allowed: {string.Join(", ", values)}");
+            }
+
+            normalizedTags[item.Index] = tag with { Value = canonicalValue.Trim() };
+        }
+
+        return (normalizedTags, null);
     }
 
     private async Task<(string RenderedHtml, IReadOnlyList<string> WikiLinks, IReadOnlyList<WikiLinkWarning> Warnings)> RenderWithWikiLinkResolutionAsync(

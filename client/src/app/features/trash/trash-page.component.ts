@@ -18,16 +18,14 @@ import { NotificationService } from '@core/services/notification.service';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatTooltipModule
+    MatTooltipModule,
   ],
   template: `
     <div class="trash-page">
       <header class="trash-page__header">
         <div class="trash-page__header-text">
           <h1 class="trash-page__title">Trash</h1>
-          <p class="trash-page__subtitle">
-            Notes in Trash can be restored or permanently deleted.
-          </p>
+          <p class="trash-page__subtitle">Notes in Trash can be restored or permanently deleted.</p>
         </div>
 
         @if (trashedNotes().length > 0) {
@@ -53,7 +51,9 @@ import { NotificationService } from '@core/services/notification.service';
         <div class="trash-page__empty">
           <mat-icon class="trash-page__empty-icon">delete_outline</mat-icon>
           <p class="trash-page__empty-title">Trash is empty</p>
-          <p class="trash-page__empty-desc">Deleted notes will show up here before permanent removal.</p>
+          <p class="trash-page__empty-desc">
+            Deleted notes will show up here before permanent removal.
+          </p>
         </div>
       } @else {
         <div class="trash-page__grid">
@@ -64,7 +64,7 @@ import { NotificationService } from '@core/services/notification.service';
                   {{ note.title || 'Untitled note' }}
                 </mat-card-title>
                 <mat-card-subtitle class="trash-card__subtitle">
-                  Deleted {{ note.trashedAtUtc | date:'mediumDate' }}
+                  Deleted {{ note.trashedAtUtc | date: 'mediumDate' }}
                 </mat-card-subtitle>
               </mat-card-header>
 
@@ -77,7 +77,7 @@ import { NotificationService } from '@core/services/notification.service';
 
                 @if ((note.tags?.length ?? 0) > 0) {
                   <mat-chip-set class="trash-card__chips">
-                    @for (tag of note.tags ?? []; track tag.value) {
+                    @for (tag of note.tags ?? []; track formatTag(tag)) {
                       <mat-chip class="trash-card__chip">#{{ formatTag(tag) }}</mat-chip>
                     }
                   </mat-chip-set>
@@ -249,7 +249,7 @@ import { NotificationService } from '@core/services/notification.service';
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TrashPageComponent implements OnInit {
   private readonly noteService = inject(NoteService);
@@ -274,7 +274,7 @@ export class TrashPageComponent implements OnInit {
       error: () => {
         this.isLoading.set(false);
         this.notification.showError('Failed to load trashed notes.');
-      }
+      },
     });
   }
 
@@ -289,7 +289,7 @@ export class TrashPageComponent implements OnInit {
       error: () => {
         this.isActionInProgress.set(false);
         this.notification.showError('Failed to restore note.');
-      }
+      },
     });
   }
 
@@ -308,7 +308,7 @@ export class TrashPageComponent implements OnInit {
       error: () => {
         this.isActionInProgress.set(false);
         this.notification.showError('Failed to permanently delete note.');
-      }
+      },
     });
   }
 
@@ -340,7 +340,7 @@ export class TrashPageComponent implements OnInit {
             this.loadTrashedNotes();
             this.isActionInProgress.set(false);
           }
-        }
+        },
       });
     });
   }
