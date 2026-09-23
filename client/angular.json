@@ -23,10 +23,18 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+            "allowedCommonJsDependencies": [
+              "prismjs"
+            ],
             "assets": [
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/katex/dist/fonts",
+                "output": "fonts"
               }
             ],
             "stylePreprocessorOptions": {
@@ -35,6 +43,7 @@
               ]
             },
             "styles": [
+              "node_modules/katex/dist/katex.min.css",
               "src/styles/styles.scss"
             ]
           },

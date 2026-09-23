@@ -130,4 +130,8 @@ export class NoteService {
   public deleteRelation(noteId: string, relationId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${noteId}/relations/${relationId}`);
   }
+
+  public renderPreview(markdown: string): Observable<{ renderedHtml: string }> {
+    return this.http.post<{ renderedHtml: string }>(`${this.baseUrl}/render`, { markdown });
+  }
 }

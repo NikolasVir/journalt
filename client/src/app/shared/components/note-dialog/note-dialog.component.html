@@ -10,21 +10,63 @@
             (input)="onTitleInput($event)"
           />
         </mat-form-field>
-        <span class="dialog-panel__level-badge" [class]="'dialog-panel__level-badge--' + n.level.toLowerCase()">
-          {{ n.level }}
-        </span>
+
+        <div class="dialog-panel__header-controls">
+          <div class="view-toggle" role="group" aria-label="Toggle view mode">
+            <button
+              type="button"
+              class="view-toggle__btn"
+              [class.view-toggle__btn--active]="viewMode() === 'rendered'"
+              (click)="setViewMode('rendered')"
+              matTooltip="Rendered Preview"
+            >
+              <mat-icon class="view-toggle__icon">visibility</mat-icon>
+              <span>Preview</span>
+            </button>
+            <button
+              type="button"
+              class="view-toggle__btn"
+              [class.view-toggle__btn--active]="viewMode() === 'markdown'"
+              (click)="setViewMode('markdown')"
+              matTooltip="Edit Markdown"
+            >
+              <mat-icon class="view-toggle__icon">edit_note</mat-icon>
+              <span>Markdown</span>
+            </button>
+          </div>
+
+          <span class="dialog-panel__level-badge" [class]="'dialog-panel__level-badge--' + n.level.toLowerCase()">
+            {{ n.level }}
+          </span>
+        </div>
       </div>
 
       <div class="dialog-panel__body">
-        <mat-form-field appearance="outline" class="dialog-panel__body-field">
-          <textarea
-            matInput
-            rows="8"
-            placeholder="Note content (Markdown supported)..."
-            [value]="editBody()"
-            (input)="onBodyInput($event)"
-          ></textarea>
-        </mat-form-field>
+        @if (viewMode() === 'rendered') {
+          @if (renderedHtml()) {
+            <div
+              #renderedContainer
+              class="dialog-panel__rendered-content markdown-body"
+              [innerHTML]="renderedHtml()"
+              (click)="onRenderedContentClick($event)"
+            ></div>
+          } @else {
+            <div class="dialog-panel__empty-rendered" (click)="setViewMode('markdown')">
+              <mat-icon>edit_note</mat-icon>
+              <p>No content to preview yet. Click to switch to Markdown and write.</p>
+            </div>
+          }
+        } @else {
+          <mat-form-field appearance="outline" class="dialog-panel__body-field">
+            <textarea
+              matInput
+              class="dialog-panel__textarea"
+              placeholder="Note content (Markdown supported)..."
+              [value]="editBody()"
+              (input)="onBodyInput($event)"
+            ></textarea>
+          </mat-form-field>
+        }
 
         @if (n.level !== 'Inbox') {
           <mat-form-field appearance="outline" class="dialog-panel__tags-field" subscriptSizing="dynamic">

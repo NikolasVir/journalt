@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Router } from '@angular/router';
 import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
+import { MarkdownEnhancerService } from '@core/services/markdown-enhancer.service';
+import { NoteService } from '@core/services/note.service';
 
 export interface NoteDialogSavePayload {
   id: string;
@@ -31,6 +34,10 @@ export interface NoteDialogSavePayload {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NoteDialogComponent {
+  private readonly router = inject(Router);
+  private readonly noteService = inject(NoteService);
+  private readonly markdownEnhancer = inject(MarkdownEnhancerService);
+
   public readonly note = input<NoteResponse | null>(null);
 
   public readonly close = output<void>();
@@ -38,10 +45,16 @@ export class NoteDialogComponent {
   public readonly trash = output<string>();
   public readonly promote = output<{ id: string; targetLevel: NoteLevel }>();
 
+  protected readonly renderedContainer = viewChild<ElementRef<HTMLElement>>('renderedContainer');
+
   protected readonly editTitle = signal<string>('');
   protected readonly editBody = signal<string>('');
   protected readonly editTags = signal<string>('');
   protected readonly editIsTodo = signal<boolean>(false);
+  protected readonly viewMode = signal<'rendered' | 'markdown'>('rendered');
+  protected readonly renderedHtml = signal<string>('');
+
+  private lastRenderedBody = '';
 
   constructor() {
     effect(() => {
@@ -53,8 +66,66 @@ export class NoteDialogComponent {
           (current.tags ?? []).map(formatTag).filter(Boolean).join(', ')
         );
         this.editIsTodo.set(current.isTodo ?? false);
+
+        const html = current.renderedHtml ?? '';
+        this.renderedHtml.set(html);
+        this.lastRenderedBody = current.bodyMarkdown ?? '';
+
+        if (!current.bodyMarkdown?.trim()) {
+          this.viewMode.set('markdown');
+        } else {
+          this.viewMode.set('rendered');
+        }
       }
     });
+
+    effect(() => {
+      const containerRef = this.renderedContainer();
+      const html = this.renderedHtml();
+      const mode = this.viewMode();
+      if (mode === 'rendered' && containerRef?.nativeElement && html) {
+        setTimeout(() => {
+          if (containerRef.nativeElement) {
+            void this.markdownEnhancer.enhance(containerRef.nativeElement);
+          }
+        }, 0);
+      }
+    });
+  }
+
+  public setViewMode(mode: 'rendered' | 'markdown'): void {
+    if (mode === 'rendered' && this.viewMode() !== 'rendered') {
+      const currentBody = this.editBody().trim();
+      if (currentBody !== this.lastRenderedBody.trim()) {
+        if (!currentBody) {
+          this.renderedHtml.set('');
+          this.lastRenderedBody = '';
+        } else {
+          this.noteService.renderPreview(currentBody).subscribe({
+            next: (res) => {
+              this.renderedHtml.set(res.renderedHtml);
+              this.lastRenderedBody = currentBody;
+            },
+            error: () => {
+              // fallback: keep existing renderedHtml
+            }
+          });
+        }
+      }
+    }
+    this.viewMode.set(mode);
+  }
+
+  public onRenderedContentClick(event: MouseEvent): void {
+    const target = (event.target as HTMLElement).closest('a');
+    if (target) {
+      const href = target.getAttribute('href');
+      if (href && href.startsWith('/notes/')) {
+        event.preventDefault();
+        this.onClose();
+        void this.router.navigateByUrl(href);
+      }
+    }
   }
 
   public get nextPromoteLevel(): NoteLevel | null {

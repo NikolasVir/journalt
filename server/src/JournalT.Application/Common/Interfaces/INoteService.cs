@@ -29,4 +29,7 @@ public interface INoteService
     // Todo Hub (Phase 4)
     Task<NoteResponse?> ToggleTodoAsync(Guid id, CancellationToken ct = default);
     Task<TodoSummaryResponse> GetTodoSummaryAsync(CancellationToken ct = default);
+
+    // Markdown Preview
+    Task<string> RenderPreviewAsync(string markdown, CancellationToken ct = default);
 }

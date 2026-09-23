@@ -1,6 +1,7 @@
 @use '@angular/material' as mat;
 @use 'tokens';
 @use 'mixins' as *;
+@use 'markdown';
 
 html {
   @include mat.theme((

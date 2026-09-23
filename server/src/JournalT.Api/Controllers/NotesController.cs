@@ -141,4 +141,16 @@ public class NotesController(INoteService noteService) : ControllerBase
         var note = await _noteService.ToggleTodoAsync(id, ct);
         return note is not null ? Ok(note) : NotFound();
     }
+
+    // Markdown Preview
+    [HttpPost("render")]
+    public async Task<IActionResult> RenderMarkdown([FromBody] RenderMarkdownRequest request, CancellationToken ct)
+    {
+        var renderedHtml = await _noteService.RenderPreviewAsync(request.Markdown ?? string.Empty, ct);
+        return Ok(new RenderMarkdownResponse(renderedHtml));
+    }
 }
+
+public record RenderMarkdownRequest(string? Markdown);
+public record RenderMarkdownResponse(string RenderedHtml);
+

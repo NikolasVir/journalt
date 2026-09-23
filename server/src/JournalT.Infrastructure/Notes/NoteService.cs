@@ -763,6 +763,15 @@ public sealed class NoteService(
         return (renderResult.RenderedHtml, wikiLinks, warnings);
     }
 
+    public async Task<string> RenderPreviewAsync(string markdown, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(markdown))
+            return string.Empty;
+
+        var (renderedHtml, _, _) = await RenderWithWikiLinkResolutionAsync(_currentUser.UserId, markdown, ct);
+        return renderedHtml;
+    }
+
     private static NoteResponse MapToResponse(
         Note note,
         IReadOnlyList<string> wikiLinks,

@@ -1,0 +1,353 @@
+.markdown-body {
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  word-wrap: break-word;
+
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--color-text-primary);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  h3 { font-size: 1.1rem; }
+  h4 { font-size: 1rem; }
+  h5 { font-size: 0.9rem; }
+  h6 { font-size: 0.85rem; color: var(--color-text-secondary); }
+
+  p {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  hr {
+    height: 1px;
+    padding: 0;
+    margin: 1.25rem 0;
+    background-color: var(--color-border-subtle);
+    border: 0;
+  }
+
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+  del { text-decoration: line-through; opacity: 0.8; }
+  ins { text-decoration: underline; }
+  sub { vertical-align: sub; font-size: 0.75em; }
+  sup { vertical-align: super; font-size: 0.75em; }
+  mark {
+    background-color: #ffd54f;
+    color: #202124;
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-xs);
+  }
+
+  ul, ol {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+
+    ul, ol {
+      margin-top: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+  }
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Task lists */
+  ul.contains-task-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  li.task-list-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+
+    input[type="checkbox"] {
+      margin: 0;
+      position: relative;
+      top: 2px;
+      cursor: default;
+      accent-color: var(--color-primary);
+    }
+  }
+
+  /* Blockquotes */
+  blockquote {
+    margin: 0.75rem 0;
+    padding: 0.5rem 1rem;
+    color: var(--color-text-secondary);
+    border-left: 3px solid var(--color-border-card-hover);
+    background-color: var(--color-bg-surface-elevated);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+
+    blockquote {
+      margin: 0.5rem 0;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+    display: block;
+    overflow-x: auto;
+
+    th, td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--color-border-card);
+    }
+
+    th {
+      font-weight: 600;
+      background-color: var(--color-bg-surface-elevated);
+      color: var(--color-text-primary);
+    }
+
+    tr:nth-child(even) td {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+  }
+
+  /* Code */
+  code {
+    font-family: var(--font-family-mono);
+    font-size: 0.85em;
+    padding: 0.15em 0.35em;
+    border-radius: var(--radius-xs);
+    background-color: rgba(128, 128, 128, 0.15);
+  }
+
+  pre {
+    margin: 0.75rem 0;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+    background-color: #1e1e1e;
+    border: 1px solid var(--color-border-card);
+
+    code {
+      background-color: transparent;
+      padding: 0;
+      font-size: 0.85rem;
+      color: #e0e0e0;
+      white-space: pre;
+
+      /* Prism Token Highlighting (VS Code Dark style) */
+      .token.comment,
+      .token.prolog,
+      .token.doctype,
+      .token.cdata {
+        color: #6a9955;
+        font-style: italic;
+      }
+
+      .token.punctuation {
+        color: #d4d4d4;
+      }
+
+      .token.property,
+      .token.tag,
+      .token.boolean,
+      .token.number,
+      .token.constant,
+      .token.symbol,
+      .token.deleted {
+        color: #b5cea8;
+      }
+
+      .token.selector,
+      .token.attr-name,
+      .token.string,
+      .token.char,
+      .token.builtin,
+      .token.inserted {
+        color: #ce9178;
+      }
+
+      .token.operator,
+      .token.entity,
+      .token.url {
+        color: #d4d4d4;
+      }
+
+      .token.atrule,
+      .token.attr-value,
+      .token.keyword {
+        color: #569cd6;
+        font-weight: 600;
+      }
+
+      .token.function,
+      .token.class-name {
+        color: #dcdcaa;
+      }
+
+      .token.regex,
+      .token.important,
+      .token.variable {
+        color: #d16969;
+      }
+    }
+  }
+
+  /* Definition Lists */
+  dl {
+    margin: 0.75rem 0;
+  }
+
+  dt {
+    font-weight: 600;
+    margin-top: 0.6rem;
+    color: var(--color-text-primary);
+  }
+
+  dd {
+    margin-left: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-secondary);
+  }
+
+  /* Alert blocks */
+  .markdown-alert {
+    padding: 0.6rem 0.85rem;
+    margin: 0.75rem 0;
+    border-left: 4px solid;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background-color: var(--color-bg-surface-elevated);
+
+    .markdown-alert-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin: 0 0 0.25rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    &.markdown-alert-note {
+      border-color: #3b82f6;
+      background-color: rgba(59, 130, 246, 0.08);
+      .markdown-alert-title { color: #60a5fa; }
+    }
+
+    &.markdown-alert-tip {
+      border-color: #10b981;
+      background-color: rgba(16, 185, 129, 0.08);
+      .markdown-alert-title { color: #34d399; }
+    }
+
+    &.markdown-alert-important {
+      border-color: #8b5cf6;
+      background-color: rgba(139, 92, 246, 0.08);
+      .markdown-alert-title { color: #a78bfa; }
+    }
+
+    &.markdown-alert-warning {
+      border-color: #f59e0b;
+      background-color: rgba(245, 158, 11, 0.08);
+      .markdown-alert-title { color: #fbbf24; }
+    }
+
+    &.markdown-alert-caution {
+      border-color: #ef4444;
+      background-color: rgba(239, 68, 68, 0.08);
+      .markdown-alert-title { color: #f87171; }
+    }
+  }
+
+  /* WikiLinks */
+  .internal-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &.unresolved {
+      color: var(--color-text-secondary);
+      opacity: 0.75;
+      border-bottom: 1px dashed var(--color-text-secondary);
+      cursor: help;
+    }
+  }
+
+  /* Footnotes */
+  .footnotes {
+    margin-top: 1.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border-subtle);
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+
+    ol {
+      padding-left: 1.25rem;
+    }
+
+    .footnote-back-ref {
+      color: var(--color-primary);
+      text-decoration: none;
+      margin-left: 0.25rem;
+    }
+  }
+
+  .footnote-ref {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-size: 0.8em;
+    font-weight: 600;
+  }
+
+  /* Mathematics */
+  .math {
+    font-family: var(--font-family-mono);
+    background-color: rgba(128, 128, 128, 0.1);
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-xs);
+  }
+
+  div.math {
+    display: block;
+    padding: 0.5rem;
+    margin: 0.75rem 0;
+    overflow-x: auto;
+    text-align: center;
+    background-color: var(--color-bg-surface-elevated);
+    border: 1px solid var(--color-border-card);
+    border-radius: var(--radius-sm);
+  }
+}
