@@ -17,7 +17,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { formatTag, NoteResponse } from '@core/models/note.model';
+import { formatTag, NoteResponse, NoteSummaryResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
 import { NotificationService } from '@core/services/notification.service';
 import {
@@ -462,7 +462,7 @@ export class TodosPageComponent implements OnInit {
   private readonly notification = inject(NotificationService);
 
   protected readonly formatTag = formatTag;
-  protected readonly allTodos = signal<NoteResponse[]>([]);
+  protected readonly allTodos = signal<NoteSummaryResponse[]>([]);
   protected readonly isLoading = signal<boolean>(false);
   protected readonly isCreating = signal<boolean>(false);
   protected readonly newTaskTitle = signal<string>('');
@@ -482,9 +482,9 @@ export class TodosPageComponent implements OnInit {
 
   public loadTodos(): void {
     this.isLoading.set(true);
-    this.noteService.list({ isTodo: true, isTrashed: false }).subscribe({
-      next: (res) => {
-        this.allTodos.set(res.items);
+    this.noteService.getTodoSummary().subscribe({
+      next: (summary) => {
+        this.allTodos.set([...summary.pendingTodos, ...summary.recentCompletedTodos]);
         this.isLoading.set(false);
       },
       error: () => {
@@ -519,7 +519,7 @@ export class TodosPageComponent implements OnInit {
       });
   }
 
-  public toggleTodo(todo: NoteResponse): void {
+  public toggleTodo(todo: NoteSummaryResponse): void {
     this.noteService.toggleTodo(todo.id).subscribe({
       next: (updated) => {
         this.allTodos.update((list) => list.map((t) => (t.id === updated.id ? updated : t)));
@@ -532,7 +532,7 @@ export class TodosPageComponent implements OnInit {
     });
   }
 
-  public trashTodo(todo: NoteResponse): void {
+  public trashTodo(todo: NoteSummaryResponse): void {
     this.noteService.trash(todo.id).subscribe({
       next: () => {
         this.allTodos.update((list) => list.filter((t) => t.id !== todo.id));
@@ -544,8 +544,11 @@ export class TodosPageComponent implements OnInit {
     });
   }
 
-  public openDialog(todo: NoteResponse): void {
-    this.selectedTodo.set(todo);
+  public openDialog(todo: NoteSummaryResponse): void {
+    this.noteService.getById(todo.id).subscribe({
+      next: (note) => this.selectedTodo.set(note),
+      error: () => this.notification.showError('Failed to load task details.'),
+    });
   }
 
   public saveDialog(payload: NoteDialogSavePayload): void {

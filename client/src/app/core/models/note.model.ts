@@ -121,10 +121,10 @@ export interface NoteFilterParams {
 }
 
 export interface TodoSummaryResponse {
-  totalTodos: number;
-  completedTodos: number;
-  pendingTodos: number;
-  recentTodos: NoteSummaryResponse[];
+  pendingCount: number;
+  completedCount: number;
+  pendingTodos: NoteSummaryResponse[];
+  recentCompletedTodos: NoteSummaryResponse[];
 }
 
 export interface CreateNoteSourceRequest {
