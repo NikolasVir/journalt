@@ -1,5 +1,12 @@
 @use 'mixins' as *;
 
+:host {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
 .header-toolbar {
   height: var(--header-height);
   background-color: var(--color-bg-surface);
@@ -7,9 +14,6 @@
   padding: 0 var(--spacing-sm);
   display: flex;
   align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 100;
 
   &__left {
     display: flex;
@@ -76,7 +80,9 @@
   padding: 0 var(--spacing-xs) 0 var(--spacing-sm);
   width: 100%;
   max-width: var(--search-max-width);
-  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 
   &:focus-within {
     background-color: var(--color-bg-input-focus);
