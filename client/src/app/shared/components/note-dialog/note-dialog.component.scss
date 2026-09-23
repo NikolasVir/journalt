@@ -128,23 +128,25 @@
     display: flex;
     flex-direction: column;
 
-    :deep(.mat-mdc-form-field-subscript-wrapper) {
-      display: none;
-    }
+    ::ng-deep {
+      .mat-mdc-form-field-subscript-wrapper {
+        display: none;
+      }
 
-    :deep(.mat-mdc-text-field-wrapper) {
-      flex: 1;
-      height: 100%;
-    }
+      .mat-mdc-text-field-wrapper {
+        flex: 1;
+        height: 100%;
+      }
 
-    :deep(.mat-mdc-form-field-flex) {
-      height: 100%;
-    }
+      .mat-mdc-form-field-flex {
+        height: 100%;
+      }
 
-    :deep(.mat-mdc-form-field-infix) {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
+      .mat-mdc-form-field-infix {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
     }
   }
 
