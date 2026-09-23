@@ -7,6 +7,7 @@
 }
 
 .note-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -25,6 +26,8 @@
 
     .note-card__actions {
       opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
     }
   }
 
@@ -91,7 +94,7 @@
 
   &__content {
     flex-grow: 1;
-    padding: var(--spacing-xs) var(--spacing-md) var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-md) var(--spacing-md);
     min-width: 0;
     overflow: hidden;
   }
@@ -153,6 +156,7 @@
 
   &__tags {
     margin-top: var(--spacing-xs);
+    padding-right: 72px;
   }
 
   &__tag {
@@ -174,8 +178,58 @@
   }
 
   &__actions {
-    padding: 0 var(--spacing-xs) var(--spacing-2xs);
+    position: absolute;
+    bottom: var(--spacing-xs);
+    right: var(--spacing-xs);
+    z-index: 2;
+    padding: 0;
+    margin: 0;
+    min-height: 0;
+    height: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2xs);
+    background: none;
+    border: none;
+    box-shadow: none;
     opacity: 0;
-    transition: opacity var(--transition-fast);
+    pointer-events: none;
+    transform: translateY(4px);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+
+    ::ng-deep {
+      .mat-mdc-icon-button {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-secondary);
+        border-radius: var(--radius-full);
+        transition: color var(--transition-fast), background-color var(--transition-fast);
+
+        &:hover {
+          color: var(--color-text-primary);
+          background-color: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+        }
+
+        &[color='primary'] {
+          color: var(--color-primary);
+        }
+
+        .mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+          line-height: 20px;
+        }
+
+        .mat-mdc-button-touch-target {
+          display: none;
+        }
+      }
+    }
   }
 }
