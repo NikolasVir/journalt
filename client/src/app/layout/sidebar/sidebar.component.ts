@@ -1,11 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { LayoutService } from '@layout/layout.service';
 
 interface NavItem {
@@ -22,9 +20,7 @@ interface NavItem {
     RouterLink,
     RouterLinkActive,
     MatListModule,
-    MatButtonModule,
     MatIconModule,
-    MatMenuModule,
     MatDividerModule,
     MatTooltipModule
   ],
@@ -34,10 +30,9 @@ interface NavItem {
 })
 export class SidebarComponent {
   protected readonly layoutService = inject(LayoutService);
-  private readonly router = inject(Router);
 
   protected readonly mainNavItems: NavItem[] = [
-    { label: 'Notes', route: '/dashboard', icon: 'lightbulb', exact: true },
+    { label: 'Home', route: '/dashboard', icon: 'lightbulb', exact: true },
     { label: 'Inbox', route: '/notes/inbox', icon: 'inbox' },
     { label: 'Quick Notes', route: '/notes/quick', icon: 'edit_note' },
     { label: 'Journal', route: '/notes/journal', icon: 'menu_book' },
@@ -54,8 +49,4 @@ export class SidebarComponent {
     { label: 'Trash', route: '/trash', icon: 'delete' },
     { label: 'Settings', route: '/settings', icon: 'settings' }
   ];
-
-  public createNote(level: 'Inbox' | 'Quick' | 'Journal'): void {
-    void this.router.navigate(['/notes', 'new'], { queryParams: { level } });
-  }
 }

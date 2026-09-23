@@ -62,6 +62,7 @@ export class DashboardPageComponent implements OnInit {
         level: payload.level,
         title: payload.title,
         bodyMarkdown: payload.bodyMarkdown,
+        isTodo: payload.isTodo,
         typeId: payload.typeId,
         typedMetadataJson: payload.typedMetadataJson,
         tags: payload.tags

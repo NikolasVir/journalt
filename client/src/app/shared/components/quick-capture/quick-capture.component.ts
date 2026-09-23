@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -26,6 +27,7 @@ export interface QuickCapturePayload {
   title: string;
   bodyMarkdown: string;
   level: NoteLevel;
+  isTodo: boolean;
   typeId?: string;
   typedMetadataJson?: string;
   tags?: (TagDto | string)[];
@@ -59,6 +61,7 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     FormsModule,
     RouterLink,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -81,6 +84,7 @@ export class QuickCaptureComponent implements OnInit {
   protected readonly selectedLevel = signal<NoteLevel>('Quick');
   protected readonly title = signal<string>('');
   protected readonly bodyMarkdown = signal<string>('');
+  protected readonly isTodo = signal<boolean>(false);
   protected readonly tagsInput = signal<string>('');
   protected readonly typedTags = signal<TagDto[]>([]);
   protected readonly typeDefinitions = signal<TypeDefinitionResponse[]>([]);
@@ -161,6 +165,7 @@ export class QuickCaptureComponent implements OnInit {
       title: title || body.slice(0, 30) + '...',
       bodyMarkdown: body,
       level: this.selectedLevel(),
+      isTodo: this.isTodo(),
       typeId,
       typedMetadataJson,
       tags: tags.length > 0 ? tags : undefined,
@@ -195,6 +200,7 @@ export class QuickCaptureComponent implements OnInit {
   private resetFields(): void {
     this.title.set('');
     this.bodyMarkdown.set('');
+    this.isTodo.set(false);
     this.tagsInput.set('');
     this.typedTags.set([]);
     this.selectedLevel.set(this.defaultLevel());

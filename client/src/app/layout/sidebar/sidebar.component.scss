@@ -17,37 +17,8 @@
   &--collapsed {
     width: var(--sidebar-width-collapsed);
 
-    .sidebar__action {
-      padding: var(--spacing-xs);
-    }
-
-    .sidebar__create-btn {
-      min-width: 48px;
-      width: 48px;
-      height: 48px;
-      padding: 0;
-      border-radius: var(--radius-pill);
-      margin: 0 auto;
-    }
-
     mat-list-item {
       justify-content: center;
-    }
-  }
-
-  &__action {
-    padding: var(--spacing-xs) var(--spacing-md) var(--spacing-sm);
-    display: flex;
-  }
-
-  &__create-btn {
-    border-radius: var(--radius-pill);
-    box-shadow: var(--shadow-card);
-    width: 100%;
-    height: 48px;
-
-    mat-icon {
-      margin-right: var(--spacing-xs);
     }
   }
 

@@ -57,6 +57,7 @@ describe('QuickCaptureComponent', () => {
       title: 'My Note Title',
       bodyMarkdown: 'Some markdown body',
       level: 'Quick',
+      isTodo: false,
       tags: undefined
     });
   });

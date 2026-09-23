@@ -95,6 +95,15 @@
       }
 
       <div class="capture-card__footer">
+        <mat-checkbox
+          class="capture-card__todo"
+          [checked]="isTodo()"
+          (change)="isTodo.set($event.checked)"
+          color="primary"
+        >
+          Mark as Todo
+        </mat-checkbox>
+
         <mat-button-toggle-group
           [value]="selectedLevel()"
           (change)="selectLevel($event.value)"

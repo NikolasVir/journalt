@@ -86,6 +86,10 @@
     }
   }
 
+  &__todo {
+    margin-right: auto;
+  }
+
   &__footer {
     @include flex-between;
     padding-top: var(--spacing-xs);
