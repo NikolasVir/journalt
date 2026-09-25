@@ -8,6 +8,7 @@ public interface INoteService
     Task<NoteResult> CreateAsync(CreateNoteRequest request, CancellationToken ct = default);
     Task<NoteResponse?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<PagedResult<NoteSummaryResponse>> ListAsync(NoteFilterParams filter, CancellationToken ct = default);
+    Task<IReadOnlyList<NoteWikiIndexItem>> GetWikiIndexAsync(CancellationToken ct = default);
     Task<NoteResult> UpdateAsync(Guid id, UpdateNoteRequest request, CancellationToken ct = default);
     Task<bool> TrashAsync(Guid id, CancellationToken ct = default);
     Task<bool> RestoreAsync(Guid id, CancellationToken ct = default);
@@ -24,6 +25,7 @@ public interface INoteService
     // Relations (Phase 3)
     Task<NoteResult> AddRelationAsync(Guid noteId, CreateNoteRelationRequest request, CancellationToken ct = default);
     Task<IReadOnlyList<NoteRelationResponse>> GetRelationsAsync(Guid noteId, CancellationToken ct = default);
+    Task<IReadOnlyList<NoteBacklinkResponse>> GetBacklinksAsync(Guid noteId, CancellationToken ct = default);
     Task<bool> DeleteRelationAsync(Guid noteId, Guid relationId, CancellationToken ct = default);
 
     // Todo Hub (Phase 4)

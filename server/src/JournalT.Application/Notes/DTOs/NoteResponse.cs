@@ -29,6 +29,8 @@ public sealed record NoteResponse(
     IReadOnlyList<string> WikiLinks,
     IReadOnlyList<NoteSourceResponse>? Sources = null,
     IReadOnlyList<NoteRelationResponse>? OutboundRelations = null,
+    /// <summary>Relations from other non-trashed notes that target this note.</summary>
+    IReadOnlyList<NoteBacklinkResponse>? Backlinks = null,
     /// <summary>Wiki-links that could not be resolved (not_found or ambiguous). Does not prevent saving.</summary>
     IReadOnlyList<WikiLinkWarning>? UnresolvedWikiLinks = null
 );

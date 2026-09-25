@@ -130,6 +130,8 @@ public sealed class NoteService(
             .Include(n => n.Sources)
             .Include(n => n.OutboundRelations.Where(r => !r.TargetNote.IsTrashed))
                 .ThenInclude(r => r.TargetNote)
+            .Include(n => n.InboundRelations.Where(r => !r.SourceNote.IsTrashed))
+                .ThenInclude(r => r.SourceNote)
             .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId, ct);
 
         if (note is null) return null;
@@ -203,6 +205,36 @@ public sealed class NoteService(
             .ToListAsync(ct);
 
         return new PagedResult<NoteSummaryResponse>(items, totalCount, page, pageSize);
+    }
+
+
+    /// <summary>
+    /// Returns a lightweight projection of every wiki-eligible note so the Explore tree can render
+    /// counts without loading note bodies. Journal notes are always members; a Quick note is a
+    /// member only once filed into a library or referenced by a relation from another note, so
+    /// unfiled scratch notes never dilute the tree. Inbox is excluded entirely.
+    /// </summary>
+    public async Task<IReadOnlyList<NoteWikiIndexItem>> GetWikiIndexAsync(CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId;
+
+        return await _db.Notes
+            .AsNoTracking()
+            .Where(n => n.UserId == userId
+                     && !n.IsTrashed
+                     && (n.Level == NoteLevel.Journal
+                         || n.LibraryId != null
+                         || n.InboundRelations.Any(r => !r.SourceNote.IsTrashed)))
+            .OrderBy(n => n.Title)
+            .Select(n => new NoteWikiIndexItem(
+                n.Id,
+                n.Level,
+                n.Title,
+                n.LibraryId,
+                n.TypeId,
+                n.UpdatedAtUtc,
+                n.InboundRelations.Any(r => !r.SourceNote.IsTrashed)))
+            .ToListAsync(ct);
     }
 
     public async Task<NoteResult> UpdateAsync(Guid id, UpdateNoteRequest request, CancellationToken ct = default)
@@ -603,6 +635,25 @@ public sealed class NoteService(
         return relations;
     }
 
+    public async Task<IReadOnlyList<NoteBacklinkResponse>> GetBacklinksAsync(Guid noteId, CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId;
+        var backlinks = await _db.NoteRelations
+            .AsNoTracking()
+            .Where(r => r.TargetNoteId == noteId && r.SourceNote.UserId == userId && !r.SourceNote.IsTrashed)
+            .OrderBy(r => r.CreatedAtUtc)
+            .Select(r => new NoteBacklinkResponse(
+                r.Id,
+                r.SourceNoteId,
+                r.SourceNote.Title,
+                r.Role,
+                r.Context
+            ))
+            .ToListAsync(ct);
+
+        return backlinks;
+    }
+
     public async Task<bool> DeleteRelationAsync(Guid noteId, Guid relationId, CancellationToken ct = default)
     {
         var userId = _currentUser.UserId;
@@ -852,6 +903,8 @@ public sealed class NoteService(
                 s.Id, s.NoteId, s.Title, s.Description, s.Url, s.CreatedAtUtc, s.UpdatedAtUtc)).ToList(),
             OutboundRelations: note.OutboundRelations.Select(r => new NoteRelationResponse(
                 r.Id, r.SourceNoteId, r.TargetNoteId, r.TargetNote?.Title ?? string.Empty, r.Role, r.Context, r.CreatedAtUtc, r.UpdatedAtUtc)).ToList(),
+            Backlinks: note.InboundRelations.Select(r => new NoteBacklinkResponse(
+                r.Id, r.SourceNoteId, r.SourceNote?.Title ?? string.Empty, r.Role, r.Context)).ToList(),
             UnresolvedWikiLinks: warnings ?? []
         );
 }

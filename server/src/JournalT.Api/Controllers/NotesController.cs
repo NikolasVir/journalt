@@ -35,6 +35,14 @@ public class NotesController(INoteService noteService) : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Lightweight index of wiki-eligible notes, used to build the Explore library tree.</summary>
+    [HttpGet("wiki-index")]
+    public async Task<IActionResult> GetWikiIndex(CancellationToken ct)
+    {
+        var index = await _noteService.GetWikiIndexAsync(ct);
+        return Ok(index);
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateNoteRequest request, CancellationToken ct)
     {
@@ -118,6 +126,13 @@ public class NotesController(INoteService noteService) : ControllerBase
     {
         var relations = await _noteService.GetRelationsAsync(id, ct);
         return Ok(relations);
+    }
+
+    [HttpGet("{id:guid}/backlinks")]
+    public async Task<IActionResult> GetBacklinks(Guid id, CancellationToken ct)
+    {
+        var backlinks = await _noteService.GetBacklinksAsync(id, ct);
+        return Ok(backlinks);
     }
 
     [HttpDelete("{id:guid}/relations/{relationId:guid}")]
