@@ -37,17 +37,17 @@
     padding-top: 0;
 
     .mat-mdc-list-item {
-      width: calc(100% - 24px);
-      height: 48px;
-      min-height: 48px;
-      margin: 0 12px;
+      width: calc(100% - var(--spacing-lg));
+      height: var(--spacing-2xl);
+      min-height: var(--spacing-2xl);
+      margin: 0 var(--spacing-md-sm);
       border-radius: var(--radius-pill);
       padding: 0;
       transition: width var(--transition-fast), background-color var(--transition-fast);
       box-sizing: border-box;
 
       .mat-mdc-list-item-icon {
-        margin: 0 16px 0 12px;
+        margin: 0 var(--spacing-md) 0 var(--spacing-md-sm);
         position: relative;
         z-index: 1;
         flex-shrink: 0;
@@ -67,6 +67,6 @@
   }
 
   &__divider {
-    margin: var(--spacing-xs) 12px;
+    margin: var(--spacing-xs) var(--spacing-md-sm);
   }
 }

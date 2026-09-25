@@ -70,14 +70,14 @@
     &:hover {
       color: var(--color-text-primary);
       border-color: var(--color-border-subtle);
-      background-color: var(--color-bg-hover, rgba(255, 255, 255, 0.08));
+      background-color: var(--color-bg-surface-hover);
     }
 
     &-icon {
       font-size: 16px;
       width: 16px;
       height: 16px;
-      color: var(--color-primary-main);
+      color: var(--color-primary);
       flex-shrink: 0;
     }
 
@@ -326,7 +326,7 @@
   transition: background-color var(--transition-fast);
 
   &:hover {
-    background-color: var(--color-bg-hover, rgba(255, 255, 255, 0.04));
+    background-color: var(--color-bg-surface-hover);
   }
 
   &__title {
@@ -342,7 +342,7 @@
     font-size: 16px;
     width: 16px;
     height: 16px;
-    color: var(--color-primary-main);
+    color: var(--color-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -352,7 +352,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--color-primary-main);
+    background-color: var(--color-primary);
     color: var(--color-primary-contrast, #fff);
     font-size: 10px;
     font-weight: var(--font-weight-bold);
@@ -384,7 +384,7 @@
     }
 
     &:hover {
-      color: var(--color-primary-main);
+      color: var(--color-primary);
     }
   }
 
@@ -492,7 +492,7 @@
     align-items: center;
     gap: 4px;
     font-size: var(--font-size-xs);
-    color: var(--color-primary-main);
+    color: var(--color-primary);
     text-decoration: none;
 
     &:hover {
@@ -588,7 +588,7 @@
 
 .sources-add-btn {
   font-size: var(--font-size-xs);
-  color: var(--color-primary-main);
+  color: var(--color-primary);
   padding: 0 var(--spacing-xs);
   height: 28px;
   line-height: 28px;
