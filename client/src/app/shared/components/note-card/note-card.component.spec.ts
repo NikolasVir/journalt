@@ -64,4 +64,22 @@ describe('NoteCardComponent', () => {
 
     expect(toggledNote).toEqual(mockNote);
   });
+
+  it('should emit tagClick when tag chip is clicked and stop propagation to cardClick', () => {
+    let clickedNote: NoteResponse | null = null;
+    let clickedTag: string | null = null;
+
+    component.cardClick.subscribe((n) => {
+      clickedNote = n;
+    });
+    component.tagClick.subscribe((t) => {
+      clickedTag = t;
+    });
+
+    const tagChip = fixture.nativeElement.querySelector('.note-card__tag') as HTMLElement;
+    tagChip.click();
+
+    expect(clickedTag).toBe('testing');
+    expect(clickedNote).toBeNull();
+  });
 });

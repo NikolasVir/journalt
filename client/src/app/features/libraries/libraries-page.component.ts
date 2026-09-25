@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
 import { LibraryResponse, LibraryTreeResponse } from '@core/models/library.model';
 import { LibraryService } from '@core/services/library.service';
 import { NotificationService } from '@core/services/notification.service';
@@ -19,6 +20,7 @@ import { NotificationService } from '@core/services/notification.service';
     DatePipe,
     NgTemplateOutlet,
     FormsModule,
+    RouterLink,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -188,6 +190,15 @@ import { NotificationService } from '@core/services/notification.service';
           </div>
 
           <div class="tree-node__actions">
+            <a
+              mat-icon-button
+              [routerLink]="['/notes']"
+              [queryParams]="{ libraryId: node.id }"
+              matTooltip="View notes in library"
+              aria-label="View notes in library"
+            >
+              <mat-icon>open_in_new</mat-icon>
+            </a>
             <button
               mat-icon-button
               (click)="openSubfolderCreate(node)"

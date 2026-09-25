@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
+import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
 
 @Component({
   selector: 'app-note-card',
@@ -18,11 +18,17 @@ export class NoteCardComponent {
   public readonly note = input.required<NoteResponse>();
 
   public readonly cardClick = output<NoteResponse>();
+  public readonly tagClick = output<string>();
   public readonly toggleTodo = output<NoteResponse>();
   public readonly trashNote = output<NoteResponse>();
   public readonly promoteNote = output<{ note: NoteResponse; targetLevel: NoteLevel }>();
 
   protected readonly formatTag = formatTag;
+
+  public onTagClick(event: Event, tag: TagDto): void {
+    event.stopPropagation();
+    this.tagClick.emit(formatTag(tag));
+  }
 
   protected readonly nextPromoteLevel = computed<NoteLevel | null>(() => {
     const level = this.note().level;

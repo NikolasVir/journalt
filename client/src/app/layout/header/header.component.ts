@@ -24,11 +24,23 @@ export class HeaderComponent {
 
   public onSearchInput(event: Event): void {
     const target = event.target as HTMLInputElement;
-    this.layoutService.setSearchQuery(target.value);
+    const query = target.value;
+    this.layoutService.setSearchQuery(query);
+    this.updateQueryParam(query);
   }
 
   public clearSearch(): void {
     this.layoutService.setSearchQuery('');
+    this.updateQueryParam('');
+  }
+
+  private updateQueryParam(query: string): void {
+    const q = query.trim() || null;
+    void this.router.navigate([], {
+      queryParams: { q },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   public onLogout(): void {

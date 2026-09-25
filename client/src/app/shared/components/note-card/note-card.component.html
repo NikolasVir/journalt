@@ -29,7 +29,11 @@
     @if ((note().tags?.length ?? 0) > 0) {
       <mat-chip-set class="note-card__tags">
         @for (tag of note().tags ?? []; track formatTag(tag)) {
-          <mat-chip class="note-card__tag" [class.note-card__tag--typed]="tag.tagType === 'Typed'">
+          <mat-chip
+            class="note-card__tag"
+            [class.note-card__tag--typed]="tag.tagType === 'Typed'"
+            (click)="onTagClick($event, tag)"
+          >
             #{{ formatTag(tag) }}
           </mat-chip>
         }

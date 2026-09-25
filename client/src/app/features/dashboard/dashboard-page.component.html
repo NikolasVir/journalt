@@ -5,6 +5,43 @@
     (createNote)="handleCreateNote($event)"
   />
 
+  <!-- Active Filter Bar -->
+  @if (activeTag() || activeLibraryId() || layoutService.searchQuery()) {
+    <div class="active-filters-bar">
+      <span class="active-filters-bar__label">Active filters:</span>
+      @if (layoutService.searchQuery()) {
+        <span class="filter-chip">
+          <mat-icon class="filter-chip__icon">search</mat-icon>
+          "{{ layoutService.searchQuery() }}"
+          <button type="button" class="filter-chip__clear" (click)="clearSearchFilter()" aria-label="Clear search filter">
+            <mat-icon>close</mat-icon>
+          </button>
+        </span>
+      }
+      @if (activeTag(); as tag) {
+        <span class="filter-chip">
+          <mat-icon class="filter-chip__icon">label</mat-icon>
+          #{{ tag }}
+          <button type="button" class="filter-chip__clear" (click)="clearTagFilter()" aria-label="Clear tag filter">
+            <mat-icon>close</mat-icon>
+          </button>
+        </span>
+      }
+      @if (activeLibraryId(); as libId) {
+        <span class="filter-chip">
+          <mat-icon class="filter-chip__icon">folder</mat-icon>
+          Library Filter
+          <button type="button" class="filter-chip__clear" (click)="clearLibraryFilter()" aria-label="Clear library filter">
+            <mat-icon>close</mat-icon>
+          </button>
+        </span>
+      }
+      <button mat-button class="active-filters-bar__reset-btn" (click)="clearAllFilters()">
+        Clear all
+      </button>
+    </div>
+  }
+
   <!-- Notes Grid -->
   <section class="dashboard__section" aria-label="Notes">
     @if (isLoading()) {
@@ -17,6 +54,7 @@
           <app-note-card
             [note]="note"
             (cardClick)="openNoteDialog($event)"
+            (tagClick)="onTagClick($event)"
             (toggleTodo)="handleToggleTodo($event)"
             (trashNote)="handleTrashNote($event)"
             (promoteNote)="handlePromoteNote($event)"

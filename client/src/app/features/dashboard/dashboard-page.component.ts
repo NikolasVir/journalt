@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
 import { LayoutService } from '@layout/layout.service';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { NotificationService } from '@core/services/notification.service';
 import { NoteCardComponent } from '@shared/components/note-card/note-card.component';
@@ -12,37 +13,95 @@ import { QuickCaptureComponent, QuickCapturePayload } from '@shared/components/q
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [MatIconModule, QuickCaptureComponent, NoteCardComponent, NoteDialogComponent],
+  imports: [MatIconModule, MatButtonModule, QuickCaptureComponent, NoteCardComponent, NoteDialogComponent],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardPageComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly noteService = inject(NoteService);
-  private readonly layoutService = inject(LayoutService);
+  protected readonly layoutService = inject(LayoutService);
   private readonly notification = inject(NotificationService);
 
   protected readonly notes = signal<NoteResponse[]>([]);
   protected readonly isLoading = signal<boolean>(false);
   protected readonly selectedNote = signal<NoteResponse | null>(null);
 
+  protected readonly activeTag = signal<string | null>(null);
+  protected readonly activeLibraryId = signal<string | null>(null);
+
   protected readonly filteredNotes = computed<NoteResponse[]>(() => {
     const query = this.layoutService.searchQuery().toLowerCase().trim();
+    const tag = this.activeTag()?.toLowerCase().trim();
+    const libId = this.activeLibraryId();
     const all = this.notes().filter((n) => !n.isTrashed);
 
-    if (!query) return all;
+    return all.filter((n) => {
+      if (libId && n.libraryId !== libId) return false;
+      if (tag && !n.tags?.some((t) => formatTag(t).toLowerCase() === tag)) return false;
+      if (!query) return true;
 
-    return all.filter(
-      (n) =>
+      return (
         (n.title || '').toLowerCase().includes(query) ||
         (n.bodyMarkdown || '').toLowerCase().includes(query) ||
         n.tags?.some((t) => formatTag(t).toLowerCase().includes(query))
-    );
+      );
+    });
   });
 
   public ngOnInit(): void {
+    this.route.queryParams.subscribe((params) => {
+      const q = params['q'];
+      if (q !== undefined && q !== this.layoutService.searchQuery()) {
+        this.layoutService.setSearchQuery(q);
+      }
+      this.activeTag.set(params['tag'] || null);
+      this.activeLibraryId.set(params['libraryId'] || null);
+    });
     this.loadNotes();
+  }
+
+  public onTagClick(tag: string): void {
+    const currentTag = this.activeTag();
+    const nextTag = currentTag?.toLowerCase() === tag.toLowerCase() ? null : tag;
+    void this.router.navigate([], {
+      queryParams: { tag: nextTag },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  public clearTagFilter(): void {
+    void this.router.navigate([], {
+      queryParams: { tag: null },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  public clearLibraryFilter(): void {
+    void this.router.navigate([], {
+      queryParams: { libraryId: null },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  public clearSearchFilter(): void {
+    this.layoutService.setSearchQuery('');
+    void this.router.navigate([], {
+      queryParams: { q: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
+  public clearAllFilters(): void {
+    this.layoutService.setSearchQuery('');
+    void this.router.navigate([], {
+      queryParams: { q: null, tag: null, libraryId: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
   }
 
   public loadNotes(): void {
@@ -63,6 +122,7 @@ export class DashboardPageComponent implements OnInit {
         title: payload.title,
         bodyMarkdown: payload.bodyMarkdown,
         isTodo: payload.isTodo,
+        libraryId: payload.libraryId,
         typeId: payload.typeId,
         typedMetadataJson: payload.typedMetadataJson,
         tags: payload.tags
@@ -124,6 +184,7 @@ export class DashboardPageComponent implements OnInit {
         title: payload.title,
         bodyMarkdown: payload.bodyMarkdown,
         isTodo: payload.isTodo,
+        libraryId: payload.libraryId,
         tags: payload.tags
       })
       .subscribe({
