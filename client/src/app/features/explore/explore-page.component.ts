@@ -245,10 +245,11 @@ export class ExplorePageComponent implements OnInit {
   // ---------------------------------------------------------------- reader
 
   public selectNote(id: string): void {
+    // Pushes a history entry (no replaceUrl) so the browser back button walks
+    // back through the note trail instead of leaving Explore entirely.
     void this.router.navigate([], {
       queryParams: { note: id },
       queryParamsHandling: 'merge',
-      replaceUrl: true,
     });
   }
 
