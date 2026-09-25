@@ -17,8 +17,18 @@
   &--collapsed {
     width: var(--sidebar-width-collapsed);
 
-    mat-list-item {
-      justify-content: center;
+    .sidebar__nav {
+      .mat-mdc-list-item {
+        width: 48px;
+
+        &::before {
+          display: none !important;
+        }
+
+        ::ng-deep .mdc-list-item__content {
+          display: none !important;
+        }
+      }
     }
   }
 
@@ -26,21 +36,37 @@
     flex: 1;
     padding-top: 0;
 
-    mat-list-item {
-      border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
-      margin-right: var(--spacing-sm);
-      transition: background-color var(--transition-fast);
+    .mat-mdc-list-item {
+      width: calc(100% - 24px);
+      height: 48px;
+      min-height: 48px;
+      margin: 0 12px;
+      border-radius: var(--radius-pill);
+      padding: 0;
+      transition: width var(--transition-fast), background-color var(--transition-fast);
+      box-sizing: border-box;
+
+      .mat-mdc-list-item-icon {
+        margin: 0 16px 0 12px;
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+      }
 
       &[activated='true'],
       &.mat-mdc-list-item-activated {
         background-color: var(--color-bg-nav-active) !important;
         --mat-list-item-leading-icon-color: var(--color-primary);
         --mat-list-item-label-text-color: var(--color-primary);
+
+        .mat-icon {
+          color: var(--color-primary) !important;
+        }
       }
     }
   }
 
   &__divider {
-    margin: var(--spacing-xs) 0;
+    margin: var(--spacing-xs) 12px;
   }
 }
