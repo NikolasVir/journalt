@@ -117,7 +117,7 @@ public sealed class NoteService(
         _db.Notes.Add(note);
         await _db.SaveChangesAsync(ct);
 
-        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings), 201);
+        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings, renderedHtml), 201);
     }
 
 
@@ -136,8 +136,11 @@ public sealed class NoteService(
 
         if (note is null) return null;
 
-        var (_, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, note.BodyMarkdown, ct);
-        return MapToResponse(note, wikiLinks, wikiWarnings);
+        // Re-resolve wiki-links on every read: the stored HTML freezes link
+        // targets at save time, but notes can be created, renamed, untrashed,
+        // or duplicated afterwards.
+        var (freshHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, note.BodyMarkdown, ct);
+        return MapToResponse(note, wikiLinks, wikiWarnings, freshHtml);
     }
 
 
@@ -330,7 +333,7 @@ public sealed class NoteService(
 
         await _db.SaveChangesAsync(ct);
 
-        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings));
+        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings, renderedHtml));
     }
 
 
@@ -457,8 +460,8 @@ public sealed class NoteService(
         note.Level = request.TargetLevel;
         await _db.SaveChangesAsync(ct);
 
-        var (_, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, note.BodyMarkdown, ct);
-        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings));
+        var (freshPromoteHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, note.BodyMarkdown, ct);
+        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings, freshPromoteHtml));
     }
 
 
@@ -691,8 +694,8 @@ public sealed class NoteService(
         }
 
         await _db.SaveChangesAsync(ct);
-        var (_, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(_currentUser.UserId, note.BodyMarkdown, ct);
-        return MapToResponse(note, wikiLinks, wikiWarnings);
+        var (freshTodoHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(_currentUser.UserId, note.BodyMarkdown, ct);
+        return MapToResponse(note, wikiLinks, wikiWarnings, freshTodoHtml);
     }
 
 
@@ -878,7 +881,8 @@ public sealed class NoteService(
     private static NoteResponse MapToResponse(
         Note note,
         IReadOnlyList<string> wikiLinks,
-        IReadOnlyList<WikiLinkWarning>? warnings = null) =>
+        IReadOnlyList<WikiLinkWarning>? warnings = null,
+        string? renderedHtml = null) =>
         new(
             note.Id,
             note.UserId,
@@ -886,7 +890,7 @@ public sealed class NoteService(
             note.Title,
             note.Summary,
             note.BodyMarkdown,
-            note.RenderedHtml,
+            renderedHtml ?? note.RenderedHtml,
             note.LibraryId,
             note.TypeId,
             note.TypeVersion,
