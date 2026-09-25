@@ -48,6 +48,7 @@
   --spacing-2xs: 0.125rem; /* 2px */
   --spacing-xs:  0.25rem;  /* 4px */
   --spacing-sm:  0.5rem;   /* 8px */
+  --spacing-md-sm: 0.75rem;/* 12px */
   --spacing-md:  1rem;     /* 16px */
   --spacing-lg:  1.5rem;   /* 24px */
   --spacing-xl:  2rem;     /* 32px */
@@ -64,6 +65,7 @@
   --font-family-sans: "Google Sans", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
+  --font-size-2xs:  0.625rem;  /* 10px */
   --font-size-xs:   0.75rem;   /* 12px */
   --font-size-sm:   0.875rem;  /* 14px */
   --font-size-base: 1rem;      /* 16px */
@@ -77,8 +79,23 @@
   --font-weight-bold: 700;
 
   --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
+
+  /* ── Compatibility Shims (Migrate callsites; do not treat as permanent) ── */
+  /* Compatibility shim: legacy primary color name; migrate to --color-primary */
+  --color-primary-main: var(--color-primary);
+  /* Compatibility shim: legacy surface hover state; migrate to --color-bg-surface-hover */
+  --color-bg-hover: var(--color-bg-surface-hover);
+  /* Compatibility shim: legacy semantic error name; migrate to --color-danger */
+  --color-error: var(--color-danger);
+  /* Compatibility shim: legacy semantic error background; migrate to --color-danger-bg */
+  --color-error-bg: var(--color-danger-bg);
+  /* Compatibility shim: legacy full pill radius alias; migrate to --radius-pill */
+  --radius-full: var(--radius-pill);
+  /* Compatibility shim: legacy micro spacing alias; migrate to --spacing-2xs */
+  --spacing-3xs: var(--spacing-2xs);
 
   /* ── Layout Dimensions ───────────────────────────────────────────────── */
   --header-height: 64px;
