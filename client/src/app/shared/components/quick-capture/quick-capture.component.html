@@ -52,6 +52,22 @@
         ></textarea>
       </mat-form-field>
 
+      @if (libraries().length > 0) {
+        <mat-form-field appearance="outline" class="capture-card__field">
+          <mat-label>Library</mat-label>
+          <mat-select
+            [value]="selectedLibraryId()"
+            (selectionChange)="selectedLibraryId.set($event.value)"
+            aria-label="Select Library"
+          >
+            <mat-option [value]="null">No Library (Unfiled)</mat-option>
+            @for (lib of libraries(); track lib.id) {
+              <mat-option [value]="lib.id">{{ lib.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
       @if (selectedLevel() === 'Journal') {
         @if (typeDefinitions().length > 0) {
           <mat-form-field appearance="outline" class="capture-card__field">

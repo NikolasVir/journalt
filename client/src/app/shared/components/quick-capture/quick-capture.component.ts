@@ -18,8 +18,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
+import { LibraryResponse } from '@core/models/library.model';
 import { NoteLevel, TagDto } from '@core/models/note.model';
 import { SectionDefinition, TypeDefinitionResponse } from '@core/models/type-definition.model';
+import { LibraryService } from '@core/services/library.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 
@@ -28,6 +30,7 @@ export interface QuickCapturePayload {
   bodyMarkdown: string;
   level: NoteLevel;
   isTodo: boolean;
+  libraryId?: string | null;
   typeId?: string;
   typedMetadataJson?: string;
   tags?: (TagDto | string)[];
@@ -76,6 +79,7 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
 })
 export class QuickCaptureComponent implements OnInit {
   private readonly typeService = inject(TypeDefinitionService);
+  private readonly libraryService = inject(LibraryService);
 
   public readonly defaultLevel = input<NoteLevel>('Quick');
   public readonly createNote = output<QuickCapturePayload>();
@@ -87,6 +91,8 @@ export class QuickCaptureComponent implements OnInit {
   protected readonly isTodo = signal<boolean>(false);
   protected readonly tagsInput = signal<string>('');
   protected readonly typedTags = signal<TagDto[]>([]);
+  protected readonly libraries = signal<LibraryResponse[]>([]);
+  protected readonly selectedLibraryId = signal<string | null>(null);
   protected readonly typeDefinitions = signal<TypeDefinitionResponse[]>([]);
   protected readonly selectedTypeId = signal<string | null>(null);
 
@@ -108,6 +114,11 @@ export class QuickCaptureComponent implements OnInit {
           this.ensureDefaultTypeSelected();
         }
       },
+    });
+
+    this.libraryService.list().subscribe({
+      next: (libs) => this.libraries.set(libs),
+      error: () => this.libraries.set([]),
     });
   }
 
@@ -166,6 +177,7 @@ export class QuickCaptureComponent implements OnInit {
       bodyMarkdown: body,
       level: this.selectedLevel(),
       isTodo: this.isTodo(),
+      libraryId: this.selectedLibraryId() ?? undefined,
       typeId,
       typedMetadataJson,
       tags: tags.length > 0 ? tags : undefined,
@@ -203,6 +215,7 @@ export class QuickCaptureComponent implements OnInit {
     this.isTodo.set(false);
     this.tagsInput.set('');
     this.typedTags.set([]);
+    this.selectedLibraryId.set(null);
     this.selectedLevel.set(this.defaultLevel());
     if (this.defaultLevel() === 'Journal') {
       this.ensureDefaultTypeSelected();

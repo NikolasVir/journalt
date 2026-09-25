@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { LibraryService } from '@core/services/library.service';
 import { QuickCaptureComponent } from './quick-capture.component';
 import { TypeDefinitionService } from '../../../core/services/type-definition.service';
 
@@ -11,6 +12,12 @@ describe('QuickCaptureComponent', () => {
     await TestBed.configureTestingModule({
       imports: [QuickCaptureComponent],
       providers: [
+        {
+          provide: LibraryService,
+          useValue: {
+            list: () => of([]),
+          },
+        },
         {
           provide: TypeDefinitionService,
           useValue: {
@@ -59,6 +66,30 @@ describe('QuickCaptureComponent', () => {
       level: 'Quick',
       isTodo: false,
       tags: undefined
+    });
+  });
+
+  it('should emit createNote with libraryId when a library is selected', () => {
+    let emittedPayload: unknown = null;
+    component.createNote.subscribe((payload) => {
+      emittedPayload = payload;
+    });
+
+    component.expand('Quick');
+    fixture.detectChanges();
+
+    (component as unknown as { title: { set: (v: string) => void } }).title.set('Work Note');
+    (component as unknown as { bodyMarkdown: { set: (v: string) => void } }).bodyMarkdown.set('Work content');
+    (component as unknown as { selectedLibraryId: { set: (v: string) => void } }).selectedLibraryId.set('lib-work-123');
+    component.submit();
+
+    expect(emittedPayload).toEqual({
+      title: 'Work Note',
+      bodyMarkdown: 'Work content',
+      level: 'Quick',
+      isTodo: false,
+      libraryId: 'lib-work-123',
+      tags: undefined,
     });
   });
 });
