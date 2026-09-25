@@ -97,6 +97,8 @@
     padding: var(--spacing-xs) var(--spacing-md) var(--spacing-md);
     min-width: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   &__body {
@@ -155,7 +157,8 @@
   }
 
   &__tags {
-    margin-top: var(--spacing-xs);
+    margin-top: auto;
+    padding-top: var(--spacing-xs);
     padding-right: 72px;
   }
 
