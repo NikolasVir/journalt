@@ -99,17 +99,31 @@ export class ExploreLibraryTreeComponent {
 
   public toggleNode(node: ExploreNode, event: Event): void {
     event.stopPropagation();
+    this.toggleExpand(node);
+  }
+
+  /**
+   * Row click selects and toggles, Obsidian-style: a collapsed library opens,
+   * an open one closes. The twist arrow stays as the explicit toggle that
+   * does not change selection. While filtering, branches are force-expanded
+   * so toggling is a no-op and the click only selects.
+   */
+  public activate(node: ExploreNode): void {
+    if (node.kind === 'note') {
+      this.noteSelected.emit(node.id);
+      return;
+    }
+    if (node.expandable && !this.forceExpand()) this.toggleExpand(node);
+    this.librarySelected.emit(node.id);
+  }
+
+  private toggleExpand(node: ExploreNode): void {
     this.expandedIds.update((current) => {
       const next = new Set(current);
       if (next.has(node.id)) next.delete(node.id);
       else next.add(node.id);
       return next;
     });
-  }
-
-  public activate(node: ExploreNode): void {
-    if (node.kind === 'note') this.noteSelected.emit(node.id);
-    else this.librarySelected.emit(node.id);
   }
 
   public nodeIcon(node: ExploreNode): string {
