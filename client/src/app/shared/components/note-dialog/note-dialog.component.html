@@ -21,6 +21,30 @@
         </mat-form-field>
 
         <div class="dialog-panel__header-controls">
+          <button
+            type="button"
+            class="dialog-panel__library-btn"
+            [matMenuTriggerFor]="libMenu"
+            aria-label="Select library"
+            matTooltip="Assign to Library"
+          >
+            <mat-icon class="dialog-panel__library-btn-icon">{{ editLibraryId() ? 'folder' : 'folder_open' }}</mat-icon>
+            <span class="dialog-panel__library-btn-text">{{ selectedLibraryName() }}</span>
+            <mat-icon class="dialog-panel__library-btn-caret">arrow_drop_down</mat-icon>
+          </button>
+          <mat-menu #libMenu="matMenu">
+            <button mat-menu-item (click)="editLibraryId.set(null)">
+              <mat-icon>folder_off</mat-icon>
+              <span>Unfiled (No Library)</span>
+            </button>
+            @for (lib of libraries(); track lib.id) {
+              <button mat-menu-item (click)="editLibraryId.set(lib.id)">
+                <mat-icon>folder</mat-icon>
+                <span>{{ lib.name }}</span>
+              </button>
+            }
+          </mat-menu>
+
           <div class="view-toggle" role="group" aria-label="Toggle view mode">
             <button
               type="button"
@@ -80,38 +104,189 @@
           </mat-form-field>
         }
 
-        @if (n.level === 'Journal' || n.level === 'Quick') {
-          <div class="dialog-panel__tags-section">
-            @if (n.level === 'Journal') {
-              @if (legacyTags().length > 0) {
-                <div class="dialog-panel__tag-conflict" role="alert">
-                  <span>Legacy free-form tags must be removed before saving.</span>
-                  <button mat-stroked-button type="button" (click)="removeLegacyTags()">
-                    Remove legacy tags
-                  </button>
-                </div>
-              }
-              <app-typed-tag-selector
-                [selectedTags]="editTypedTags()"
-                (selectedTagsChange)="editTypedTags.set($event)"
-              />
-            } @else if (n.level === 'Quick') {
-              <mat-form-field
-                appearance="outline"
-                class="dialog-panel__tags-field"
-                subscriptSizing="dynamic"
+        <!-- Bottom-anchored footer sections (Sources and Tags) -->
+        <div class="dialog-panel__footer-sections">
+          <!-- Sources Section -->
+          <div class="dialog-panel__sources-section">
+            <div class="sources-header" (click)="toggleSources()" role="button" tabindex="0">
+              <div class="sources-header__title">
+                <mat-icon class="sources-header__icon">link</mat-icon>
+                <span>Sources & References</span>
+                @if (sources().length > 0) {
+                  <span class="sources-header__badge">{{ sources().length }}</span>
+                }
+              </div>
+              <button
+                type="button"
+                class="sources-header__toggle-btn"
+                [attr.aria-label]="isSourcesExpanded() ? 'Collapse sources' : 'Expand sources'"
               >
-                <mat-label>Free-form tags</mat-label>
-                <input
-                  matInput
-                  placeholder="Comma-separated tags..."
-                  [value]="editTags()"
-                  (input)="onTagsInput($event)"
-                />
-              </mat-form-field>
+                <mat-icon class="sources-header__toggle-icon">{{ isSourcesExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+              </button>
+            </div>
+
+            @if (isSourcesExpanded()) {
+              <div class="sources-content">
+                @if (sources().length > 0) {
+                  <ul class="sources-list">
+                    @for (src of sources(); track src.id) {
+                      <li class="sources-item">
+                        <div class="sources-item__text">
+                          <span class="sources-item__citation">{{ src.title || src.citation }}</span>
+                          @if (src.url) {
+                            <a
+                              [href]="formatExternalUrl(src.url)"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="sources-item__link"
+                              (click)="$event.stopPropagation()"
+                            >
+                              <mat-icon class="sources-item__link-icon">open_in_new</mat-icon>
+                              <span>{{ src.url }}</span>
+                            </a>
+                          }
+                        </div>
+                        <button
+                          mat-icon-button
+                          type="button"
+                          class="sources-item__delete-btn"
+                          (click)="deleteSource(src.id, $event)"
+                          matTooltip="Remove source"
+                          aria-label="Remove source"
+                        >
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                } @else if (!isAddingSource()) {
+                  <p class="sources-empty">No sources or citations added yet.</p>
+                }
+
+                @if (isAddingSource()) {
+                  <div class="sources-form">
+                    @if (sourceError(); as err) {
+                      <div class="sources-form__error" role="alert">
+                        <mat-icon class="sources-form__error-icon">error_outline</mat-icon>
+                        <span>{{ err }}</span>
+                      </div>
+                    }
+
+                    <div class="sources-form__inputs">
+                      <mat-form-field appearance="outline" class="sources-form__citation-field" subscriptSizing="dynamic">
+                        <mat-label>Citation / Title</mat-label>
+                        <input
+                          matInput
+                          placeholder="e.g. Clean Architecture by R. Martin"
+                          [value]="newCitation()"
+                          (input)="newCitation.set($any($event.target).value)"
+                          (keydown.enter)="addSource()"
+                        />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="sources-form__url-field" subscriptSizing="dynamic">
+                        <mat-label>URL (optional)</mat-label>
+                        <input
+                          matInput
+                          placeholder="https://..."
+                          [value]="newUrl()"
+                          (input)="newUrl.set($any($event.target).value)"
+                          (keydown.enter)="addSource()"
+                        />
+                      </mat-form-field>
+                    </div>
+
+                    <div class="sources-form__actions">
+                      <button mat-button type="button" (click)="cancelAddSource()" [disabled]="isSubmittingSource()">Cancel</button>
+                      <button
+                        mat-flat-button
+                        color="primary"
+                        type="button"
+                        (click)="addSource()"
+                        [disabled]="!newCitation().trim() || isSubmittingSource()"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <button mat-button type="button" class="sources-add-btn" (click)="openAddSource()">
+                    <mat-icon>add</mat-icon>
+                    <span>Add Source</span>
+                  </button>
+                }
+              </div>
             }
           </div>
-        }
+
+          @if (n.level === 'Journal' || n.level === 'Quick') {
+            <div class="dialog-panel__tags-section">
+              <div class="tags-header" (click)="toggleTags()" role="button" tabindex="0">
+                <div class="tags-header__title">
+                  <mat-icon class="tags-header__icon">label</mat-icon>
+                  <span>{{ n.level === 'Journal' ? 'Journal Tags' : 'Tags' }}</span>
+                  @if (tagCount() > 0) {
+                    <span class="tags-header__badge">{{ tagCount() }}</span>
+                  }
+                </div>
+                <div class="tags-header__actions">
+                  @if (n.level === 'Journal') {
+                    <a
+                      mat-button
+                      routerLink="/tags"
+                      class="tags-header__manage-link"
+                      (click)="$event.stopPropagation(); onClose()"
+                      matTooltip="Manage tag definitions in registry"
+                    >
+                      <mat-icon>tune</mat-icon>
+                      <span>Manage</span>
+                    </a>
+                  }
+                  <button
+                    type="button"
+                    class="tags-header__toggle-btn"
+                    [attr.aria-label]="isTagsExpanded() ? 'Collapse tags' : 'Expand tags'"
+                  >
+                    <mat-icon class="tags-header__toggle-icon">{{ isTagsExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+                </div>
+              </div>
+
+              @if (isTagsExpanded()) {
+                <div class="tags-content">
+                  @if (n.level === 'Journal') {
+                    @if (legacyTags().length > 0) {
+                      <div class="dialog-panel__tag-conflict" role="alert">
+                        <span>Legacy free-form tags must be removed before saving.</span>
+                        <button mat-stroked-button type="button" (click)="removeLegacyTags()">
+                          Remove legacy tags
+                        </button>
+                      </div>
+                    }
+                    <app-typed-tag-selector
+                      [selectedTags]="editTypedTags()"
+                      (selectedTagsChange)="editTypedTags.set($event)"
+                    />
+                  } @else if (n.level === 'Quick') {
+                    <mat-form-field
+                      appearance="outline"
+                      class="dialog-panel__tags-field"
+                      subscriptSizing="dynamic"
+                    >
+                      <mat-label>Free-form tags</mat-label>
+                      <input
+                        matInput
+                        placeholder="Comma-separated tags..."
+                        [value]="editTags()"
+                        (input)="onTagsInput($event)"
+                      />
+                    </mat-form-field>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
       </div>
 
       <div class="dialog-panel__actions">

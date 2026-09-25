@@ -224,7 +224,7 @@ import {
         <app-note-dialog
           [note]="note"
           (save)="saveDialog($event)"
-          (cancel)="selectedTodo.set(null)"
+          (close)="selectedTodo.set(null)"
         />
       }
     </div>
@@ -557,6 +557,7 @@ export class TodosPageComponent implements OnInit {
         title: payload.title,
         bodyMarkdown: payload.bodyMarkdown,
         isTodo: payload.isTodo,
+        libraryId: payload.libraryId,
         tags: payload.tags,
       })
       .subscribe({

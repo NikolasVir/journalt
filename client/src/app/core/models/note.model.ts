@@ -19,9 +19,12 @@ export function formatTag(tag: TagDto): string {
 export interface NoteSourceResponse {
   id: string;
   noteId: string;
-  citation: string;
+  title: string;
+  citation?: string;
+  description?: string | null;
   url?: string | null;
   createdAtUtc: string;
+  updatedAtUtc?: string;
 }
 
 export interface NoteRelationResponse {
@@ -128,7 +131,9 @@ export interface TodoSummaryResponse {
 }
 
 export interface CreateNoteSourceRequest {
-  citation: string;
+  title: string;
+  citation?: string;
+  description?: string | null;
   url?: string | null;
 }
 
