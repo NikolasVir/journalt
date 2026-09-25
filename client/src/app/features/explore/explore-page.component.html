@@ -1,7 +1,9 @@
 <div
+  #container
   class="explore"
   [class.explore--pane-tree]="mobilePane() === 'tree'"
   [class.explore--pane-preview]="mobilePane() === 'preview'"
+  [style.--explore-tree-width.px]="treeWidth()"
 >
   <app-explore-library-tree
     [tree]="tree()"
@@ -14,6 +16,8 @@
     (createRequested)="createJournalNote()"
     (reloadRequested)="reload()"
   />
+
+  <app-explore-pane-resizer />
 
   <app-explore-note-viewer
     [note]="selectedNote()"

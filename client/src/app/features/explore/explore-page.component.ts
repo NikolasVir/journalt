@@ -15,7 +15,9 @@ import { NoteService } from '@core/services/note.service';
 import { NotificationService } from '@core/services/notification.service';
 import { ExploreLibraryTreeComponent } from './components/explore-library-tree/explore-library-tree.component';
 import { ExploreNoteViewerComponent } from './components/explore-note-viewer/explore-note-viewer.component';
+import { ExplorePaneResizerComponent } from './components/explore-pane-resizer/explore-pane-resizer.component';
 import { ExploreNode, UNFILED_NODE_ID } from './explore-page.types';
+import { LayoutService } from '@layout/layout.service';
 
 /**
  * Explore is the wiki surface: one navigation column where libraries hold their
@@ -26,7 +28,11 @@ import { ExploreNode, UNFILED_NODE_ID } from './explore-page.types';
 @Component({
   selector: 'app-explore-page',
   standalone: true,
-  imports: [ExploreLibraryTreeComponent, ExploreNoteViewerComponent],
+  imports: [
+    ExploreLibraryTreeComponent,
+    ExplorePaneResizerComponent,
+    ExploreNoteViewerComponent,
+  ],
   templateUrl: './explore-page.component.html',
   styleUrl: './explore-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +43,7 @@ export class ExplorePageComponent implements OnInit {
   private readonly noteService = inject(NoteService);
   private readonly libraryService = inject(LibraryService);
   private readonly notification = inject(NotificationService);
+  protected readonly layoutService = inject(LayoutService);
 
   protected readonly isLoading = signal<boolean>(true);
   protected readonly isLoadingNote = signal<boolean>(false);
@@ -58,6 +65,9 @@ export class ExplorePageComponent implements OnInit {
     item.level === 'Journal' || item.libraryId != null || item.isReferenced;
 
   protected readonly tree = signal<ExploreNode[]>([]);
+
+  /** Tree column width, driven by the drag handle and persisted by LayoutService. */
+  protected readonly treeWidth = this.layoutService.exploreTreeWidth;
 
   /** Library the New Journal Note button files into. */
   protected readonly createTargetLibraryId = computed<string | null>(() => {

@@ -7,28 +7,42 @@
 }
 
 .explore {
+  // --explore-tree-width is bound from the page; the middle track is the real
+  // 8px drag handle, so no overlap hacks are needed.
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: var(--explore-tree-width, 340px) 8px minmax(0, 1fr);
   width: 100%;
   min-height: calc(100vh - var(--header-height));
   background-color: var(--color-bg-app);
 }
 
 @media (max-width: 1200px) {
-  .explore { grid-template-columns: 300px minmax(0, 1fr); }
+  .explore {
+    grid-template-columns: minmax(
+        220px,
+        min(var(--explore-tree-width, 300px), 40%)
+      ) 8px minmax(0, 1fr);
+  }
 }
 
 // Below tablet width the two columns collapse into one, driven by mobilePane().
 @include respond-to('tablet') {
-  .explore { grid-template-columns: 260px minmax(0, 1fr); }
+  .explore {
+    grid-template-columns: minmax(200px, 30vw) 8px minmax(0, 1fr);
+  }
 }
 
 @include respond-to('mobile') {
   .explore { grid-template-columns: minmax(0, 1fr); }
 
   app-explore-library-tree,
-  app-explore-note-viewer { display: none; }
+  app-explore-note-viewer,
+  app-explore-pane-resizer {
+    display: none;
+  }
 
   .explore--pane-tree app-explore-library-tree,
-  .explore--pane-preview app-explore-note-viewer { display: flex; }
+  .explore--pane-preview app-explore-note-viewer {
+    display: flex;
+  }
 }
