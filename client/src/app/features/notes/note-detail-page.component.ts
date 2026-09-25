@@ -10,8 +10,10 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LibraryResponse } from '@core/models/library.model';
 import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
 import { SectionDefinition, TypeDefinitionResponse } from '@core/models/type-definition.model';
+import { LibraryService } from '@core/services/library.service';
 import { NoteService } from '@core/services/note.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
@@ -21,6 +23,7 @@ interface NoteForm {
   bodyMarkdown: FormControl<string>;
   level: FormControl<NoteLevel>;
   typeId: FormControl<string | null>;
+  libraryId: FormControl<string | null>;
   isTodo: FormControl<boolean>;
   tagsInput: FormControl<string>;
   typedTags: FormControl<TagDto[]>;
@@ -73,11 +76,13 @@ export class NoteDetailPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly noteService = inject(NoteService);
   private readonly typeService = inject(TypeDefinitionService);
+  private readonly libraryService = inject(LibraryService);
 
   protected readonly noteId = signal<string | null>(null);
   protected readonly isSaving = signal<boolean>(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly typeDefinitions = signal<TypeDefinitionResponse[]>([]);
+  protected readonly libraries = signal<LibraryResponse[]>([]);
   protected readonly legacyTags = signal<TagDto[]>([]);
   protected readonly promotionTarget = signal<NoteLevel | null>(null);
 
@@ -86,6 +91,7 @@ export class NoteDetailPageComponent implements OnInit {
     bodyMarkdown: new FormControl('', { nonNullable: true }),
     level: new FormControl<NoteLevel>('Quick', { nonNullable: true }),
     typeId: new FormControl<string | null>(null),
+    libraryId: new FormControl<string | null>(null),
     isTodo: new FormControl(false, { nonNullable: true }),
     tagsInput: new FormControl('', { nonNullable: true }),
     typedTags: new FormControl<TagDto[]>([], { nonNullable: true }),
@@ -95,6 +101,14 @@ export class NoteDetailPageComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     const requestedLevel = this.route.snapshot.queryParamMap.get('level') as NoteLevel | null;
     const promoteTo = this.route.snapshot.queryParamMap.get('promoteTo') as NoteLevel | null;
+    // Explore links here with the library already chosen, so the note is
+    // filed on create instead of landing unfiled.
+    const requestedLibraryId = this.route.snapshot.queryParamMap.get('libraryId');
+
+    this.libraryService.list().subscribe({
+      next: (libs) => this.libraries.set(libs),
+      error: () => this.libraries.set([])
+    });
 
     this.typeService.list(false).subscribe({
       next: (types) => {
@@ -148,8 +162,13 @@ export class NoteDetailPageComponent implements OnInit {
         this.promotionTarget.set(promoteTo);
         this.form.controls.level.setValue(promoteTo);
       }
-    } else if (requestedLevel) {
-      this.form.controls.level.setValue(requestedLevel);
+    } else {
+      if (requestedLevel) {
+        this.form.controls.level.setValue(requestedLevel);
+      }
+      if (requestedLibraryId) {
+        this.form.controls.libraryId.setValue(requestedLibraryId);
+      }
     }
   }
 
@@ -166,6 +185,7 @@ export class NoteDetailPageComponent implements OnInit {
           bodyMarkdown: note.bodyMarkdown,
           level: note.level,
           typeId: note.typeId ?? null,
+          libraryId: note.libraryId ?? null,
           isTodo: note.isTodo,
           tagsInput:
             note.level === 'Quick' && !isPromotingToJournal
@@ -247,6 +267,7 @@ export class NoteDetailPageComponent implements OnInit {
           title: val.title,
           bodyMarkdown: val.bodyMarkdown,
           typeId,
+          libraryId: val.libraryId,
           isTodo: val.isTodo,
           tags,
         })
@@ -270,6 +291,7 @@ export class NoteDetailPageComponent implements OnInit {
           title: val.title,
           bodyMarkdown: val.bodyMarkdown,
           typeId,
+          libraryId: val.libraryId,
           typedMetadataJson,
           isTodo: val.isTodo,
           tags,

@@ -62,6 +62,18 @@
         }
       }
 
+      @if (libraries().length > 0) {
+        <mat-form-field appearance="outline" class="note-form__field">
+          <mat-label>Library</mat-label>
+          <mat-select formControlName="libraryId" aria-label="Select library">
+            <mat-option [value]="null">Unfiled (No Library)</mat-option>
+            @for (lib of libraries(); track lib.id) {
+              <mat-option [value]="lib.id">{{ lib.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
       <mat-form-field appearance="outline" class="note-form__field">
         <mat-label>Content (Markdown)</mat-label>
         <textarea
