@@ -25,7 +25,7 @@
 
     &__reset-btn {
       font-size: var(--font-size-xs);
-      color: var(--color-primary-main);
+      color: var(--color-primary);
       padding: 0 var(--spacing-xs);
       height: 28px;
       line-height: 28px;
@@ -33,21 +33,13 @@
   }
 
   .filter-chip {
-    @include flex-row;
-    align-items: center;
-    gap: 4px;
-    background-color: var(--color-bg-surface-elevated, var(--color-bg-hover));
-    border: 1px solid var(--color-border-card);
-    border-radius: var(--radius-full);
-    padding: 2px 8px 2px 10px;
-    font-size: var(--font-size-xs);
-    color: var(--color-text-primary);
+    @include standard-filter-chip;
 
     &__icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-      color: var(--color-primary-main);
+      font-size: var(--font-size-sm);
+      width: var(--font-size-sm);
+      height: var(--font-size-sm);
+      color: var(--color-primary);
     }
 
     &__clear {
@@ -57,22 +49,22 @@
       background: none;
       border: none;
       padding: 0;
-      margin-left: 2px;
+      margin-left: var(--spacing-2xs);
       cursor: pointer;
       color: var(--color-text-muted);
-      border-radius: 50%;
-      width: 16px;
-      height: 16px;
+      border-radius: var(--radius-pill);
+      width: var(--spacing-md);
+      height: var(--spacing-md);
 
       &:hover {
         color: var(--color-text-primary);
-        background-color: var(--color-bg-hover);
+        background-color: var(--color-bg-surface-hover);
       }
 
       mat-icon {
-        font-size: 12px;
-        width: 12px;
-        height: 12px;
+        font-size: var(--font-size-xs);
+        width: var(--font-size-xs);
+        height: var(--font-size-xs);
       }
     }
   }
@@ -107,9 +99,9 @@
     color: var(--color-text-muted);
 
     mat-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
+      font-size: 56px;
+      width: 56px;
+      height: 56px;
     }
   }
 

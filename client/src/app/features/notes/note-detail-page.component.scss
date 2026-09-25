@@ -22,8 +22,9 @@
   }
 
   &__heading {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
     font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
   }
 
   &__alert {
