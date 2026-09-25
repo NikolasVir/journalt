@@ -1,0 +1,23 @@
+<div
+  class="explore"
+  [class.explore--pane-tree]="mobilePane() === 'tree'"
+  [class.explore--pane-preview]="mobilePane() === 'preview'"
+>
+  <app-explore-library-tree
+    [tree]="tree()"
+    [isLoading]="isLoading()"
+    [selectedLibraryId]="selectedLibraryId()"
+    [selectedNoteId]="selectedNoteId()"
+    [canCreate]="canCreate()"
+    (librarySelected)="selectLibrary($event)"
+    (noteSelected)="selectNote($event)"
+    (createRequested)="createJournalNote()"
+    (reloadRequested)="reload()"
+  />
+
+  <app-explore-note-viewer
+    [note]="selectedNote()"
+    [isLoading]="isLoadingNote()"
+    (noteSelected)="selectNote($event)"
+  />
+</div>

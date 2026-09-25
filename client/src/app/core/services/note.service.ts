@@ -5,10 +5,12 @@ import {
   CreateNoteRelationRequest,
   CreateNoteRequest,
   CreateNoteSourceRequest,
+  NoteBacklinkResponse,
   NoteFilterParams,
   NoteRelationResponse,
   NoteResponse,
   NoteSourceResponse,
+  NoteWikiIndexItem,
   PromoteNoteRequest,
   TagDto,
   TodoSummaryResponse,
@@ -66,6 +68,15 @@ export class NoteService {
 
   public getById(id: string): Observable<NoteResponse> {
     return this.http.get<NoteResponse>(`${this.baseUrl}/${id}`);
+  }
+
+  /** Lightweight index of wiki-eligible notes (Journal + Quick), for the Explore tree. */
+  public getWikiIndex(): Observable<NoteWikiIndexItem[]> {
+    return this.http.get<NoteWikiIndexItem[]>(`${this.baseUrl}/wiki-index`);
+  }
+
+  public getBacklinks(id: string): Observable<NoteBacklinkResponse[]> {
+    return this.http.get<NoteBacklinkResponse[]>(`${this.baseUrl}/${id}/backlinks`);
   }
 
   public create(request: CreateNoteRequest): Observable<NoteResponse> {

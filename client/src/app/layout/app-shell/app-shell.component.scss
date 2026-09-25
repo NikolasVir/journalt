@@ -22,5 +22,14 @@
     @include respond-to('mobile') {
       padding: var(--spacing-sm);
     }
+
+    // Full-bleed routes (Explore) manage their own pane padding so the
+    // library tree and note preview can span the full viewport height.
+    &--fullbleed {
+      max-width: none;
+      padding: 0;
+      display: flex;
+      min-height: calc(100vh - var(--header-height));
+    }
   }
 }

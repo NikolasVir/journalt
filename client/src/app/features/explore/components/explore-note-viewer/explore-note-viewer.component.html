@@ -1,0 +1,135 @@
+<section class="viewer" aria-label="Note preview">
+  @if (isLoading()) {
+    <div class="viewer__status">
+      <mat-icon class="spinning">sync</mat-icon>
+      <span>Loading note...</span>
+    </div>
+  } @else if (note(); as n) {
+    <header class="viewer__header">
+      <h2 class="viewer__title">{{ n.title || 'Untitled Note' }}</h2>
+      <div class="viewer__meta">
+        <span class="viewer__level" [class.viewer__level--journal]="n.level === 'Journal'">
+          {{ n.level }}
+        </span>
+        @if (typeLabel(); as label) {
+          <span class="viewer__type">{{ label }}</span>
+        }
+        <span class="viewer__date">Updated {{ n.updatedAtUtc | date: 'mediumDate' }}</span>
+      </div>
+    </header>
+
+    <div #bodyRef class="viewer__body markdown-body" (click)="onBodyClick($event)">
+      @if (n.renderedHtml) {
+        <div [innerHTML]="n.renderedHtml"></div>
+      } @else {
+        <p class="viewer__blank">This note has no content yet.</p>
+      }
+    </div>
+
+    <aside class="viewer__panels">
+      @if (unresolved().length > 0) {
+        <section class="panel">
+          <h3 class="panel__title">
+            <mat-icon>link_off</mat-icon>
+            <span>Unresolved links</span>
+            <span class="panel__badge">{{ unresolved().length }}</span>
+          </h3>
+          <ul class="panel__list">
+            @for (link of unresolved(); track link.title) {
+              <li>
+                <span class="panel__source">{{ link.title }}</span>
+                <span class="panel__hint">{{ link.reason === 'ambiguous' ? 'ambiguous title' : 'not created yet' }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (tagCount() > 0) {
+        <section class="panel">
+          <h3 class="panel__title">
+            <mat-icon>label</mat-icon>
+            <span>Tags</span>
+            <span class="panel__badge">{{ tagCount() }}</span>
+          </h3>
+          <div class="panel__chips">
+            @for (tag of n.tags; track $index) {
+              <span class="panel__chip">#{{ formatTagValue(tag) }}</span>
+            }
+          </div>
+        </section>
+      }
+
+      @if (backlinks().length > 0) {
+        <section class="panel">
+          <h3 class="panel__title">
+            <mat-icon>west</mat-icon>
+            <span>Backlinks</span>
+            <span class="panel__badge">{{ backlinks().length }}</span>
+          </h3>
+          <ul class="panel__list">
+            @for (link of backlinks(); track link.relationId) {
+              <li>
+                <button type="button" class="panel__link" (click)="noteSelected.emit(link.sourceNoteId)">
+                  <span class="panel__role">{{ link.role }}</span>
+                  <span class="panel__link-title">{{ link.sourceNoteTitle || 'Untitled Note' }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (outbound().length > 0) {
+        <section class="panel">
+          <h3 class="panel__title">
+            <mat-icon>east</mat-icon>
+            <span>Links out</span>
+            <span class="panel__badge">{{ outbound().length }}</span>
+          </h3>
+          <ul class="panel__list">
+            @for (rel of outbound(); track rel.id) {
+              <li>
+                <button type="button" class="panel__link" (click)="noteSelected.emit(rel.targetNoteId)">
+                  <span class="panel__role">{{ rel.role }}</span>
+                  <span class="panel__link-title">{{ rel.targetNoteTitle || 'Untitled Note' }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (sources().length > 0) {
+        <section class="panel">
+          <h3 class="panel__title">
+            <mat-icon>link</mat-icon>
+            <span>Sources</span>
+            <span class="panel__badge">{{ sources().length }}</span>
+          </h3>
+          <ul class="panel__list">
+            @for (src of sources(); track src.id) {
+              <li>
+                <span class="panel__source">{{ src.title }}</span>
+                @if (src.url) {
+                  <a class="panel__source-url" [href]="src.url" target="_blank" rel="noopener noreferrer">
+                    {{ src.url }}
+                  </a>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </aside>
+  } @else {
+    <div class="viewer__empty">
+      <mat-icon class="viewer__empty-icon">article</mat-icon>
+      <p class="viewer__empty-title">Select a note to read</p>
+      <p class="viewer__empty-subtitle">
+        Wiki-links inside a note open here, so you can follow a trail without losing your
+        place in the tree.
+      </p>
+    </div>
+  }
+</section>

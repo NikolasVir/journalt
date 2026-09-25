@@ -37,6 +37,26 @@ export interface NoteRelationResponse {
   createdAtUtc: string;
 }
 
+export interface NoteBacklinkResponse {
+  relationId: string;
+  sourceNoteId: string;
+  sourceNoteTitle: string;
+  role: string;
+  context?: string | null;
+}
+
+/** Lightweight wiki-eligible note projection powering the Explore library tree. */
+export interface NoteWikiIndexItem {
+  id: string;
+  level: NoteLevel;
+  title: string;
+  libraryId?: string | null;
+  typeId?: string | null;
+  updatedAtUtc: string;
+  /** True when another non-trashed note holds a relation pointing at this one. */
+  isReferenced: boolean;
+}
+
 export interface NoteResponse {
   id: string;
   userId: string;
@@ -59,6 +79,7 @@ export interface NoteResponse {
   wikiLinks?: string[] | null;
   sources?: NoteSourceResponse[] | null;
   outboundRelations?: NoteRelationResponse[] | null;
+  backlinks?: NoteBacklinkResponse[] | null;
   unresolvedWikiLinks?: WikiLinkWarning[] | null;
 }
 

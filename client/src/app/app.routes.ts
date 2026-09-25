@@ -29,6 +29,14 @@ export const routes: Routes = [
           import('@features/notes/notes.routes').then((m) => m.NOTES_ROUTES)
       },
       {
+        path: 'explore',
+        loadChildren: () =>
+          import('@features/explore/explore.routes').then((m) => m.EXPLORE_ROUTES),
+        // Explore renders its own library tree on the left edge, so the
+        // global sidebar steps aside instead of doubling up.
+        data: { hideSidebar: true }
+      },
+      {
         path: 'todos',
         loadChildren: () =>
           import('@features/todos/todos.routes').then((m) => m.TODOS_ROUTES)

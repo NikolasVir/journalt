@@ -1,0 +1,153 @@
+<aside class="tree" aria-label="Library tree">
+  <header class="tree__header">
+    <div class="tree__title-row">
+      <mat-icon class="tree__title-icon">account_tree</mat-icon>
+      <h1 class="tree__title">Explore</h1>
+    </div>
+
+    <div class="tree__header-actions">
+      <button
+        mat-icon-button
+        color="primary"
+        (click)="createRequested.emit()"
+        [disabled]="!canCreate()"
+        matTooltip="New Journal note in this library"
+        aria-label="New Journal note in this library"
+      >
+        <mat-icon>add</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="reloadRequested.emit()"
+        matTooltip="Refresh"
+        aria-label="Refresh"
+      >
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <a mat-icon-button routerLink="/dashboard" matTooltip="Exit Explore" aria-label="Exit Explore">
+        <mat-icon>west</mat-icon>
+      </a>
+    </div>
+  </header>
+
+  <div class="tree__search">
+    <mat-icon class="tree__search-icon">search</mat-icon>
+    <input
+      type="search"
+      class="tree__search-input"
+      placeholder="Filter notes"
+      [value]="query()"
+      (input)="onQueryInput($event)"
+      aria-label="Filter notes by title"
+    />
+    @if (query()) {
+      <button
+        type="button"
+        class="tree__search-clear"
+        (click)="clearQuery()"
+        aria-label="Clear filter"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </div>
+
+  @if (isLoading()) {
+    <div class="tree__status">
+      <mat-icon class="spinning">sync</mat-icon>
+      <span>Loading...</span>
+    </div>
+  } @else {
+    <nav class="tree__scroll" aria-label="Libraries and notes">
+      @if (tree().length === 0) {
+        <div class="tree__status">
+          <mat-icon>folder_off</mat-icon>
+          <span>No libraries yet</span>
+          <a mat-stroked-button routerLink="/libraries" class="tree__cta">
+            <mat-icon>create_new_folder</mat-icon>
+            <span>Create</span>
+          </a>
+        </div>
+      } @else if (visibleTree().length === 0) {
+        <div class="tree__status">
+          <mat-icon>search_off</mat-icon>
+          <span>No notes match "{{ query() }}"</span>
+        </div>
+      } @else {
+        @if (query()) {
+          <p class="tree__result-count">{{ visibleNoteCount() }} matching notes</p>
+        }
+        @for (root of visibleTree(); track root.id) {
+          <ng-container *ngTemplateOutlet="nodeTmpl; context: { $implicit: root }" />
+        }
+      }
+    </nav>
+  }
+</aside>
+
+<ng-template #nodeTmpl let-node>
+  @if (node.kind === 'note') {
+    <button
+      type="button"
+      class="tree__note"
+      [class.tree__note--active]="isNoteSelected(node)"
+      [style.padding-left.px]="8 + node.depth * 14"
+      (click)="activate(node)"
+      [attr.aria-current]="isNoteSelected(node) ? 'true' : null"
+    >
+      <span class="tree__note-twist"></span>
+      <mat-icon class="tree__note-icon">{{ nodeIcon(node) }}</mat-icon>
+      <span class="tree__note-label">{{ node.label }}</span>
+      @if (node.isReferenced) {
+        <mat-icon
+          class="tree__note-linked"
+          matTooltip="Referenced by another note"
+          aria-label="Referenced by another note"
+        >
+          link
+        </mat-icon>
+      }
+      <span
+        class="tree__note-level"
+        [class.tree__note-level--journal]="node.noteLevel === 'Journal'"
+      >
+        {{ node.noteLevel === 'Journal' ? 'J' : 'Q' }}
+      </span>
+    </button>
+  } @else {
+    <button
+      type="button"
+      class="tree__row"
+      [class.tree__row--active]="isLibrarySelected(node)"
+      [style.padding-left.px]="8 + node.depth * 14"
+      (click)="activate(node)"
+      [attr.aria-expanded]="isExpanded(node)"
+    >
+      <span
+        class="tree__twist"
+        [class.tree__twist--placeholder]="!node.expandable"
+        (click)="toggleNode(node, $event)"
+        [attr.aria-label]="isExpanded(node) ? 'Collapse' : 'Expand'"
+      >
+        @if (node.expandable) {
+          <mat-icon class="tree__twist-icon">
+            {{ isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+          </mat-icon>
+        }
+      </span>
+
+      <mat-icon class="tree__row-icon">{{ nodeIcon(node) }}</mat-icon>
+      <span class="tree__row-label">{{ node.label }}</span>
+
+      @if (node.noteCount > 0) {
+        <span class="tree__row-count">{{ node.noteCount }}</span>
+      }
+    </button>
+
+    @if (isExpanded(node)) {
+      @for (child of node.children; track child.id) {
+        <ng-container *ngTemplateOutlet="nodeTmpl; context: { $implicit: child }" />
+      }
+    }
+  }
+</ng-template>

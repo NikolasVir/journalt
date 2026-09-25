@@ -1,0 +1,34 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.explore {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  width: 100%;
+  min-height: calc(100vh - var(--header-height));
+  background-color: var(--color-bg-app);
+}
+
+@media (max-width: 1200px) {
+  .explore { grid-template-columns: 300px minmax(0, 1fr); }
+}
+
+// Below tablet width the two columns collapse into one, driven by mobilePane().
+@include respond-to('tablet') {
+  .explore { grid-template-columns: 260px minmax(0, 1fr); }
+}
+
+@include respond-to('mobile') {
+  .explore { grid-template-columns: minmax(0, 1fr); }
+
+  app-explore-library-tree,
+  app-explore-note-viewer { display: none; }
+
+  .explore--pane-tree app-explore-library-tree,
+  .explore--pane-preview app-explore-note-viewer { display: flex; }
+}

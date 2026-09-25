@@ -33,6 +33,7 @@ export class SidebarComponent {
 
   protected readonly mainNavItems: NavItem[] = [
     { label: 'Home', route: '/dashboard', icon: 'lightbulb', exact: true },
+    { label: 'Explore', route: '/explore', icon: 'account_tree', exact: true },
     { label: 'Inbox', route: '/notes/inbox', icon: 'inbox' },
     { label: 'Quick Notes', route: '/notes/quick', icon: 'edit_note' },
     { label: 'Journal', route: '/notes/journal', icon: 'menu_book' },
