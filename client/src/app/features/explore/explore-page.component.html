@@ -23,5 +23,6 @@
     [note]="selectedNote()"
     [isLoading]="isLoadingNote()"
     (noteSelected)="selectNote($event)"
+    (editRequested)="editNote($event)"
   />
 </div>

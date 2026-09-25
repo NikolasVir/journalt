@@ -1,6 +1,6 @@
 <div class="note-editor">
   <header class="note-editor__header">
-    <a mat-button routerLink="/dashboard" class="note-editor__back-btn">
+    <a mat-button class="note-editor__back-btn" (click)="goBack()">
       <mat-icon>arrow_back</mat-icon>
       <span>Back to notes</span>
     </a>
@@ -114,7 +114,7 @@
         }
 
         <div class="note-form__buttons">
-          <a mat-button routerLink="/dashboard">Cancel</a>
+          <a mat-button (click)="goBack()">Cancel</a>
           <button
             mat-flat-button
             color="primary"

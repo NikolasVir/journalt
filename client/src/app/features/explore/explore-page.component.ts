@@ -253,6 +253,16 @@ export class ExplorePageComponent implements OnInit {
     });
   }
 
+  /**
+   * Opens the full editor with a return ticket: after save, cancel, or trash
+   * the editor navigates back to this exact Explore state instead of home.
+   */
+  public editNote(id: string): void {
+    void this.router.navigate(['/notes', id], {
+      queryParams: { returnUrl: this.router.url },
+    });
+  }
+
   private async loadNote(id: string): Promise<void> {
     this.selectedNoteId.set(id);
     this.isLoadingNote.set(true);

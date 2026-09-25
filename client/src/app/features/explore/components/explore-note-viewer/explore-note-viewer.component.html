@@ -6,16 +6,28 @@
     </div>
   } @else if (note(); as n) {
     <header class="viewer__header">
-      <h2 class="viewer__title">{{ n.title || 'Untitled Note' }}</h2>
-      <div class="viewer__meta">
-        <span class="viewer__level" [class.viewer__level--journal]="n.level === 'Journal'">
-          {{ n.level }}
-        </span>
-        @if (typeLabel(); as label) {
-          <span class="viewer__type">{{ label }}</span>
-        }
-        <span class="viewer__date">Updated {{ n.updatedAtUtc | date: 'mediumDate' }}</span>
+      <div class="viewer__heading">
+        <h2 class="viewer__title">{{ n.title || 'Untitled Note' }}</h2>
+        <div class="viewer__meta">
+          <span class="viewer__level" [class.viewer__level--journal]="n.level === 'Journal'">
+            {{ n.level }}
+          </span>
+          @if (typeLabel(); as label) {
+            <span class="viewer__type">{{ label }}</span>
+          }
+          <span class="viewer__date">Updated {{ n.updatedAtUtc | date: 'mediumDate' }}</span>
+        </div>
       </div>
+
+      <button
+        mat-icon-button
+        class="viewer__edit"
+        (click)="editRequested.emit(n.id)"
+        matTooltip="Edit note"
+        aria-label="Edit note"
+      >
+        <mat-icon>edit</mat-icon>
+      </button>
     </header>
 
     <div #bodyRef class="viewer__body markdown-body" (click)="onBodyClick($event)">

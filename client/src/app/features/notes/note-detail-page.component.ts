@@ -85,6 +85,11 @@ export class NoteDetailPageComponent implements OnInit {
   protected readonly libraries = signal<LibraryResponse[]>([]);
   protected readonly legacyTags = signal<TagDto[]>([]);
   protected readonly promotionTarget = signal<NoteLevel | null>(null);
+  /**
+   * Optional return ticket (e.g. from Explore): after save, cancel, or trash,
+   * go back to the exact previous state instead of the dashboard.
+   */
+  protected readonly returnUrl = signal<string | null>(null);
 
   protected readonly form = new FormGroup<NoteForm>({
     title: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -104,6 +109,13 @@ export class NoteDetailPageComponent implements OnInit {
     // Explore links here with the library already chosen, so the note is
     // filed on create instead of landing unfiled.
     const requestedLibraryId = this.route.snapshot.queryParamMap.get('libraryId');
+
+    // Optional return ticket honored on save, cancel, and trash. Only
+    // internal paths are accepted, so a crafted URL cannot bounce outward.
+    const requestedReturn = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (requestedReturn?.startsWith('/')) {
+      this.returnUrl.set(requestedReturn);
+    }
 
     this.libraryService.list().subscribe({
       next: (libs) => this.libraries.set(libs),
@@ -251,7 +263,7 @@ export class NoteDetailPageComponent implements OnInit {
         .subscribe({
           next: () => {
             this.isSaving.set(false);
-            void this.router.navigate(['/dashboard']);
+            this.goBack();
           },
           error: (err: { error?: { detail?: string } }) => {
             this.isSaving.set(false);
@@ -274,7 +286,7 @@ export class NoteDetailPageComponent implements OnInit {
         .subscribe({
           next: () => {
             this.isSaving.set(false);
-            void this.router.navigate(['/dashboard']);
+            this.goBack();
           },
           error: (err: { error?: { detail?: string } }) => {
             this.isSaving.set(false);
@@ -299,13 +311,23 @@ export class NoteDetailPageComponent implements OnInit {
         .subscribe({
           next: () => {
             this.isSaving.set(false);
-            void this.router.navigate(['/dashboard']);
+            this.goBack();
           },
           error: (err: { error?: { detail?: string } }) => {
             this.isSaving.set(false);
             this.errorMessage.set(err.error?.detail ?? 'Failed to create note.');
           },
         });
+    }
+  }
+
+  /** Leaves the editor: back to the return ticket when present, else home. */
+  public goBack(): void {
+    const returnUrl = this.returnUrl();
+    if (returnUrl) {
+      void this.router.navigateByUrl(returnUrl);
+    } else {
+      void this.router.navigate(['/dashboard']);
     }
   }
 
@@ -320,7 +342,7 @@ export class NoteDetailPageComponent implements OnInit {
 
     this.noteService.trash(id).subscribe({
       next: () => {
-        void this.router.navigate(['/dashboard']);
+        this.goBack();
       },
     });
   }
