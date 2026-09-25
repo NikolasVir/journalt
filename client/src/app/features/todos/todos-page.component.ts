@@ -241,7 +241,7 @@ import {
 
       &__header {
         border-bottom: 1px solid var(--color-border-card);
-        padding-bottom: var(--spacing-sm);
+        padding-bottom: var(--spacing-md);
       }
 
       &__title {
@@ -324,11 +324,11 @@ import {
         margin-top: var(--spacing-2xs);
 
         &--pending {
-          color: var(--color-primary-main, #1976d2);
+          color: var(--color-primary);
         }
 
         &--completed {
-          color: #2e7d32;
+          color: var(--color-success);
         }
       }
     }
@@ -383,7 +383,7 @@ import {
       transition: background-color 0.2s;
 
       &:hover {
-        background-color: var(--color-bg-hover, rgba(0, 0, 0, 0.02));
+        background-color: var(--color-bg-surface-hover);
       }
 
       &--completed {
@@ -399,7 +399,7 @@ import {
 
       &__details {
         @include flex-column;
-        gap: var(--spacing-3xs);
+        gap: var(--spacing-2xs);
         flex: 1;
         cursor: pointer;
       }
@@ -436,7 +436,7 @@ import {
 
       &__chip {
         font-size: var(--font-size-xs);
-        min-height: 22px;
+        min-height: 24px;
       }
 
       &__actions {

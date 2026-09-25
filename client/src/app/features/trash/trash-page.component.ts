@@ -190,6 +190,7 @@ import { NotificationService } from '@core/services/notification.service';
       &__title {
         font-size: var(--font-size-base);
         font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
       }
 
       &__subtitle {
@@ -200,7 +201,7 @@ import { NotificationService } from '@core/services/notification.service';
       &__content {
         @include flex-column;
         gap: var(--spacing-xs);
-        padding-top: var(--spacing-xs);
+        padding-top: var(--spacing-sm);
         flex-grow: 1;
       }
 
@@ -235,7 +236,7 @@ import { NotificationService } from '@core/services/notification.service';
         justify-content: flex-end;
         gap: var(--spacing-xs);
         border-top: 1px solid var(--color-border-card);
-        padding: var(--spacing-xs) var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
       }
     }
 

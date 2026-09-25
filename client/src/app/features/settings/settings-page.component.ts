@@ -213,14 +213,14 @@ import { NotificationService } from '@core/services/notification.service';
 
     .settings-page {
       @include flex-column;
-      gap: var(--spacing-xl);
+      gap: var(--spacing-lg);
       width: 100%;
       max-width: 960px;
       margin: 0 auto;
 
       &__header {
         border-bottom: 1px solid var(--color-border-card);
-        padding-bottom: var(--spacing-sm);
+        padding-bottom: var(--spacing-md);
       }
 
       &__title {
@@ -248,7 +248,7 @@ import { NotificationService } from '@core/services/notification.service';
       border-color: var(--color-border-card);
 
       &__avatar-icon {
-        color: var(--color-primary-main, #1976d2);
+        color: var(--color-primary);
         font-size: 32px;
         width: 32px;
         height: 32px;
@@ -265,7 +265,7 @@ import { NotificationService } from '@core/services/notification.service';
 
       &__title {
         font-size: var(--font-size-base);
-        font-weight: var(--font-weight-bold);
+        font-weight: var(--font-weight-medium);
       }
 
       &__subtitle {
@@ -304,7 +304,7 @@ import { NotificationService } from '@core/services/notification.service';
 
     .profile-field {
       @include flex-column;
-      gap: var(--spacing-3xs);
+      gap: var(--spacing-2xs);
 
       &__label {
         font-size: var(--font-size-xs);
@@ -326,12 +326,12 @@ import { NotificationService } from '@core/services/notification.service';
     }
 
     .key-banner {
-      background-color: #e8f5e9;
-      border: 1px solid #a5d6a7;
+      background-color: var(--color-success-bg);
+      border: 1px solid var(--color-success);
       border-radius: var(--radius-sm);
       padding: var(--spacing-md);
       margin-bottom: var(--spacing-md);
-      color: #1b5e20;
+      color: var(--color-success);
 
       &__header {
         @include flex-row;
@@ -348,30 +348,30 @@ import { NotificationService } from '@core/services/notification.service';
 
       &__title {
         font-size: var(--font-size-base);
-        font-weight: var(--font-weight-bold);
+        font-weight: var(--font-weight-medium);
         margin: 0;
       }
 
       &__warning {
         font-size: var(--font-size-xs);
-        margin: var(--spacing-3xs) 0 0 0;
+        margin: var(--spacing-2xs) 0 0 0;
       }
 
       &__code-box {
         @include flex-row;
         align-items: center;
         justify-content: space-between;
-        background-color: #ffffff;
+        background-color: var(--color-bg-surface);
         padding: var(--spacing-xs) var(--spacing-sm);
-        border: 1px solid #81c784;
+        border: 1px solid var(--color-success);
         border-radius: var(--radius-xs);
       }
 
       &__code {
         font-family: monospace;
         font-size: var(--font-size-sm);
-        font-weight: bold;
-        color: #2e7d32;
+        font-weight: var(--font-weight-bold);
+        color: var(--color-success);
         word-break: break-all;
       }
     }
@@ -415,7 +415,7 @@ import { NotificationService } from '@core/services/notification.service';
 
       &__info {
         @include flex-column;
-        gap: var(--spacing-3xs);
+        gap: var(--spacing-2xs);
       }
 
       &__name-line {
@@ -434,7 +434,7 @@ import { NotificationService } from '@core/services/notification.service';
         font-family: monospace;
         font-size: var(--font-size-xs);
         background-color: var(--color-bg-surface);
-        padding: 2px 6px;
+        padding: var(--spacing-2xs) var(--spacing-xs);
         border-radius: var(--radius-xs);
         border: 1px solid var(--color-border-card);
       }

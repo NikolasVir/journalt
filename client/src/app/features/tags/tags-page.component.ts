@@ -241,7 +241,7 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
       @include flex-column;
       gap: var(--spacing-lg);
       width: 100%;
-      max-width: 1000px;
+      max-width: 960px;
       margin: 0 auto;
 
       &__header {
@@ -355,12 +355,12 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
       }
 
       &__icon {
-        color: var(--color-primary-main, #1976d2);
+        color: var(--color-primary);
       }
 
       &__category {
         font-size: var(--font-size-base);
-        font-weight: var(--font-weight-bold);
+        font-weight: var(--font-weight-medium);
         color: var(--color-text-primary);
       }
 
@@ -382,7 +382,7 @@ import { TagDefinitionService } from '@core/services/tag-definition.service';
       }
 
       &__mode {
-        padding: var(--spacing-3xs, 2px) var(--spacing-xs);
+        padding: var(--spacing-2xs) var(--spacing-xs);
         border-radius: var(--radius-sm);
         background: var(--color-bg-input);
         color: var(--color-text-secondary);

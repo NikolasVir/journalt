@@ -338,7 +338,7 @@ import { NotificationService } from '@core/services/notification.service';
       transition: background-color 0.2s;
 
       &:hover {
-        background-color: var(--color-bg-hover, rgba(0, 0, 0, 0.02));
+        background-color: var(--color-bg-surface-hover);
       }
 
       &__main {
@@ -348,12 +348,12 @@ import { NotificationService } from '@core/services/notification.service';
       }
 
       &__icon {
-        color: var(--color-primary-main, #1976d2);
+        color: var(--color-primary);
       }
 
       &__info {
         @include flex-column;
-        gap: 2px;
+        gap: var(--spacing-2xs);
       }
 
       &__name {
@@ -369,7 +369,7 @@ import { NotificationService } from '@core/services/notification.service';
 
       &__actions {
         @include flex-row;
-        gap: var(--spacing-3xs);
+        gap: var(--spacing-xs);
       }
     }
 

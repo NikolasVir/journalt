@@ -361,19 +361,19 @@ import { TypeDefinitionService } from '@core/services/type-definition.service';
       }
 
       &__icon {
-        color: var(--color-primary-main, #1976d2);
+        color: var(--color-primary);
       }
 
       &__name {
         font-size: var(--font-size-base);
-        font-weight: var(--font-weight-bold);
+        font-weight: var(--font-weight-medium);
         color: var(--color-text-primary);
       }
 
       &__version {
         font-size: var(--font-size-xs);
         background-color: var(--color-border-card);
-        padding: 2px 6px;
+        padding: var(--spacing-2xs) var(--spacing-xs);
         border-radius: var(--radius-sm);
         color: var(--color-text-secondary);
       }
@@ -391,7 +391,7 @@ import { TypeDefinitionService } from '@core/services/type-definition.service';
       }
 
       &__content {
-        padding-top: var(--spacing-xs);
+        padding-top: var(--spacing-sm);
       }
 
       &__panel {
