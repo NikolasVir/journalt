@@ -2,15 +2,15 @@
 
 .sidebar {
   width: var(--sidebar-width-expanded);
-  height: calc(100vh - var(--header-height));
+  max-width: 80vw;
+  height: 100%;
   background-color: var(--color-bg-app);
   border-right: 1px solid var(--color-border-subtle);
   transition: width var(--transition-fast);
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--spacing-sm) 0;
-  position: sticky;
-  top: var(--header-height);
+  padding: var(--spacing-sm) 0 0;
+  box-sizing: border-box;
   @include custom-scrollbar;
   @include flex-column;
 
@@ -29,6 +29,21 @@
           display: none !important;
         }
       }
+    }
+
+    .sidebar__divider {
+      margin: var(--spacing-xs) var(--spacing-md-sm);
+    }
+
+    .sidebar__footer {
+      padding: var(--spacing-xs) 0;
+    }
+
+    .sidebar__user {
+      justify-content: center;
+      background: none;
+      padding: var(--spacing-xs) 0;
+      margin: 0;
     }
   }
 
@@ -68,5 +83,76 @@
 
   &__divider {
     margin: var(--spacing-xs) var(--spacing-md-sm);
+  }
+
+  &__footer {
+    margin-top: auto;
+    padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
+    flex-shrink: 0;
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg-surface);
+    margin-top: var(--spacing-xs);
+    box-sizing: border-box;
+
+    &-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+      color: var(--color-text-secondary);
+      flex-shrink: 0;
+    }
+
+    &-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1;
+    }
+
+    &-name {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &-email {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &-logout {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+
+      &:hover {
+        color: var(--color-danger);
+      }
+
+      .mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+      }
+    }
   }
 }

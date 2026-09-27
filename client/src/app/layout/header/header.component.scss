@@ -18,9 +18,13 @@
   &__left {
     display: flex;
     align-items: center;
-    min-width: 232px;
+    min-width: 0;
     gap: var(--spacing-xs);
     padding-left: var(--spacing-xs);
+
+    @include respond-to('desktop') {
+      min-width: 232px;
+    }
   }
 
   &__brand {
@@ -45,6 +49,30 @@
 
     @include respond-to('mobile') {
       display: none;
+    }
+  }
+
+  &__mobile-search {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: var(--spacing-xs);
+  }
+
+  &__mobile-input {
+    flex: 1;
+    background-color: var(--color-bg-input);
+    border-radius: var(--radius-md);
+    padding: 0 var(--spacing-sm);
+    height: 40px;
+    border: none;
+    outline: none;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+
+    &:focus {
+      background-color: var(--color-bg-input-focus);
+      box-shadow: var(--shadow-search);
     }
   }
 

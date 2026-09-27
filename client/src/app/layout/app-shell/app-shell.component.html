@@ -1,16 +1,34 @@
 <div class="shell">
   <app-header />
-  <div class="shell__body">
-    @if (!layoutService.isSidebarHidden()) {
-      <app-sidebar />
+  <mat-sidenav-container
+    class="shell__container"
+    [hasBackdrop]="layoutService.isHandset()"
+    autosize
+  >
+    @if (!layoutService.isSidebarHidden() || layoutService.isHandset()) {
+      <mat-sidenav
+        #drawer
+        [mode]="layoutService.isHandset() ? 'over' : 'side'"
+        [opened]="layoutService.isHandset() ? layoutService.isMobileMenuOpen() : !layoutService.isSidebarHidden()"
+        (closed)="layoutService.closeMobileMenu()"
+        class="shell__sidenav"
+        [attr.role]="layoutService.isHandset() ? 'dialog' : 'navigation'"
+      >
+        <app-sidebar (itemClicked)="layoutService.isHandset() && layoutService.closeMobileMenu()" />
+      </mat-sidenav>
     }
-    <main
-      class="shell__content"
-      [class.shell__content--fullbleed]="layoutService.isSidebarHidden()"
-      id="main-content"
-      tabindex="-1"
+    <mat-sidenav-content
+      class="shell__content-wrap"
+      [class.shell__content-wrap--fullbleed]="layoutService.isSidebarHidden()"
     >
-      <router-outlet />
-    </main>
-  </div>
+      <main
+        class="shell__content"
+        [class.shell__content--fullbleed]="layoutService.isSidebarHidden()"
+        id="main-content"
+        tabindex="-1"
+      >
+        <router-outlet />
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
 </div>

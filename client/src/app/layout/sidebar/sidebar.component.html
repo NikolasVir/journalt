@@ -1,6 +1,6 @@
 <aside
   class="sidebar"
-  [class.sidebar--collapsed]="layoutService.isSidebarCollapsed()"
+  [class.sidebar--collapsed]="layoutService.isSidebarCollapsed() && !layoutService.isHandset()"
   aria-label="Navigation drawer"
 >
   <mat-nav-list class="sidebar__nav">
@@ -12,11 +12,12 @@
         routerLinkActive
         #rla="routerLinkActive"
         [activated]="rla.isActive"
-        [matTooltip]="layoutService.isSidebarCollapsed() ? item.label : ''"
+        [matTooltip]="(layoutService.isSidebarCollapsed() && !layoutService.isHandset()) ? item.label : ''"
         matTooltipPosition="right"
+        (click)="itemClicked.emit()"
       >
         <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-        @if (!layoutService.isSidebarCollapsed()) {
+        @if (!layoutService.isSidebarCollapsed() || layoutService.isHandset()) {
           <span matListItemTitle>{{ item.label }}</span>
         }
       </a>
@@ -31,11 +32,12 @@
         routerLinkActive
         #rlaSec="routerLinkActive"
         [activated]="rlaSec.isActive"
-        [matTooltip]="layoutService.isSidebarCollapsed() ? item.label : ''"
+        [matTooltip]="(layoutService.isSidebarCollapsed() && !layoutService.isHandset()) ? item.label : ''"
         matTooltipPosition="right"
+        (click)="itemClicked.emit()"
       >
         <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-        @if (!layoutService.isSidebarCollapsed()) {
+        @if (!layoutService.isSidebarCollapsed() || layoutService.isHandset()) {
           <span matListItemTitle>{{ item.label }}</span>
         }
       </a>
@@ -50,14 +52,39 @@
         routerLinkActive
         #rlaSys="routerLinkActive"
         [activated]="rlaSys.isActive"
-        [matTooltip]="layoutService.isSidebarCollapsed() ? item.label : ''"
+        [matTooltip]="(layoutService.isSidebarCollapsed() && !layoutService.isHandset()) ? item.label : ''"
         matTooltipPosition="right"
+        (click)="itemClicked.emit()"
       >
         <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-        @if (!layoutService.isSidebarCollapsed()) {
+        @if (!layoutService.isSidebarCollapsed() || layoutService.isHandset()) {
           <span matListItemTitle>{{ item.label }}</span>
         }
       </a>
     }
   </mat-nav-list>
+
+  <div class="sidebar__footer">
+    <mat-divider class="sidebar__divider" />
+    @if (authService.currentUser(); as user) {
+      <div class="sidebar__user" [matTooltip]="(layoutService.isSidebarCollapsed() && !layoutService.isHandset()) ? (user.userName || user.email) : ''" matTooltipPosition="right">
+        <mat-icon class="sidebar__user-icon">account_circle</mat-icon>
+        @if (!layoutService.isSidebarCollapsed() || layoutService.isHandset()) {
+          <div class="sidebar__user-info">
+            <span class="sidebar__user-name">{{ user.userName || user.email }}</span>
+            <span class="sidebar__user-email">{{ user.email }}</span>
+          </div>
+          <button
+            mat-icon-button
+            class="sidebar__user-logout"
+            (click)="onLogout()"
+            matTooltip="Sign out"
+            aria-label="Sign out"
+          >
+            <mat-icon>logout</mat-icon>
+          </button>
+        }
+      </div>
+    }
+  </div>
 </aside>

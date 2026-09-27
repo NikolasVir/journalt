@@ -4,11 +4,12 @@ import { Subscription, filter } from 'rxjs';
 import { LayoutService } from '@layout/layout.service';
 import { HeaderComponent } from '../header/header.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
+import { MatSidenavModule } from '@angular/material/sidenav';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, HeaderComponent, SidebarComponent],
+  imports: [RouterOutlet, HeaderComponent, SidebarComponent, MatSidenavModule],
   templateUrl: './app-shell.component.html',
   styleUrl: './app-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -22,7 +23,10 @@ export class AppShellComponent implements OnDestroy {
     this.syncSidebarVisibility();
     this.subscription = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(() => this.syncSidebarVisibility());
+      .subscribe(() => {
+        this.syncSidebarVisibility();
+        this.layoutService.closeMobileMenu();
+      });
   }
 
   public ngOnDestroy(): void {
