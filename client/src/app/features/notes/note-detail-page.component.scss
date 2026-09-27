@@ -111,6 +111,12 @@
     gap: var(--spacing-md);
   }
 
+  // Tighten the gap between the Type/Library meta-grid and the tags
+  // section — the form gap is --spacing-md but these two belong together.
+  app-typed-tag-selector {
+    margin-top: calc(var(--spacing-sm) - var(--spacing-md));
+  }
+
   &__meta-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

@@ -67,6 +67,12 @@ export class TypedTagSelectorComponent implements OnInit {
     });
   });
 
+  protected readonly valuePlaceholder = computed(() => {
+    if (!this.activeCategory()) return 'Select a category first';
+    if (!this.activeOption()?.values?.length) return '';
+    return 'Type to filter registered values';
+  });
+
   constructor() {
     effect(() => {
       const categories = this.categories();

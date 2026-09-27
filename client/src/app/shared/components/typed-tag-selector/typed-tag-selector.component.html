@@ -1,11 +1,5 @@
 <div class="typed-tags" aria-label="Journal tags">
-  <div class="typed-tags__header">
-    <span class="typed-tags__label">Journal Tags</span>
-    <a mat-button routerLink="/tags" class="typed-tags__manage">
-      <mat-icon>tune</mat-icon>
-      Manage tag definitions
-    </a>
-  </div>
+  <span class="typed-tags__label">Journal Tags</span>
 
   @if (isLoading()) {
     <div class="typed-tags__status">
@@ -41,31 +35,28 @@
         </mat-select>
       </mat-form-field>
 
-      @if (activeOption()?.values?.length) {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Add a value</mat-label>
-          <input
-            matInput
-            autocomplete="off"
-            placeholder="Type to filter registered values"
-            [value]="valueSearch()"
-            [matAutocomplete]="valueAutocomplete"
-            (input)="updateSearch($event)"
-            (keydown.enter)="$event.preventDefault()"
-            aria-label="Filter tag values"
-          />
-          <mat-autocomplete #valueAutocomplete (optionSelected)="addValue($event.option.value)">
-            @for (value of filteredValues(); track value) {
-              <mat-option [value]="value">{{ value }}</mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-      } @else if (activeOption() && !activeOption()!.isClosed) {
-        <div class="typed-tags__category-added">
-          <mat-icon>check_circle</mat-icon>
-          <span>{{ activeOption()!.category }} is added as a category-only tag.</span>
-        </div>
-      }
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Add a value</mat-label>
+        <input
+          matInput
+          autocomplete="off"
+          [placeholder]="valuePlaceholder()"
+          [disabled]="!activeOption()?.values?.length"
+          [value]="valueSearch()"
+          [matAutocomplete]="valueAutocomplete"
+          (input)="updateSearch($event)"
+          (keydown.enter)="$event.preventDefault()"
+          aria-label="Filter tag values"
+        />
+        <mat-autocomplete #valueAutocomplete (optionSelected)="addValue($event.option.value)">
+          @for (value of filteredValues(); track value) {
+            <mat-option [value]="value">{{ value }}</mat-option>
+          }
+        </mat-autocomplete>
+        @if (activeOption() && !activeOption()!.isClosed) {
+          <mat-hint>Category-only tag — no values needed.</mat-hint>
+        }
+      </mat-form-field>
     </div>
 
     @if (selectedTags().length > 0) {
@@ -80,5 +71,10 @@
     } @else {
       <div class="typed-tags__unselected">No Journal tags selected.</div>
     }
+
+    <a mat-button routerLink="/tags" class="typed-tags__manage">
+      <mat-icon>tune</mat-icon>
+      Manage tag definitions
+    </a>
   }
 </div>

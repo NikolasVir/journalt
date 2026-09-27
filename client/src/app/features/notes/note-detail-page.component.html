@@ -56,7 +56,7 @@
       <div class="note-form__meta-grid">
         @if (form.controls.level.value === 'Journal') {
           @if (typeDefinitions().length > 0) {
-            <mat-form-field appearance="outline" class="note-form__field">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="note-form__field">
               <mat-label>Journal Type Definition</mat-label>
               <mat-select formControlName="typeId" aria-label="Select Journal Type">
                 @for (type of typeDefinitions(); track type.id) {
@@ -76,7 +76,7 @@
         }
 
         @if (libraries().length > 0) {
-          <mat-form-field appearance="outline" class="note-form__field">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="note-form__field">
             <mat-label>Library</mat-label>
             <mat-select formControlName="libraryId" aria-label="Select library">
               <mat-option [value]="null">Unfiled (No Library)</mat-option>
