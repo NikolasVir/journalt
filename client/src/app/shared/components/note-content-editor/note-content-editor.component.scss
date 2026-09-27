@@ -1,0 +1,22 @@
+.cm-host {
+  width: 100%;
+  border: 1px solid var(--color-border-card, #3a3a3a);
+  border-radius: var(--radius-sm, 6px);
+  overflow: hidden;
+  background: var(--color-bg-input, #1e1e1e);
+  font-size: var(--font-size-base, 14px);
+
+  ::ng-deep .cm-editor {
+    min-height: inherit;
+  }
+
+  ::ng-deep .cm-scroller {
+    min-height: inherit;
+  }
+
+  ::ng-deep .cm-content {
+    min-height: 160px;
+    padding: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+}
