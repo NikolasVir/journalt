@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -8,7 +8,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LibraryResponse } from '@core/models/library.model';
 import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
@@ -17,6 +16,7 @@ import { LibraryService } from '@core/services/library.service';
 import { NoteService } from '@core/services/note.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
+import { NoteContentEditorComponent } from '@shared/components/note-content-editor/note-content-editor.component';
 
 interface NoteForm {
   title: FormControl<string>;
@@ -64,19 +64,22 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule,
     TypedTagSelectorComponent,
+    NoteContentEditorComponent,
   ],
   templateUrl: './note-detail-page.component.html',
   styleUrl: './note-detail-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NoteDetailPageComponent implements OnInit {
+export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly noteService = inject(NoteService);
   private readonly typeService = inject(TypeDefinitionService);
   private readonly libraryService = inject(LibraryService);
+
+  private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
+  private readonly contentEditor = viewChild(NoteContentEditorComponent);
 
   protected readonly noteId = signal<string | null>(null);
   protected readonly isSaving = signal<boolean>(false);
@@ -181,6 +184,24 @@ export class NoteDetailPageComponent implements OnInit {
       if (requestedLibraryId) {
         this.form.controls.libraryId.setValue(requestedLibraryId);
       }
+    }
+  }
+
+  public ngAfterViewInit(): void {
+    // Writing-first flow: new notes start in Title, existing notes in the editor.
+    if (this.noteId()) {
+      this.contentEditor()?.focus();
+    } else {
+      this.titleInput()?.nativeElement.focus();
+    }
+  }
+
+  /** Ctrl/Cmd+S saves without leaving the keyboard (browser save dialog suppressed). */
+  @HostListener('window:keydown', ['$event'])
+  protected onGlobalKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+      event.preventDefault();
+      this.onSubmit();
     }
   }
 

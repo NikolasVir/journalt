@@ -1,13 +1,5 @@
 <div class="note-editor">
-  <header class="note-editor__header">
-    <a mat-button class="note-editor__back-btn" (click)="goBack()">
-      <mat-icon>arrow_back</mat-icon>
-      <span>Back to notes</span>
-    </a>
-    <h1 class="note-editor__heading">
-      {{ noteId() ? 'Edit Note' : 'New Note' }}
-    </h1>
-  </header>
+  <h1 class="sr-only">{{ noteId() ? 'Edit Note' : 'New Note' }}</h1>
 
   @if (errorMessage(); as error) {
     <div class="note-editor__alert" role="alert">
@@ -22,13 +14,25 @@
 
   <mat-card appearance="outlined" class="note-card-form">
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="note-form" novalidate>
-      <mat-form-field appearance="outline" class="note-form__field">
-        <mat-label>Title</mat-label>
-        <input matInput formControlName="title" placeholder="Title" autocomplete="off" />
-        @if (form.controls.title.invalid && form.controls.title.touched) {
-          <mat-error>Title is required.</mat-error>
-        }
-      </mat-form-field>
+      <div class="note-form__title-row">
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="note-form__field note-form__title-field"
+        >
+          <mat-label>Title</mat-label>
+          <input
+            #titleInput
+            matInput
+            formControlName="title"
+            placeholder="Title"
+            autocomplete="off"
+          />
+          @if (form.controls.title.invalid && form.controls.title.touched) {
+            <mat-error>Title is required.</mat-error>
+          }
+        </mat-form-field>
+      </div>
 
       @if (!noteId()) {
         <div class="note-form__level-section">
@@ -41,48 +45,48 @@
         </div>
       }
 
-      @if (form.controls.level.value === 'Journal') {
-        @if (typeDefinitions().length > 0) {
+      <label class="note-form__label" for="note-content-editor">Content (Markdown)</label>
+      <app-note-content-editor
+        formControlName="bodyMarkdown"
+        placeholder="Write in Markdown..."
+        ariaLabel="Note content (Markdown)"
+        minHeight="62vh"
+      />
+
+      <div class="note-form__meta-grid">
+        @if (form.controls.level.value === 'Journal') {
+          @if (typeDefinitions().length > 0) {
+            <mat-form-field appearance="outline" class="note-form__field">
+              <mat-label>Journal Type Definition</mat-label>
+              <mat-select formControlName="typeId" aria-label="Select Journal Type">
+                @for (type of typeDefinitions(); track type.id) {
+                  <mat-option [value]="type.id">{{ type.name }} (v{{ type.version }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          } @else {
+            <div class="note-form__type-notice">
+              <mat-icon>info</mat-icon>
+              <span
+                >No active type definitions found.
+                <a routerLink="/types">Create a type definition</a> first.</span
+              >
+            </div>
+          }
+        }
+
+        @if (libraries().length > 0) {
           <mat-form-field appearance="outline" class="note-form__field">
-            <mat-label>Journal Type Definition</mat-label>
-            <mat-select formControlName="typeId" aria-label="Select Journal Type">
-              @for (type of typeDefinitions(); track type.id) {
-                <mat-option [value]="type.id">{{ type.name }} (v{{ type.version }})</mat-option>
+            <mat-label>Library</mat-label>
+            <mat-select formControlName="libraryId" aria-label="Select library">
+              <mat-option [value]="null">Unfiled (No Library)</mat-option>
+              @for (lib of libraries(); track lib.id) {
+                <mat-option [value]="lib.id">{{ lib.name }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
-        } @else {
-          <div class="note-form__type-notice">
-            <mat-icon>info</mat-icon>
-            <span
-              >No active type definitions found.
-              <a routerLink="/types">Create a type definition</a> first.</span
-            >
-          </div>
         }
-      }
-
-      @if (libraries().length > 0) {
-        <mat-form-field appearance="outline" class="note-form__field">
-          <mat-label>Library</mat-label>
-          <mat-select formControlName="libraryId" aria-label="Select library">
-            <mat-option [value]="null">Unfiled (No Library)</mat-option>
-            @for (lib of libraries(); track lib.id) {
-              <mat-option [value]="lib.id">{{ lib.name }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      }
-
-      <mat-form-field appearance="outline" class="note-form__field">
-        <mat-label>Content (Markdown)</mat-label>
-        <textarea
-          matInput
-          formControlName="bodyMarkdown"
-          rows="12"
-          placeholder="Write in Markdown..."
-        ></textarea>
-      </mat-form-field>
+      </div>
 
       @if (form.controls.level.value === 'Journal') {
         <app-typed-tag-selector
