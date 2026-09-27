@@ -24,6 +24,7 @@ import { SectionDefinition, TypeDefinitionResponse } from '@core/models/type-def
 import { LibraryService } from '@core/services/library.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
+import { NoteContentEditorComponent } from '@shared/components/note-content-editor/note-content-editor.component';
 
 export interface QuickCapturePayload {
   title: string;
@@ -72,6 +73,7 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     MatIconModule,
     MatButtonToggleModule,
     TypedTagSelectorComponent,
+    NoteContentEditorComponent,
   ],
   templateUrl: './quick-capture.component.html',
   styleUrl: './quick-capture.component.scss',

@@ -31,6 +31,8 @@ import { MarkdownEnhancerService } from '@core/services/markdown-enhancer.servic
 import { NoteService } from '@core/services/note.service';
 import { NotificationService } from '@core/services/notification.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
+import { NoteContentEditorComponent } from '@shared/components/note-content-editor/note-content-editor.component';
+import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 
 export interface NoteDialogSavePayload {
   id: string;
@@ -54,6 +56,8 @@ export interface NoteDialogSavePayload {
     MatIconModule,
     MatTooltipModule,
     TypedTagSelectorComponent,
+    NoteContentEditorComponent,
+    NoteEditButtonComponent,
   ],
   templateUrl: './note-dialog.component.html',
   styleUrl: './note-dialog.component.scss',
@@ -294,9 +298,19 @@ export class NoteDialogComponent {
     this.editTitle.set(input.value);
   }
 
-  public onBodyInput(event: Event): void {
-    const textarea = event.target as HTMLTextAreaElement;
-    this.editBody.set(textarea.value);
+  public onBodyChange(next: string): void {
+    this.editBody.set(next ?? '');
+  }
+
+  /** Escalate quick dialog to full-page editor, preserving quick edits first. */
+  public openInFullEditor(): void {
+    const current = this.note();
+    if (!current) return;
+    const returnUrl = this.router.url;
+    this.onClose();
+    void this.router.navigate(['/notes', current.id], {
+      queryParams: { returnUrl },
+    });
   }
 
   public onTagsInput(event: Event): void {

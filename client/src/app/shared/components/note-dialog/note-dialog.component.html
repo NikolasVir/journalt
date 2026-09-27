@@ -45,6 +45,12 @@
             }
           </mat-menu>
 
+          <app-note-edit-button
+            tooltip="Open full editor"
+            ariaLabel="Open full editor"
+            (editRequested)="openInFullEditor()"
+          />
+
           <div class="view-toggle" role="group" aria-label="Toggle view mode">
             <button
               type="button"
@@ -93,15 +99,12 @@
             </div>
           }
         } @else {
-          <mat-form-field appearance="outline" class="dialog-panel__body-field">
-            <textarea
-              matInput
-              class="dialog-panel__textarea"
-              placeholder="Note content (Markdown supported)..."
-              [value]="editBody()"
-              (input)="onBodyInput($event)"
-            ></textarea>
-          </mat-form-field>
+          <app-note-content-editor
+            [value]="editBody()"
+            (valueChange)="onBodyChange($event)"
+            placeholder="Note content (Markdown supported)..."
+            ariaLabel="Note content (Markdown)"
+          />
         }
 
         <!-- Bottom-anchored footer sections (Sources and Tags) -->

@@ -41,16 +41,13 @@
         />
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="capture-card__field">
-        <mat-label>Take a note...</mat-label>
-        <textarea
-          matInput
-          rows="4"
-          placeholder="Note content (Markdown supported)..."
-          [value]="bodyMarkdown()"
-          (input)="bodyMarkdown.set($any($event.target).value)"
-        ></textarea>
-      </mat-form-field>
+      <app-note-content-editor
+        [value]="bodyMarkdown()"
+        (valueChange)="bodyMarkdown.set($event)"
+        placeholder="Note content (Markdown supported)..."
+        ariaLabel="Note content"
+        minHeight="120px"
+      />
 
       @if (libraries().length > 0) {
         <mat-form-field appearance="outline" class="capture-card__field">
