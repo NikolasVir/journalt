@@ -11,6 +11,10 @@
   @include flex-center;
   padding: var(--spacing-lg);
   backdrop-filter: blur(4px);
+
+  @include respond-to('mobile') {
+    padding: var(--spacing-xs);
+  }
 }
 
 .dialog-panel {
@@ -26,6 +30,14 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  @include respond-to('mobile') {
+    width: 98vw;
+    height: 94vh;
+    min-height: 0;
+    max-height: none;
+    border-radius: var(--radius-md);
+  }
 
   &__header {
     display: flex;

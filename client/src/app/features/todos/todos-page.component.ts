@@ -264,8 +264,8 @@ import {
 
       &__stats {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: var(--spacing-md);
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: var(--spacing-sm);
       }
 
       &__quick-add {

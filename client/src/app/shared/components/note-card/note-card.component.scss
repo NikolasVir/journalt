@@ -27,7 +27,13 @@
     .note-card__actions {
       opacity: 1;
       pointer-events: auto;
-      transform: translateY(0);
+    }
+  }
+
+  @media (hover: none) {
+    .note-card__actions {
+      opacity: 1;
+      pointer-events: auto;
     }
   }
 
@@ -159,7 +165,7 @@
   &__tags {
     margin-top: auto;
     padding-top: var(--spacing-xs);
-    padding-right: 72px;
+    padding-right: 0;
   }
 
   &__tag {
@@ -181,24 +187,21 @@
   }
 
   &__actions {
-    position: absolute;
-    bottom: var(--spacing-xs);
-    right: var(--spacing-xs);
-    z-index: 2;
-    padding: 0;
-    margin: 0;
-    min-height: 0;
+    position: relative;
+    margin-top: auto;
+    padding: var(--spacing-2xs) var(--spacing-xs) var(--spacing-xs);
+    min-height: 36px;
     height: auto;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: var(--spacing-2xs);
     background: none;
     border: none;
     box-shadow: none;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(4px);
-    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    transition: opacity var(--transition-fast);
 
     ::ng-deep {
       .mat-mdc-icon-button {
@@ -231,6 +234,77 @@
 
         .mat-mdc-button-touch-target {
           display: none;
+        }
+      }
+    }
+  }
+}
+
+@include respond-to('mobile') {
+  :host {
+    margin-bottom: var(--spacing-md-sm);
+  }
+
+  .note-card {
+    border-radius: var(--radius-md);
+
+    &__header {
+      padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-2xs);
+      gap: var(--spacing-xs);
+    }
+
+    &__title {
+      font-size: var(--font-size-sm);
+    }
+
+    &__level-badge {
+      font-size: 10px;
+      padding: 1px 5px;
+    }
+
+    &__content {
+      padding: var(--spacing-2xs) var(--spacing-sm) var(--spacing-sm);
+    }
+
+    &__body {
+      max-height: 140px;
+      font-size: var(--font-size-xs);
+    }
+
+    &__body-text {
+      max-height: 140px;
+      font-size: var(--font-size-xs);
+    }
+
+    &__tags {
+      padding-right: 0;
+      gap: 4px;
+      margin-top: var(--spacing-xs);
+    }
+
+    &__tag {
+      font-size: 11px;
+      min-height: 22px;
+      padding: 0 var(--spacing-xs);
+    }
+
+    &__actions {
+      opacity: 1;
+      pointer-events: auto;
+      padding: 0 var(--spacing-xs) var(--spacing-2xs);
+      gap: 2px;
+      min-height: 32px;
+
+      ::ng-deep .mat-mdc-icon-button {
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+
+        .mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+          line-height: 18px;
         }
       }
     }

@@ -22,8 +22,10 @@
   &__collapsed {
     @include flex-between;
     min-height: 46px;
-    padding: 0 var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-md);
     cursor: pointer;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
   }
 
   &__placeholder {
@@ -35,6 +37,7 @@
   &__actions {
     @include flex-center;
     gap: var(--spacing-2xs);
+    flex-wrap: wrap;
   }
 
   &__pill {

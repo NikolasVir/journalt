@@ -109,6 +109,7 @@
   &__radio-group {
     display: flex;
     gap: var(--spacing-md);
+    flex-wrap: wrap;
   }
 
   // Tighten the gap between the Type/Library meta-grid and the tags
@@ -135,6 +136,8 @@
     background-color: var(--color-bg-surface);
     padding: var(--spacing-md) 0;
     border-top: 1px solid var(--color-border-subtle);
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
   }
 
   &__buttons {
