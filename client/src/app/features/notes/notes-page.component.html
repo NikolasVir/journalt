@@ -55,7 +55,10 @@
         <p>Loading {{ pageTitle() }}...</p>
       </div>
     } @else if (filteredNotes().length > 0) {
-      <div class="notes-page__grid">
+      <div
+        class="notes-page__grid"
+        [class.notes-page__grid--list]="layoutService.viewMode() === 'list'"
+      >
         @for (note of filteredNotes(); track note.id) {
           <app-note-card
             [note]="note"

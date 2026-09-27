@@ -5,6 +5,10 @@
   gap: var(--spacing-xl);
   width: 100%;
 
+  @include respond-to('mobile') {
+    gap: var(--spacing-md);
+  }
+
   &__section {
     width: 100%;
   }
@@ -86,7 +90,14 @@
     }
 
     @include respond-to('mobile') {
-      column-count: 1;
+      column-count: 2;
+      column-gap: var(--spacing-md-sm);
+    }
+
+    &--list {
+      column-count: 1 !important;
+      max-width: 800px;
+      margin: 0 auto;
     }
   }
 

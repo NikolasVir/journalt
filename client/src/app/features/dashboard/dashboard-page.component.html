@@ -49,7 +49,10 @@
         <p>Loading notes...</p>
       </div>
     } @else if (filteredNotes().length > 0) {
-      <div class="dashboard__grid">
+      <div
+        class="dashboard__grid"
+        [class.dashboard__grid--list]="layoutService.viewMode() === 'list'"
+      >
         @for (note of filteredNotes(); track note.id) {
           <app-note-card
             [note]="note"
