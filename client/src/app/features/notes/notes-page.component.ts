@@ -10,6 +10,7 @@ import { NotificationService } from '@core/services/notification.service';
 import { NoteCardComponent } from '@shared/components/note-card/note-card.component';
 import { NoteDialogComponent, NoteDialogSavePayload } from '@shared/components/note-dialog/note-dialog.component';
 import { QuickCaptureComponent, QuickCapturePayload } from '@shared/components/quick-capture/quick-capture.component';
+import { openNoteEditor } from '@shared/utils/note-navigation';
 
 @Component({
   selector: 'app-notes-page',
@@ -229,5 +230,10 @@ export class NotesPageComponent implements OnInit {
 
   public openNoteDialog(note: NoteResponse): void {
     this.selectedNote.set(note);
+  }
+
+  /** Universal pen: full-page editor with return ticket to this tab. */
+  public openFullEditor(note: NoteResponse): void {
+    void openNoteEditor(this.router, note.id);
   }
 }

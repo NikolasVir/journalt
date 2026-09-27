@@ -5,11 +5,12 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
+import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 
 @Component({
   selector: 'app-note-card',
   standalone: true,
-  imports: [MatCardModule, MatChipsModule, MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [MatCardModule, MatChipsModule, MatButtonModule, MatIconModule, MatTooltipModule, NoteEditButtonComponent],
   templateUrl: './note-card.component.html',
   styleUrl: './note-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -22,6 +23,7 @@ export class NoteCardComponent {
   public readonly toggleTodo = output<NoteResponse>();
   public readonly trashNote = output<NoteResponse>();
   public readonly promoteNote = output<{ note: NoteResponse; targetLevel: NoteLevel }>();
+  public readonly editRequested = output<NoteResponse>();
 
   protected readonly formatTag = formatTag;
 
@@ -39,6 +41,10 @@ export class NoteCardComponent {
 
   public onCardClick(): void {
     this.cardClick.emit(this.note());
+  }
+
+  public onEdit(): void {
+    this.editRequested.emit(this.note());
   }
 
   public onToggleTodo(event: Event): void {

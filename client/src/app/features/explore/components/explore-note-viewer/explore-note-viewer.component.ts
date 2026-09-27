@@ -11,12 +11,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { formatTag, NoteResponse } from '@core/models/note.model';
 import { MarkdownEnhancerService } from '@core/services/markdown-enhancer.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
+import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 
 /**
  * Right pane of Explore. Renders a note read-only and intercepts wiki-links so
@@ -25,7 +24,7 @@ import { TypeDefinitionService } from '@core/services/type-definition.service';
 @Component({
   selector: 'app-explore-note-viewer',
   standalone: true,
-  imports: [DatePipe, MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [DatePipe, MatIconModule, NoteEditButtonComponent],
   templateUrl: './explore-note-viewer.component.html',
   styleUrl: './explore-note-viewer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

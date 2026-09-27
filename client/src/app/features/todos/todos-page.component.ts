@@ -20,6 +20,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { formatTag, NoteResponse, NoteSummaryResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
 import { NotificationService } from '@core/services/notification.service';
+import { Router } from '@angular/router';
+import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 import {
   NoteDialogComponent,
   NoteDialogSavePayload,
@@ -41,6 +43,7 @@ import {
     MatTabsModule,
     MatTooltipModule,
     NoteDialogComponent,
+    NoteEditButtonComponent,
   ],
   template: `
     <div class="todos-page">
@@ -143,14 +146,11 @@ import {
                   </div>
 
                   <div class="todo-card__actions">
-                    <button
-                      mat-icon-button
-                      (click)="openDialog(todo)"
-                      matTooltip="Edit task"
-                      aria-label="Edit task"
-                    >
-                      <mat-icon>edit</mat-icon>
-                    </button>
+                    <app-note-edit-button
+                      tooltip="Edit task"
+                      ariaLabel="Edit task"
+                      (editRequested)="openFullEditor(todo)"
+                    />
                     <button
                       mat-icon-button
                       (click)="trashTodo(todo)"
@@ -203,6 +203,11 @@ import {
                   </div>
 
                   <div class="todo-card__actions">
+                    <app-note-edit-button
+                      tooltip="Edit task"
+                      ariaLabel="Edit task"
+                      (editRequested)="openFullEditor(todo)"
+                    />
                     <button
                       mat-icon-button
                       (click)="trashTodo(todo)"
@@ -460,6 +465,7 @@ import {
 export class TodosPageComponent implements OnInit {
   private readonly noteService = inject(NoteService);
   private readonly notification = inject(NotificationService);
+  private readonly router = inject(Router);
 
   protected readonly formatTag = formatTag;
   protected readonly allTodos = signal<NoteSummaryResponse[]>([]);
@@ -548,6 +554,13 @@ export class TodosPageComponent implements OnInit {
     this.noteService.getById(todo.id).subscribe({
       next: (note) => this.selectedTodo.set(note),
       error: () => this.notification.showError('Failed to load task details.'),
+    });
+  }
+
+  /** Universal pen: full-page editor with return ticket to Todos. */
+  public openFullEditor(todo: NoteSummaryResponse): void {
+    void this.router.navigate(['/notes', todo.id], {
+      queryParams: { returnUrl: this.router.url },
     });
   }
 

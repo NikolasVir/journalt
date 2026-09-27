@@ -42,6 +42,8 @@
   </mat-card-content>
 
   <mat-card-actions align="end" class="note-card__actions">
+    <app-note-edit-button (editRequested)="onEdit()" />
+
     <button
       mat-icon-button
       [color]="note().isTodo ? 'primary' : undefined"

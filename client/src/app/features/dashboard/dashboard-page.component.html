@@ -54,6 +54,7 @@
           <app-note-card
             [note]="note"
             (cardClick)="openNoteDialog($event)"
+            (editRequested)="openFullEditor($event)"
             (tagClick)="onTagClick($event)"
             (toggleTodo)="handleToggleTodo($event)"
             (trashNote)="handleTrashNote($event)"

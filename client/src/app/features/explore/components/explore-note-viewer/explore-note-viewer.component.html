@@ -19,15 +19,10 @@
         </div>
       </div>
 
-      <button
-        mat-icon-button
+      <app-note-edit-button
         class="viewer__edit"
-        (click)="editRequested.emit(n.id)"
-        matTooltip="Edit note"
-        aria-label="Edit note"
-      >
-        <mat-icon>edit</mat-icon>
-      </button>
+        (editRequested)="editRequested.emit(n.id)"
+      />
     </header>
 
     <div #bodyRef class="viewer__body markdown-body" (click)="onBodyClick($event)">
