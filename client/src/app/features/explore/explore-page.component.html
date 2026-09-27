@@ -24,5 +24,6 @@
     [isLoading]="isLoadingNote()"
     (noteSelected)="selectNote($event)"
     (editRequested)="editNote($event)"
+    (backToTreeRequested)="clearSelectedNote()"
   />
 </div>

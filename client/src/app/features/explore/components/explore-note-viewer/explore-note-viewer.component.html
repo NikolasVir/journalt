@@ -6,6 +6,16 @@
     </div>
   } @else if (note(); as n) {
     <header class="viewer__header">
+      <button
+        mat-icon-button
+        type="button"
+        class="viewer__back-btn"
+        (click)="backToTreeRequested.emit()"
+        aria-label="Back to library tree"
+        matTooltip="Back to tree"
+      >
+        <mat-icon>arrow_back</mat-icon>
+      </button>
       <div class="viewer__heading">
         <h2 class="viewer__title">{{ n.title || 'Untitled Note' }}</h2>
         <div class="viewer__meta">

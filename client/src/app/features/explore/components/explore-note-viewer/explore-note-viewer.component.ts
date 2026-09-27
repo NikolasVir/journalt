@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { formatTag, NoteResponse } from '@core/models/note.model';
 import { MarkdownEnhancerService } from '@core/services/markdown-enhancer.service';
@@ -24,7 +25,7 @@ import { NoteEditButtonComponent } from '@shared/components/note-edit-button/not
 @Component({
   selector: 'app-explore-note-viewer',
   standalone: true,
-  imports: [DatePipe, MatIconModule, NoteEditButtonComponent],
+  imports: [DatePipe, MatIconModule, MatButtonModule, NoteEditButtonComponent],
   templateUrl: './explore-note-viewer.component.html',
   styleUrl: './explore-note-viewer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,6 +39,7 @@ export class ExploreNoteViewerComponent {
 
   public readonly noteSelected = output<string>();
   public readonly editRequested = output<string>();
+  public readonly backToTreeRequested = output<void>();
 
   private readonly bodyRef = viewChild<ElementRef<HTMLElement>>('bodyRef');
 
