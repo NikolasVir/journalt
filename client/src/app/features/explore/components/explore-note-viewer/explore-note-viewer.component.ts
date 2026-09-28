@@ -10,6 +10,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { catchError, filter, map, of, switchMap } from 'rxjs';
 import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -68,19 +70,24 @@ export class ExploreNoteViewerComponent {
     });
 
     // Resolve the type name once per id; Journal notes always carry a typeId.
-    effect(() => {
-      const typeId = this.note()?.typeId;
-      if (!typeId || this.typeNames()[typeId]) return;
-      this.typeService.getById(typeId).subscribe({
-        next: (type) =>
-          this.typeNames.update((names) => ({
-            ...names,
-            [typeId]: `${type.name} v${type.version}`,
-          })),
-        error: () =>
-          this.typeNames.update((names) => ({ ...names, [typeId]: 'Typed' })),
+    toObservable(this.note)
+      .pipe(
+        map((n) => n?.typeId),
+        filter((typeId): typeId is string => !!typeId && !this.typeNames()[typeId]),
+        switchMap((typeId) =>
+          this.typeService.getById(typeId).pipe(
+            map((type) => ({ typeId, name: `${type.name} v${type.version}` })),
+            catchError(() => of({ typeId, name: 'Typed' }))
+          )
+        ),
+        takeUntilDestroyed()
+      )
+      .subscribe(({ typeId, name }) => {
+        this.typeNames.update((names) => ({
+          ...names,
+          [typeId]: name,
+        }));
       });
-    });
   }
 
   public formatTagValue(tag: Parameters<typeof formatTag>[0]): string {

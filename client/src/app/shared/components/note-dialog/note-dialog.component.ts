@@ -2,14 +2,18 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { catchError, of, switchMap } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -69,6 +73,7 @@ export class NoteDialogComponent {
   private readonly libraryService = inject(LibraryService);
   private readonly markdownEnhancer = inject(MarkdownEnhancerService);
   private readonly notification = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   public readonly note = input<NoteResponse | null>(null);
 
@@ -79,12 +84,28 @@ export class NoteDialogComponent {
 
   protected readonly renderedContainer = viewChild<ElementRef<HTMLElement>>('renderedContainer');
 
-  protected readonly editTitle = signal<string>('');
-  protected readonly editBody = signal<string>('');
-  protected readonly editTags = signal<string>('');
-  protected readonly editTypedTags = signal<TagDto[]>([]);
-  protected readonly legacyTags = signal<TagDto[]>([]);
-  protected readonly isTagsExpanded = signal<boolean>(false);
+  protected readonly editTitle = linkedSignal(() => this.note()?.title ?? '');
+  protected readonly editBody = linkedSignal(() => this.note()?.bodyMarkdown ?? '');
+  protected readonly editTags = linkedSignal(() => {
+    const current = this.note();
+    if (!current || current.level !== 'Quick') return '';
+    return (current.tags ?? []).map(formatTag).filter(Boolean).join(', ');
+  });
+  protected readonly editTypedTags = linkedSignal<TagDto[]>(() => {
+    const current = this.note();
+    if (!current || current.level !== 'Journal') return [];
+    return (current.tags ?? []).filter((tag) => tag.tagType === 'Typed');
+  });
+  protected readonly legacyTags = linkedSignal<TagDto[]>(() => {
+    const current = this.note();
+    if (!current || current.level !== 'Journal') return [];
+    return (current.tags ?? []).filter((tag) => tag.tagType !== 'Typed');
+  });
+  protected readonly isTagsExpanded = linkedSignal<boolean>(() => {
+    const current = this.note();
+    if (!current || current.level !== 'Journal') return false;
+    return (current.tags ?? []).some((tag) => tag.tagType !== 'Typed');
+  });
   protected readonly tagCount = computed(() => {
     const current = this.note();
     if (!current) return 0;
@@ -100,8 +121,8 @@ export class NoteDialogComponent {
     }
     return 0;
   });
-  protected readonly editIsTodo = signal<boolean>(false);
-  protected readonly editLibraryId = signal<string | null>(null);
+  protected readonly editIsTodo = linkedSignal(() => this.note()?.isTodo ?? false);
+  protected readonly editLibraryId = linkedSignal(() => this.note()?.libraryId ?? null);
   protected readonly libraries = signal<LibraryResponse[]>([]);
   protected readonly selectedLibraryName = computed(() => {
     const libId = this.editLibraryId();
@@ -116,58 +137,43 @@ export class NoteDialogComponent {
   protected readonly isAddingSource = signal<boolean>(false);
   protected readonly isSubmittingSource = signal<boolean>(false);
   protected readonly sourceError = signal<string | null>(null);
-  protected readonly viewMode = signal<'rendered' | 'markdown'>('rendered');
-  protected readonly renderedHtml = signal<string>('');
+  protected readonly renderedHtml = linkedSignal(() => this.note()?.renderedHtml ?? '');
+  protected readonly viewMode = linkedSignal<'rendered' | 'markdown'>(() => {
+    const current = this.note();
+    return current?.bodyMarkdown?.trim() ? 'rendered' : 'markdown';
+  });
 
   private lastRenderedBody = '';
   private pointerDownOnBackdrop = false;
 
   constructor() {
-    this.libraryService.list().subscribe({
-      next: (libs) => this.libraries.set(libs),
-      error: () => this.libraries.set([])
-    });
+    this.libraryService
+      .list()
+      .pipe(takeUntilDestroyed())
+      .subscribe({
+        next: (libs) => this.libraries.set(libs),
+        error: () => this.libraries.set([])
+      });
 
-    effect(() => {
-      const current = this.note();
-      if (current) {
-        this.editTitle.set(current.title ?? '');
-        this.editBody.set(current.bodyMarkdown ?? '');
-        this.editLibraryId.set(current.libraryId ?? null);
-        const tags = current.tags ?? [];
-        const typedTags = tags.filter((tag) => tag.tagType === 'Typed');
-        const nonTypedTags = tags.filter((tag) => tag.tagType !== 'Typed');
-        this.editTags.set(
-          current.level === 'Quick' ? tags.map(formatTag).filter(Boolean).join(', ') : '',
-        );
-        this.editTypedTags.set(current.level === 'Journal' ? typedTags : []);
-        this.legacyTags.set(current.level === 'Journal' ? nonTypedTags : []);
-        this.editIsTodo.set(current.isTodo ?? false);
-
-        if (current.level === 'Journal' && nonTypedTags.length > 0) {
-          this.isTagsExpanded.set(true);
-        } else {
-          this.isTagsExpanded.set(false);
-        }
-
-        this.noteService.getSources(current.id).subscribe({
-          next: (s) => this.sources.set(s ?? []),
-          error: () => this.sources.set([]),
-        });
+    // Reactively fetch sources when active note changes, automatically cancelling in-flight requests
+    toObservable(this.note)
+      .pipe(
+        switchMap((current) => {
+          if (!current) return of([]);
+          return this.noteService.getSources(current.id).pipe(catchError(() => of([])));
+        }),
+        takeUntilDestroyed()
+      )
+      .subscribe((s) => {
+        this.sources.set(s ?? []);
         this.isAddingSource.set(false);
         this.newCitation.set('');
         this.newUrl.set('');
+      });
 
-        const html = current.renderedHtml ?? '';
-        this.renderedHtml.set(html);
-        this.lastRenderedBody = current.bodyMarkdown ?? '';
-
-        if (!current.bodyMarkdown?.trim()) {
-          this.viewMode.set('markdown');
-        } else {
-          this.viewMode.set('rendered');
-        }
-      }
+    effect(() => {
+      const current = this.note();
+      this.lastRenderedBody = current?.bodyMarkdown ?? '';
     });
 
     effect(() => {
@@ -192,15 +198,18 @@ export class NoteDialogComponent {
           this.renderedHtml.set('');
           this.lastRenderedBody = '';
         } else {
-          this.noteService.renderPreview(currentBody).subscribe({
-            next: (res) => {
-              this.renderedHtml.set(res.renderedHtml);
-              this.lastRenderedBody = currentBody;
-            },
-            error: () => {
-              // fallback: keep existing renderedHtml
-            },
-          });
+          this.noteService
+            .renderPreview(currentBody)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: (res) => {
+                this.renderedHtml.set(res.renderedHtml);
+                this.lastRenderedBody = currentBody;
+              },
+              error: () => {
+                // fallback: keep existing renderedHtml
+              },
+            });
         }
       }
     }
@@ -387,6 +396,7 @@ export class NoteDialogComponent {
         citation,
         url,
       })
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (created) => {
           this.sources.update((list) => [...list, created]);
@@ -407,15 +417,18 @@ export class NoteDialogComponent {
     const current = this.note();
     if (!current) return;
 
-    this.noteService.deleteSource(current.id, sourceId).subscribe({
-      next: () => {
-        this.sources.update((list) => list.filter((s) => s.id !== sourceId));
-        this.notification.showSuccess('Source removed');
-      },
-      error: (err) => {
-        const msg = this.extractErrorMessage(err, 'Failed to remove source.');
-        this.notification.showError(msg);
-      },
-    });
+    this.noteService
+      .deleteSource(current.id, sourceId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.sources.update((list) => list.filter((s) => s.id !== sourceId));
+          this.notification.showSuccess('Source removed');
+        },
+        error: (err) => {
+          const msg = this.extractErrorMessage(err, 'Failed to remove source.');
+          this.notification.showError(msg);
+        },
+      });
   }
 }
