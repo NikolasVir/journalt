@@ -237,4 +237,23 @@ describe('NoteDialogComponent', () => {
     expect(component['tagCount']()).toBe(1);
     expect(component['isTagsExpanded']()).toBe(true);
   });
+
+  it('emits trash event with note and close event when onTrash is called', () => {
+    fixture.componentRef.setInput('note', note);
+    fixture.detectChanges();
+
+    let trashedNote: NoteResponse | undefined;
+    let closed = false;
+    component.trash.subscribe((n) => {
+      trashedNote = n;
+    });
+    component.close.subscribe(() => {
+      closed = true;
+    });
+
+    component.onTrash();
+
+    expect(trashedNote).toBe(note);
+    expect(closed).toBe(true);
+  });
 });

@@ -63,3 +63,11 @@ a {
     text-decoration: underline;
   }
 }
+
+/* ── Snackbars ────────────────────────────────────────────────────────── */
+.mat-mdc-snack-bar-container.snackbar-undo {
+  .mat-mdc-snack-bar-action {
+    font-weight: 600;
+    color: var(--mat-sys-inverse-primary, #8ab4f8);
+  }
+}

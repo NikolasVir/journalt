@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarConfig, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
+import { take } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -32,5 +33,22 @@ export class NotificationService {
     this.snackBar.open(message, 'OK', {
       ...this.defaultConfig
     });
+  }
+
+  public showUndo(
+    message: string,
+    onUndo: () => void,
+    action: string = 'Undo',
+    duration: number = 5000
+  ): MatSnackBarRef<TextOnlySnackBar> {
+    const ref = this.snackBar.open(message, action, {
+      ...this.defaultConfig,
+      duration,
+      panelClass: ['snackbar-undo']
+    });
+    ref.onAction().pipe(take(1)).subscribe(() => {
+      onUndo();
+    });
+    return ref;
   }
 }

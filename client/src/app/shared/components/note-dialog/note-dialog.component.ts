@@ -74,7 +74,7 @@ export class NoteDialogComponent {
 
   public readonly close = output<void>();
   public readonly save = output<NoteDialogSavePayload>();
-  public readonly trash = output<string>();
+  public readonly trash = output<NoteResponse>();
   public readonly promote = output<{ id: string; targetLevel: NoteLevel }>();
 
   protected readonly renderedContainer = viewChild<ElementRef<HTMLElement>>('renderedContainer');
@@ -275,7 +275,7 @@ export class NoteDialogComponent {
   public onTrash(): void {
     const current = this.note();
     if (current) {
-      this.trash.emit(current.id);
+      this.trash.emit(current);
       this.close.emit();
     }
   }
