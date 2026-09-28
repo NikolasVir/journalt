@@ -51,29 +51,6 @@
             (editRequested)="openInFullEditor()"
           />
 
-          <div class="view-toggle" role="group" aria-label="Toggle view mode">
-            <button
-              type="button"
-              class="view-toggle__btn"
-              [class.view-toggle__btn--active]="viewMode() === 'rendered'"
-              (click)="setViewMode('rendered')"
-              matTooltip="Rendered Preview"
-            >
-              <mat-icon class="view-toggle__icon">visibility</mat-icon>
-              <span>Preview</span>
-            </button>
-            <button
-              type="button"
-              class="view-toggle__btn"
-              [class.view-toggle__btn--active]="viewMode() === 'markdown'"
-              (click)="setViewMode('markdown')"
-              matTooltip="Edit Markdown"
-            >
-              <mat-icon class="view-toggle__icon">edit_note</mat-icon>
-              <span>Markdown</span>
-            </button>
-          </div>
-
           <span
             class="dialog-panel__level-badge"
             [class]="'dialog-panel__level-badge--' + n.level.toLowerCase()"
@@ -84,27 +61,18 @@
       </div>
 
       <div class="dialog-panel__body">
-        @if (viewMode() === 'rendered') {
-          @if (renderedHtml()) {
-            <div
-              #renderedContainer
-              class="dialog-panel__rendered-content markdown-body"
-              [innerHTML]="renderedHtml()"
-              (click)="onRenderedContentClick($event)"
-            ></div>
-          } @else {
-            <div class="dialog-panel__empty-rendered" (click)="setViewMode('markdown')">
-              <mat-icon>edit_note</mat-icon>
-              <p>No content to preview yet. Click to switch to Markdown and write.</p>
-            </div>
-          }
+        @if (renderedHtml()) {
+          <div
+            #renderedContainer
+            class="dialog-panel__rendered-content markdown-body"
+            [innerHTML]="renderedHtml()"
+            (click)="onRenderedContentClick($event)"
+          ></div>
         } @else {
-          <app-note-content-editor
-            [value]="editBody()"
-            (valueChange)="onBodyChange($event)"
-            placeholder="Note content (Markdown supported)..."
-            ariaLabel="Note content (Markdown)"
-          />
+          <div class="dialog-panel__empty-rendered" (click)="openInFullEditor()">
+            <mat-icon>edit_note</mat-icon>
+            <p>No content to preview yet. Click to open in full editor and write.</p>
+          </div>
         }
 
         <!-- Bottom-anchored footer sections (Sources and Tags) -->

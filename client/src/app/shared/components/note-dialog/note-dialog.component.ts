@@ -35,7 +35,6 @@ import { MarkdownEnhancerService } from '@core/services/markdown-enhancer.servic
 import { NoteService } from '@core/services/note.service';
 import { NotificationService } from '@core/services/notification.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
-import { NoteContentEditorComponent } from '@shared/components/note-content-editor/note-content-editor.component';
 import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 
 export interface NoteDialogSavePayload {
@@ -60,7 +59,6 @@ export interface NoteDialogSavePayload {
     MatIconModule,
     MatTooltipModule,
     TypedTagSelectorComponent,
-    NoteContentEditorComponent,
     NoteEditButtonComponent,
   ],
   templateUrl: './note-dialog.component.html',
@@ -138,12 +136,6 @@ export class NoteDialogComponent {
   protected readonly isSubmittingSource = signal<boolean>(false);
   protected readonly sourceError = signal<string | null>(null);
   protected readonly renderedHtml = linkedSignal(() => this.note()?.renderedHtml ?? '');
-  protected readonly viewMode = linkedSignal<'rendered' | 'markdown'>(() => {
-    const current = this.note();
-    return current?.bodyMarkdown?.trim() ? 'rendered' : 'markdown';
-  });
-
-  private lastRenderedBody = '';
   private pointerDownOnBackdrop = false;
 
   constructor() {
@@ -172,15 +164,9 @@ export class NoteDialogComponent {
       });
 
     effect(() => {
-      const current = this.note();
-      this.lastRenderedBody = current?.bodyMarkdown ?? '';
-    });
-
-    effect(() => {
       const containerRef = this.renderedContainer();
       const html = this.renderedHtml();
-      const mode = this.viewMode();
-      if (mode === 'rendered' && containerRef?.nativeElement && html) {
+      if (containerRef?.nativeElement && html) {
         setTimeout(() => {
           if (containerRef.nativeElement) {
             void this.markdownEnhancer.enhance(containerRef.nativeElement);
@@ -188,32 +174,6 @@ export class NoteDialogComponent {
         }, 0);
       }
     });
-  }
-
-  public setViewMode(mode: 'rendered' | 'markdown'): void {
-    if (mode === 'rendered' && this.viewMode() !== 'rendered') {
-      const currentBody = this.editBody().trim();
-      if (currentBody !== this.lastRenderedBody.trim()) {
-        if (!currentBody) {
-          this.renderedHtml.set('');
-          this.lastRenderedBody = '';
-        } else {
-          this.noteService
-            .renderPreview(currentBody)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: (res) => {
-                this.renderedHtml.set(res.renderedHtml);
-                this.lastRenderedBody = currentBody;
-              },
-              error: () => {
-                // fallback: keep existing renderedHtml
-              },
-            });
-        }
-      }
-    }
-    this.viewMode.set(mode);
   }
 
   public onRenderedContentClick(event: MouseEvent): void {
@@ -305,10 +265,6 @@ export class NoteDialogComponent {
   public onTitleInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.editTitle.set(input.value);
-  }
-
-  public onBodyChange(next: string): void {
-    this.editBody.set(next ?? '');
   }
 
   /** Escalate quick dialog to full-page editor, preserving quick edits first. */
