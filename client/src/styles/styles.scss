@@ -73,3 +73,42 @@ a {
     color: var(--mat-sys-inverse-primary, #8ab4f8);
   }
 }
+
+/* ── Dialog Overlays ──────────────────────────────────────────────────── */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  @include flex-center;
+  padding: var(--spacing-lg);
+  backdrop-filter: blur(4px);
+
+  @include respond-to('mobile') {
+    padding: var(--spacing-xs);
+  }
+}
+
+.dialog-panel {
+  width: 90vw;
+  max-width: 960px;
+  height: 85vh;
+  max-height: 850px;
+  min-height: 480px;
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  @include respond-to('mobile') {
+    width: 98vw;
+    height: 94vh;
+    min-height: 0;
+    max-height: none;
+    border-radius: var(--radius-md);
+  }
+}
+
