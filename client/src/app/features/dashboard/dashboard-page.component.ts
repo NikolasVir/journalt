@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
@@ -26,6 +26,11 @@ export class DashboardPageComponent implements OnInit {
   protected readonly layoutService = inject(LayoutService);
   private readonly notification = inject(NotificationService);
 
+  // Router inputs provided by withComponentInputBinding()
+  public readonly q = input<string>();
+  public readonly tag = input<string>();
+  public readonly libraryId = input<string>();
+
   protected readonly notes = signal<NoteResponse[]>([]);
   protected readonly isLoading = signal<boolean>(false);
   protected readonly selectedNote = signal<NoteResponse | null>(null);
@@ -52,15 +57,18 @@ export class DashboardPageComponent implements OnInit {
     });
   });
 
-  public ngOnInit(): void {
-    this.route.queryParams.subscribe((params) => {
-      const q = params['q'];
-      if (q !== undefined && q !== this.layoutService.searchQuery()) {
-        this.layoutService.setSearchQuery(q);
+  constructor() {
+    effect(() => {
+      const query = this.q();
+      if (query !== undefined && query !== this.layoutService.searchQuery()) {
+        this.layoutService.setSearchQuery(query);
       }
-      this.activeTag.set(params['tag'] || null);
-      this.activeLibraryId.set(params['libraryId'] || null);
+      this.activeTag.set(this.tag() || null);
+      this.activeLibraryId.set(this.libraryId() || null);
     });
+  }
+
+  public ngOnInit(): void {
     this.loadNotes();
   }
 

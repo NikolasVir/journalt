@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
 import { LayoutService } from '@layout/layout.service';
@@ -27,7 +26,11 @@ export class NotesPageComponent implements OnInit {
   protected readonly layoutService = inject(LayoutService);
   private readonly notification = inject(NotificationService);
 
-  private readonly routeData = toSignal(this.route.data);
+  // Router inputs provided by withComponentInputBinding()
+  public readonly level = input<NoteLevel>();
+  public readonly q = input<string>();
+  public readonly tag = input<string>();
+  public readonly libraryId = input<string>();
 
   protected readonly notes = signal<NoteResponse[]>([]);
   protected readonly isLoading = signal<boolean>(false);
@@ -36,9 +39,7 @@ export class NotesPageComponent implements OnInit {
   protected readonly activeTag = signal<string | null>(null);
   protected readonly activeLibraryId = signal<string | null>(null);
 
-  public readonly currentLevel = computed<NoteLevel | undefined>(() => {
-    return this.routeData()?.['level'] as NoteLevel | undefined;
-  });
+  public readonly currentLevel = computed<NoteLevel | undefined>(() => this.level());
 
   public readonly pageTitle = computed(() => {
     const level = this.currentLevel();
@@ -79,22 +80,24 @@ export class NotesPageComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      // Reload or filter when route data changes
+      // Reload notes whenever level route changes
       const lvl = this.currentLevel();
       this.loadNotes(lvl);
+    });
+
+    effect(() => {
+      // Sync query params smoothly via inputs
+      const query = this.q();
+      if (query !== undefined && query !== this.layoutService.searchQuery()) {
+        this.layoutService.setSearchQuery(query);
+      }
+      this.activeTag.set(this.tag() || null);
+      this.activeLibraryId.set(this.libraryId() || null);
     });
   }
 
   public ngOnInit(): void {
-    this.route.queryParams.subscribe((params) => {
-      const q = params['q'];
-      if (q !== undefined && q !== this.layoutService.searchQuery()) {
-        this.layoutService.setSearchQuery(q);
-      }
-      this.activeTag.set(params['tag'] || null);
-      this.activeLibraryId.set(params['libraryId'] || null);
-    });
-    this.loadNotes(this.currentLevel());
+    // Initial fetch handled by effect() reacting to currentLevel()
   }
 
   public onTagClick(tag: string): void {
