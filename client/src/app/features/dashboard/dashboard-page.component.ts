@@ -151,10 +151,34 @@ export class DashboardPageComponent implements OnInit {
   }
 
   public handleTrashNote(note: NoteResponse): void {
+    const originalIndex = this.notes().findIndex((n) => n.id === note.id);
     this.noteService.trash(note.id).subscribe({
       next: () => {
         this.notes.update((list) => list.filter((n) => n.id !== note.id));
-      }
+        this.notification.showUndo('Note moved to trash.', () => {
+          this.noteService.restore(note.id).subscribe({
+            next: () => {
+              this.notes.update((list) => {
+                if (list.some((n) => n.id === note.id)) return list;
+                const next = [...list];
+                if (originalIndex >= 0 && originalIndex <= next.length) {
+                  next.splice(originalIndex, 0, note);
+                } else {
+                  next.unshift(note);
+                }
+                return next;
+              });
+              this.notification.showSuccess('Note restored.');
+            },
+            error: () => {
+              this.notification.showError('Failed to restore note.');
+            },
+          });
+        });
+      },
+      error: () => {
+        this.notification.showError('Failed to move note to trash.');
+      },
     });
   }
 

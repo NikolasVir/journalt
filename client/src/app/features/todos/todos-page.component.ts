@@ -229,6 +229,7 @@ import {
         <app-note-dialog
           [note]="note"
           (save)="saveDialog($event)"
+          (trash)="trashTodo($event)"
           (close)="selectedTodo.set(null)"
         />
       }
@@ -539,10 +540,30 @@ export class TodosPageComponent implements OnInit {
   }
 
   public trashTodo(todo: NoteSummaryResponse): void {
+    const originalIndex = this.allTodos().findIndex((t) => t.id === todo.id);
     this.noteService.trash(todo.id).subscribe({
       next: () => {
         this.allTodos.update((list) => list.filter((t) => t.id !== todo.id));
-        this.notification.showSuccess('Task moved to trash.');
+        this.notification.showUndo('Task moved to trash.', () => {
+          this.noteService.restore(todo.id).subscribe({
+            next: () => {
+              this.allTodos.update((list) => {
+                if (list.some((t) => t.id === todo.id)) return list;
+                const next = [...list];
+                if (originalIndex >= 0 && originalIndex <= next.length) {
+                  next.splice(originalIndex, 0, todo);
+                } else {
+                  next.unshift(todo);
+                }
+                return next;
+              });
+              this.notification.showSuccess('Task restored.');
+            },
+            error: () => {
+              this.notification.showError('Failed to restore task.');
+            },
+          });
+        });
       },
       error: () => {
         this.notification.showError('Failed to trash task.');

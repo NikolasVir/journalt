@@ -79,7 +79,7 @@
     [note]="selectedNote()"
     (close)="selectedNote.set(null)"
     (save)="handleSaveDialog($event)"
-    (trash)="handleTrashNote(selectedNote()!)"
+    (trash)="handleTrashNote($event)"
     (promote)="handlePromoteNote({ note: selectedNote()!, targetLevel: $event.targetLevel })"
   />
 </div>

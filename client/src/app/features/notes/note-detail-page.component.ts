@@ -14,6 +14,7 @@ import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.mo
 import { SectionDefinition, TypeDefinitionResponse } from '@core/models/type-definition.model';
 import { LibraryService } from '@core/services/library.service';
 import { NoteService } from '@core/services/note.service';
+import { NotificationService } from '@core/services/notification.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 import { NoteContentEditorComponent } from '@shared/components/note-content-editor/note-content-editor.component';
@@ -77,6 +78,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   private readonly noteService = inject(NoteService);
   private readonly typeService = inject(TypeDefinitionService);
   private readonly libraryService = inject(LibraryService);
+  private readonly notification = inject(NotificationService);
 
   private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
   private readonly contentEditor = viewChild(NoteContentEditorComponent);
@@ -360,10 +362,27 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   public onDelete(): void {
     const id = this.noteId();
     if (!id) return;
+    const currentReturnUrl = this.returnUrl();
 
     this.noteService.trash(id).subscribe({
       next: () => {
         this.goBack();
+        this.notification.showUndo('Note moved to trash.', () => {
+          this.noteService.restore(id).subscribe({
+            next: () => {
+              void this.router.navigate(['/notes', id], {
+                queryParams: currentReturnUrl ? { returnUrl: currentReturnUrl } : undefined,
+              });
+              this.notification.showSuccess('Note restored.');
+            },
+            error: () => {
+              this.notification.showError('Failed to restore note.');
+            },
+          });
+        });
+      },
+      error: () => {
+        this.notification.showError('Failed to move note to trash.');
       },
     });
   }
