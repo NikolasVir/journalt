@@ -232,7 +232,7 @@ export class QuickCaptureComponent implements OnInit {
       try {
         const sections = JSON.parse(typeDef.sectionsJson) as SectionDefinition[];
         if (Array.isArray(sections) && sections.length > 0) {
-          const template = sections.map((s) => `## ${s.title}\n\n`).join('');
+          const template = sections.map((s) => `${'#'.repeat(s.level || 2)} ${s.heading || s.title}\n\n`).join('');
           this.bodyMarkdown.set(template);
         }
       } catch {

@@ -2,16 +2,109 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TypeDefinitionResponse } from '@core/models/type-definition.model';
 import { NotificationService } from '@core/services/notification.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
+
+export interface MetadataFieldDef {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'array';
+  required: boolean;
+}
+
+export interface SectionFieldDef {
+  heading: string;
+  level: number;
+  required: boolean;
+  allowMultiple: boolean;
+}
+
+export function parseSchemaFields(schemaJson?: string | null): MetadataFieldDef[] {
+  if (!schemaJson) return [];
+  try {
+    const parsed = JSON.parse(schemaJson);
+    if (!parsed || typeof parsed !== 'object' || !parsed.properties) return [];
+    const req: string[] = Array.isArray(parsed.required) ? parsed.required : [];
+    const validTypes: MetadataFieldDef['type'][] = ['string', 'number', 'boolean', 'array'];
+    return Object.entries(parsed.properties).map(([name, conf]) => {
+      const prop = conf as { type?: string };
+      const fieldType = validTypes.includes(prop?.type as MetadataFieldDef['type'])
+        ? (prop.type as MetadataFieldDef['type'])
+        : 'string';
+      return {
+        name,
+        type: fieldType,
+        required: req.includes(name),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export function buildSchemaJson(fields: MetadataFieldDef[]): string {
+  const properties: Record<string, { type: string }> = {};
+  const required: string[] = [];
+
+  for (const f of fields) {
+    const key = f.name.trim();
+    if (!key) continue;
+    properties[key] = { type: f.type };
+    if (f.required) {
+      required.push(key);
+    }
+  }
+
+  const obj: Record<string, unknown> = {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+    properties,
+    additionalProperties: false,
+  };
+  if (required.length > 0) {
+    obj['required'] = required;
+  }
+  return JSON.stringify(obj, null, 2);
+}
+
+export function parseSections(sectionsJson?: string | null): SectionFieldDef[] {
+  if (!sectionsJson) return [];
+  try {
+    const parsed = JSON.parse(sectionsJson);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => ({
+        heading: (item.heading || item.title || '').trim(),
+        level: typeof item.level === 'number' && item.level >= 1 && item.level <= 6 ? item.level : 2,
+        required: item.required ?? true,
+        allowMultiple: item.allowMultiple ?? item.repeatable ?? false,
+      }))
+      .filter((s) => s.heading.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+export function buildSectionsJson(sections: SectionFieldDef[]): string | null {
+  const list = sections
+    .filter((s) => s.heading.trim().length > 0)
+    .map((s) => ({
+      heading: s.heading.trim(),
+      level: s.level || 2,
+      required: !!s.required,
+      allowMultiple: !!s.allowMultiple,
+    }));
+  return list.length > 0 ? JSON.stringify(list, null, 2) : null;
+}
 
 @Component({
   selector: 'app-types-page',
@@ -26,421 +119,13 @@ import { TypeDefinitionService } from '@core/services/type-definition.service';
     MatChipsModule,
     MatExpansionModule,
     MatSlideToggleModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSelectModule,
+    MatCheckboxModule,
   ],
-  template: `
-    <div class="types-page">
-      <header class="types-page__header">
-        <div class="types-page__header-text">
-          <h1 class="types-page__title">Type Definitions</h1>
-          <p class="types-page__subtitle">
-            Manage types and section templates for structured Journal notes.
-          </p>
-        </div>
-
-        <button
-          mat-flat-button
-          color="primary"
-          (click)="showCreateModal.set(true)"
-          class="types-page__new-btn"
-        >
-          <mat-icon>add</mat-icon>
-          <span>New Type Definition</span>
-        </button>
-      </header>
-
-      <!-- Create Type Definition Form -->
-      @if (showCreateModal()) {
-        <mat-card appearance="outlined" class="create-card">
-          <mat-card-header>
-            <mat-card-title class="create-card__title">Create Type Definition</mat-card-title>
-          </mat-card-header>
-
-          <mat-card-content class="create-card__content">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Type Name</mat-label>
-              <input
-                matInput
-                placeholder="e.g. Meeting Note, Book Summary, Daily Log"
-                [ngModel]="newName()"
-                (ngModelChange)="newName.set($event)"
-              />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Description</mat-label>
-              <input
-                matInput
-                placeholder="Brief description of this note type"
-                [ngModel]="newDescription()"
-                (ngModelChange)="newDescription.set($event)"
-              />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Type JSON</mat-label>
-              <textarea
-                matInput
-                rows="6"
-                [ngModel]="newSchemaJson()"
-                (ngModelChange)="newSchemaJson.set($event)"
-                class="code-font"
-              ></textarea>
-              <mat-hint>Valid JSON defining typed metadata fields.</mat-hint>
-            </mat-form-field>
-          </mat-card-content>
-
-          <mat-card-actions class="create-card__actions">
-            <button mat-button (click)="cancelCreate()">Cancel</button>
-            <button
-              mat-flat-button
-              color="primary"
-              (click)="createTypeDefinition()"
-              [disabled]="!newName().trim() || !newSchemaJson().trim() || isSubmitting()"
-            >
-              Create Type
-            </button>
-          </mat-card-actions>
-        </mat-card>
-      }
-
-      <!-- Clone Type Modal -->
-      @if (cloningType(); as type) {
-        <mat-card appearance="outlined" class="create-card">
-          <mat-card-header>
-            <mat-card-title class="create-card__title">Clone "{{ type.name }}"</mat-card-title>
-          </mat-card-header>
-
-          <mat-card-content class="create-card__content">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>New Type Name</mat-label>
-              <input
-                matInput
-                [ngModel]="cloneName()"
-                (ngModelChange)="cloneName.set($event)"
-              />
-            </mat-form-field>
-          </mat-card-content>
-
-          <mat-card-actions class="create-card__actions">
-            <button mat-button (click)="cloningType.set(null)">Cancel</button>
-            <button
-              mat-flat-button
-              color="primary"
-              (click)="submitClone()"
-              [disabled]="!cloneName().trim() || isSubmitting()"
-            >
-              Clone
-            </button>
-          </mat-card-actions>
-        </mat-card>
-      }
-
-      <!-- Content -->
-      @if (isLoading()) {
-        <div class="types-page__loading">
-          <mat-icon class="spinning">sync</mat-icon>
-          <span>Loading type definitions...</span>
-        </div>
-      } @else if (types().length === 0) {
-        <div class="types-page__empty">
-          <mat-icon class="types-page__empty-icon">schema</mat-icon>
-          <p class="types-page__empty-title">No type definitions created yet</p>
-          <p class="types-page__empty-desc">
-            Define structured types and validation rules for Journal notes.
-          </p>
-          <button
-            mat-stroked-button
-            color="primary"
-            (click)="showCreateModal.set(true)"
-            class="types-page__empty-cta"
-          >
-            <mat-icon>add</mat-icon>
-            <span>Create First Type</span>
-          </button>
-        </div>
-      } @else {
-        <div class="types-page__list">
-          @for (type of types(); track type.id) {
-            <mat-card appearance="outlined" class="type-card">
-              <mat-card-header>
-                <div class="type-card__header-top">
-                  <div class="type-card__title-row">
-                    <mat-icon class="type-card__icon">schema</mat-icon>
-                    <mat-card-title class="type-card__name">{{ type.name }}</mat-card-title>
-                    <span class="type-card__version">v{{ type.version }}</span>
-                  </div>
-
-                  <div class="type-card__actions">
-                    <mat-slide-toggle
-                      [checked]="type.isActive"
-                      (change)="toggleActive(type)"
-                      color="primary"
-                      matTooltip="Toggle Active Status"
-                    >
-                      {{ type.isActive ? 'Active' : 'Inactive' }}
-                    </mat-slide-toggle>
-
-                    <button
-                      mat-icon-button
-                      (click)="openClone(type)"
-                      matTooltip="Clone Type"
-                      aria-label="Clone Type"
-                    >
-                      <mat-icon>content_copy</mat-icon>
-                    </button>
-
-                    <button
-                      mat-icon-button
-                      (click)="deleteType(type)"
-                      matTooltip="Delete Type"
-                      aria-label="Delete Type"
-                    >
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
-                </div>
-
-                @if (type.description) {
-                  <mat-card-subtitle class="type-card__desc">
-                    {{ type.description }}
-                  </mat-card-subtitle>
-                }
-              </mat-card-header>
-
-              <mat-card-content class="type-card__content">
-                <mat-expansion-panel class="type-card__panel">
-                  <mat-expansion-panel-header>
-                    <mat-panel-title>
-                      <mat-icon class="panel-icon">data_object</mat-icon>
-                      <span>Type & Sections JSON</span>
-                    </mat-panel-title>
-                  </mat-expansion-panel-header>
-
-                  <div class="type-card__schema">
-                    <span class="type-card__schema-label">Type:</span>
-                    <pre class="code-block">{{ formatJson(type.schemaJson) }}</pre>
-
-                    @if (type.sectionsJson) {
-                      <span class="type-card__schema-label">Sections:</span>
-                      <pre class="code-block">{{ formatJson(type.sectionsJson) }}</pre>
-                    }
-                  </div>
-                </mat-expansion-panel>
-              </mat-card-content>
-            </mat-card>
-          }
-        </div>
-      }
-    </div>
-  `,
-  styles: `
-    @use 'mixins' as *;
-
-    .types-page {
-      @include flex-column;
-      gap: var(--spacing-lg);
-      width: 100%;
-      max-width: 960px;
-      margin: 0 auto;
-
-      &__header {
-        @include flex-row;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid var(--color-border-card);
-        padding-bottom: var(--spacing-md);
-        flex-wrap: wrap;
-        gap: var(--spacing-sm);
-      }
-
-      &__title {
-        font-size: var(--font-size-xl);
-        font-weight: var(--font-weight-medium);
-        color: var(--color-text-primary);
-        margin: 0;
-      }
-
-      &__subtitle {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        margin: var(--spacing-2xs) 0 0 0;
-      }
-
-      &__loading,
-      &__empty {
-        @include flex-column;
-        align-items: center;
-        justify-content: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-2xl) 0;
-        color: var(--color-text-muted);
-
-        mat-icon {
-          font-size: 56px;
-          width: 56px;
-          height: 56px;
-        }
-      }
-
-      &__empty-title {
-        font-size: var(--font-size-lg);
-        font-weight: var(--font-weight-medium);
-        color: var(--color-text-secondary);
-        margin: 0;
-      }
-
-      &__empty-desc {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-muted);
-        margin: 0;
-      }
-
-      &__empty-cta {
-        margin-top: var(--spacing-sm);
-      }
-
-      &__list {
-        @include flex-column;
-        gap: var(--spacing-md);
-      }
-    }
-
-    .create-card {
-      padding: var(--spacing-md);
-      border-radius: var(--radius-md);
-      background-color: var(--color-bg-surface);
-      border-color: var(--color-border-card);
-
-      &__title {
-        font-size: var(--font-size-base);
-        font-weight: var(--font-weight-medium);
-        margin-bottom: var(--spacing-sm);
-      }
-
-      &__content {
-        @include flex-column;
-        gap: var(--spacing-sm);
-      }
-
-      &__actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: var(--spacing-xs);
-        padding-top: var(--spacing-xs);
-      }
-    }
-
-    .full-width {
-      width: 100%;
-    }
-
-    .code-font {
-      font-family: monospace;
-      font-size: var(--font-size-xs);
-    }
-
-    .type-card {
-      border-radius: var(--radius-md);
-      background-color: var(--color-bg-surface);
-      border-color: var(--color-border-card);
-
-      &__header-top {
-        @include flex-row;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        flex-wrap: wrap;
-        gap: var(--spacing-sm);
-      }
-
-      &__title-row {
-        @include flex-row;
-        align-items: center;
-        gap: var(--spacing-xs);
-      }
-
-      &__icon {
-        color: var(--color-primary);
-      }
-
-      &__name {
-        font-size: var(--font-size-base);
-        font-weight: var(--font-weight-medium);
-        color: var(--color-text-primary);
-      }
-
-      &__version {
-        font-size: var(--font-size-xs);
-        background-color: var(--color-border-card);
-        padding: var(--spacing-2xs) var(--spacing-xs);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-secondary);
-      }
-
-      &__actions {
-        @include flex-row;
-        align-items: center;
-        gap: var(--spacing-sm);
-      }
-
-      &__desc {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        margin-top: var(--spacing-2xs);
-      }
-
-      &__content {
-        padding-top: var(--spacing-sm);
-      }
-
-      &__panel {
-        box-shadow: none !important;
-        border: 1px solid var(--color-border-card);
-        border-radius: var(--radius-sm);
-      }
-
-      &__schema {
-        @include flex-column;
-        gap: var(--spacing-xs);
-      }
-
-      &__schema-label {
-        font-size: var(--font-size-xs);
-        font-weight: var(--font-weight-bold);
-        color: var(--color-text-secondary);
-      }
-    }
-
-    .panel-icon {
-      margin-right: var(--spacing-xs);
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-
-    .code-block {
-      background-color: var(--color-bg-app, #f8f9fa);
-      padding: var(--spacing-sm);
-      border-radius: var(--radius-sm);
-      font-family: monospace;
-      font-size: var(--font-size-xs);
-      color: var(--color-text-primary);
-      overflow-x: auto;
-      margin: 0;
-    }
-
-    .spinning {
-      animation: spin 1.2s linear infinite;
-    }
-
-    @keyframes spin {
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-  `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  templateUrl: './types-page.component.html',
+  styleUrl: './types-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TypesPageComponent implements OnInit {
   private readonly typeService = inject(TypeDefinitionService);
@@ -449,25 +134,22 @@ export class TypesPageComponent implements OnInit {
   protected readonly types = signal<TypeDefinitionResponse[]>([]);
   protected readonly isLoading = signal<boolean>(false);
   protected readonly isSubmitting = signal<boolean>(false);
+  protected readonly isHelpOpen = signal<boolean>(false);
 
-  protected readonly showCreateModal = signal<boolean>(false);
-  protected readonly newName = signal<string>('');
-  protected readonly newDescription = signal<string>('');
-  protected readonly newSchemaJson = signal<string>(
-    JSON.stringify(
-      {
-        type: 'object',
-        properties: {
-          topic: { type: 'string' },
-          notes: { type: 'string' }
-        },
-        required: ['topic']
-      },
-      null,
-      2
-    )
-  );
+  // Guided Builder state
+  protected readonly showBuilder = signal<boolean>(false);
+  protected readonly builderMode = signal<'visual' | 'json'>('visual');
+  protected readonly editingType = signal<TypeDefinitionResponse | null>(null);
 
+  protected readonly name = signal<string>('');
+  protected readonly description = signal<string>('');
+  protected readonly fields = signal<MetadataFieldDef[]>([]);
+  protected readonly sections = signal<SectionFieldDef[]>([]);
+
+  protected readonly rawSchemaJson = signal<string>('{}');
+  protected readonly rawSectionsJson = signal<string>('');
+
+  // Clone modal state
   protected readonly cloningType = signal<TypeDefinitionResponse | null>(null);
   protected readonly cloneName = signal<string>('');
 
@@ -485,11 +167,39 @@ export class TypesPageComponent implements OnInit {
       error: () => {
         this.isLoading.set(false);
         this.notification.showError('Failed to load type definitions.');
-      }
+      },
     });
   }
 
-  public formatJson(raw: string): string {
+  public toggleHelp(): void {
+    this.isHelpOpen.update((v) => !v);
+  }
+
+  public getFields(type: TypeDefinitionResponse): MetadataFieldDef[] {
+    return parseSchemaFields(type.schemaJson);
+  }
+
+  public getSections(type: TypeDefinitionResponse): SectionFieldDef[] {
+    return parseSections(type.sectionsJson);
+  }
+
+  public formatTypeLabel(type: string): string {
+    switch (type) {
+      case 'string':
+        return 'Text';
+      case 'number':
+        return 'Number';
+      case 'boolean':
+        return 'Boolean';
+      case 'array':
+        return 'List';
+      default:
+        return type;
+    }
+  }
+
+  public formatJson(raw?: string | null): string {
+    if (!raw) return '';
     try {
       return JSON.stringify(JSON.parse(raw), null, 2);
     } catch {
@@ -497,57 +207,261 @@ export class TypesPageComponent implements OnInit {
     }
   }
 
-  public cancelCreate(): void {
-    this.showCreateModal.set(false);
-    this.newName.set('');
-    this.newDescription.set('');
+  public openCreate(): void {
+    this.editingType.set(null);
+    this.name.set('');
+    this.description.set('');
+    this.fields.set([]);
+    this.sections.set([]);
+    this.builderMode.set('visual');
+    this.showBuilder.set(true);
   }
 
-  public createTypeDefinition(): void {
-    const name = this.newName().trim();
-    const schemaJson = this.newSchemaJson().trim();
-    if (!name || !schemaJson || this.isSubmitting()) return;
+  public openNewVersion(type: TypeDefinitionResponse): void {
+    this.editingType.set(type);
+    this.name.set(type.name);
+    this.description.set(type.description || '');
+    this.fields.set(parseSchemaFields(type.schemaJson));
+    this.sections.set(parseSections(type.sectionsJson));
+    this.builderMode.set('visual');
+    this.showBuilder.set(true);
+  }
 
-    try {
-      JSON.parse(schemaJson);
-    } catch {
-      this.notification.showError('Type must be valid JSON.');
-      return;
+  public cancelBuilder(): void {
+    this.showBuilder.set(false);
+    this.editingType.set(null);
+    this.name.set('');
+    this.description.set('');
+    this.fields.set([]);
+    this.sections.set([]);
+  }
+
+  public setBuilderMode(mode: 'visual' | 'json'): void {
+    if (mode === 'json' && this.builderMode() === 'visual') {
+      this.rawSchemaJson.set(buildSchemaJson(this.fields()));
+      this.rawSectionsJson.set(buildSectionsJson(this.sections()) ?? '');
+    } else if (mode === 'visual' && this.builderMode() === 'json') {
+      this.fields.set(parseSchemaFields(this.rawSchemaJson()));
+      this.sections.set(parseSections(this.rawSectionsJson()));
+    }
+    this.builderMode.set(mode);
+  }
+
+  public applyPreset(preset: 'meeting' | 'decision' | 'book'): void {
+    if (preset === 'meeting') {
+      this.name.set('Meeting Note');
+      this.description.set('Standard template for team and project meetings');
+      this.fields.set([
+        { name: 'meetingDate', type: 'string', required: true },
+        { name: 'attendees', type: 'array', required: false },
+      ]);
+      this.sections.set([
+        { heading: 'Summary', level: 2, required: true, allowMultiple: false },
+        { heading: 'Discussion Points', level: 2, required: false, allowMultiple: false },
+        { heading: 'Action Items', level: 2, required: true, allowMultiple: false },
+      ]);
+    } else if (preset === 'decision') {
+      this.name.set('Decision Record');
+      this.description.set('Architecture or team decision rationale and outcome');
+      this.fields.set([
+        { name: 'status', type: 'string', required: true },
+        { name: 'decider', type: 'string', required: false },
+      ]);
+      this.sections.set([
+        { heading: 'Context & Problem', level: 2, required: true, allowMultiple: false },
+        { heading: 'Considered Options', level: 2, required: false, allowMultiple: false },
+        { heading: 'Decision Outcome', level: 2, required: true, allowMultiple: false },
+        { heading: 'Consequences', level: 2, required: false, allowMultiple: false },
+      ]);
+    } else if (preset === 'book') {
+      this.name.set('Book Review');
+      this.description.set('Notes, takeaways, and key ideas from a book');
+      this.fields.set([
+        { name: 'author', type: 'string', required: true },
+        { name: 'rating', type: 'number', required: false },
+        { name: 'recommend', type: 'boolean', required: false },
+      ]);
+      this.sections.set([
+        { heading: 'Key Takeaways', level: 2, required: true, allowMultiple: false },
+        { heading: 'Chapter Notes', level: 2, required: false, allowMultiple: true },
+        { heading: 'Quotes & References', level: 2, required: false, allowMultiple: false },
+      ]);
+    }
+  }
+
+  public addField(): void {
+    this.fields.update((list) => [...list, { name: '', type: 'string', required: false }]);
+  }
+
+  public removeField(index: number): void {
+    this.fields.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  public updateFieldName(index: number, val: string): void {
+    this.fields.update((list) =>
+      list.map((f, i) => (i === index ? { ...f, name: val } : f)),
+    );
+  }
+
+  public updateFieldType(index: number, val: 'string' | 'number' | 'boolean' | 'array'): void {
+    this.fields.update((list) =>
+      list.map((f, i) => (i === index ? { ...f, type: val } : f)),
+    );
+  }
+
+  public updateFieldRequired(index: number, val: boolean): void {
+    this.fields.update((list) =>
+      list.map((f, i) => (i === index ? { ...f, required: val } : f)),
+    );
+  }
+
+  public addSection(): void {
+    this.sections.update((list) => [
+      ...list,
+      { heading: '', level: 2, required: true, allowMultiple: false },
+    ]);
+  }
+
+  public removeSection(index: number): void {
+    this.sections.update((list) => list.filter((_, i) => i !== index));
+  }
+
+  public moveSection(index: number, direction: 'up' | 'down'): void {
+    this.sections.update((list) => {
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= list.length) return list;
+      const copy = [...list];
+      const temp = copy[index];
+      copy[index] = copy[targetIndex];
+      copy[targetIndex] = temp;
+      return copy;
+    });
+  }
+
+  public updateSectionHeading(index: number, val: string): void {
+    this.sections.update((list) =>
+      list.map((s, i) => (i === index ? { ...s, heading: val } : s)),
+    );
+  }
+
+  public updateSectionLevel(index: number, val: number): void {
+    this.sections.update((list) =>
+      list.map((s, i) => (i === index ? { ...s, level: val } : s)),
+    );
+  }
+
+  public updateSectionRequired(index: number, val: boolean): void {
+    this.sections.update((list) =>
+      list.map((s, i) => (i === index ? { ...s, required: val } : s)),
+    );
+  }
+
+  public updateSectionAllowMultiple(index: number, val: boolean): void {
+    this.sections.update((list) =>
+      list.map((s, i) => (i === index ? { ...s, allowMultiple: val } : s)),
+    );
+  }
+
+  public saveType(): void {
+    const name = this.name().trim();
+    if (!name || this.isSubmitting()) return;
+
+    let schemaJson: string;
+    let sectionsJson: string | null = null;
+
+    if (this.builderMode() === 'visual') {
+      const fieldList = this.fields();
+      const fieldNames = fieldList.map((f) => f.name.trim()).filter(Boolean);
+      const uniqueNames = new Set(fieldNames);
+      if (uniqueNames.size !== fieldNames.length) {
+        this.notification.showError('Field names must be unique.');
+        return;
+      }
+
+      schemaJson = buildSchemaJson(fieldList);
+      sectionsJson = buildSectionsJson(this.sections());
+    } else {
+      schemaJson = this.rawSchemaJson().trim();
+      try {
+        JSON.parse(schemaJson);
+      } catch {
+        this.notification.showError('Type schema must be valid JSON.');
+        return;
+      }
+
+      const rawSec = this.rawSectionsJson().trim();
+      if (rawSec) {
+        try {
+          const parsed = JSON.parse(rawSec);
+          if (!Array.isArray(parsed)) {
+            this.notification.showError('Sections must be a JSON array.');
+            return;
+          }
+          sectionsJson = rawSec;
+        } catch {
+          this.notification.showError('Sections must be valid JSON.');
+          return;
+        }
+      }
     }
 
     this.isSubmitting.set(true);
-    this.typeService
-      .create({
-        name,
-        description: this.newDescription().trim() || undefined,
-        schemaJson
-      })
-      .subscribe({
-        next: () => {
-          this.cancelCreate();
-          this.isSubmitting.set(false);
-          this.notification.showSuccess(`Type "${name}" created.`);
-          this.loadTypes();
-        },
-        error: () => {
-          this.isSubmitting.set(false);
-          this.notification.showError('Failed to create type definition.');
-        }
-      });
+    const existing = this.editingType();
+
+    if (existing) {
+      this.typeService
+        .createNewVersion(existing.id, {
+          description: this.description().trim() || undefined,
+          schemaJson,
+          sectionsJson,
+        })
+        .subscribe({
+          next: (created) => {
+            this.cancelBuilder();
+            this.isSubmitting.set(false);
+            this.notification.showSuccess(`Version ${created.version} of "${created.name}" published.`);
+            this.loadTypes();
+          },
+          error: (err: { error?: { detail?: string } }) => {
+            this.isSubmitting.set(false);
+            this.notification.showError(err.error?.detail ?? 'Failed to publish new version.');
+          },
+        });
+    } else {
+      this.typeService
+        .create({
+          name,
+          description: this.description().trim() || undefined,
+          schemaJson,
+          sectionsJson,
+        })
+        .subscribe({
+          next: (created) => {
+            this.cancelBuilder();
+            this.isSubmitting.set(false);
+            this.notification.showSuccess(`Type "${created.name}" created.`);
+            this.loadTypes();
+          },
+          error: (err: { error?: { detail?: string } }) => {
+            this.isSubmitting.set(false);
+            this.notification.showError(err.error?.detail ?? 'Failed to create type definition.');
+          },
+        });
+    }
   }
 
   public toggleActive(type: TypeDefinitionResponse): void {
     this.typeService.toggleActive(type.id).subscribe({
       next: () => {
         this.types.update((list) =>
-          list.map((t) => (t.id === type.id ? { ...t, isActive: !t.isActive } : t))
+          list.map((t) => (t.id === type.id ? { ...t, isActive: !t.isActive } : t)),
         );
         const status = !type.isActive ? 'activated' : 'deactivated';
         this.notification.showSuccess(`Type "${type.name}" ${status}.`);
       },
       error: () => {
         this.notification.showError('Failed to update type status.');
-      }
+      },
     });
   }
 
@@ -572,7 +486,7 @@ export class TypesPageComponent implements OnInit {
       error: () => {
         this.isSubmitting.set(false);
         this.notification.showError('Failed to clone type definition.');
-      }
+      },
     });
   }
 
@@ -586,7 +500,7 @@ export class TypesPageComponent implements OnInit {
       },
       error: () => {
         this.notification.showError('Failed to delete type definition.');
-      }
+      },
     });
   }
 }

@@ -162,7 +162,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
             const sections = JSON.parse(selected.sectionsJson) as SectionDefinition[];
             if (Array.isArray(sections) && sections.length > 0) {
               this.form.controls.bodyMarkdown.setValue(
-                sections.map((s) => `## ${s.title}\n\n`).join(''),
+                sections.map((s) => `${'#'.repeat(s.level || 2)} ${s.heading || s.title}\n\n`).join(''),
               );
             }
           } catch {

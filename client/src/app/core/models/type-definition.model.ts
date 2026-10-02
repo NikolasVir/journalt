@@ -1,7 +1,10 @@
 export interface SectionDefinition {
-  title: string;
+  heading?: string;
+  level?: number;
   required: boolean;
+  allowMultiple?: boolean;
   repeatable?: boolean;
+  title?: string;
 }
 
 export interface TypeDefinitionResponse {
@@ -19,13 +22,13 @@ export interface CreateTypeDefinitionRequest {
   name: string;
   description?: string | null;
   schemaJson: string;
-  sections?: SectionDefinition[] | null;
+  sectionsJson?: string | null;
 }
 
 export interface CreateTypeVersionRequest {
   description?: string | null;
   schemaJson: string;
-  sections?: SectionDefinition[] | null;
+  sectionsJson?: string | null;
 }
 
 export interface CloneTypeRequest {
