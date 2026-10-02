@@ -54,11 +54,94 @@
       margin-right: var(--spacing-2xs);
     }
   }
+}
 
-  &__expanded {
-    @include flex-column;
-    padding: var(--spacing-md);
-    gap: var(--spacing-xs);
+.capture-dialog {
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-xs);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  &__title-field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__header-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+  }
+
+  &__library-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border-card);
+    background-color: var(--color-bg-surface-elevated, rgba(255, 255, 255, 0.04));
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    max-width: 160px;
+    transition: var(--transition-fast);
+
+    &:hover {
+      color: var(--color-text-primary);
+      border-color: var(--color-border-subtle);
+      background-color: var(--color-bg-surface-hover);
+    }
+
+    &-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    &-text {
+      @include truncate-text;
+    }
+
+    &-caret {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+    }
+  }
+
+  &__level-toggle {
+    height: 32px;
+
+    ::ng-deep .mat-button-toggle-label-content {
+      line-height: 30px;
+      padding: 0 var(--spacing-sm);
+      font-size: var(--font-size-xs);
+    }
+  }
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    @include custom-scrollbar;
   }
 
   &__field {
@@ -74,7 +157,6 @@
     border-radius: var(--radius-md);
     font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
-    margin-bottom: var(--spacing-xs);
 
     mat-icon {
       font-size: 18px;
@@ -89,20 +171,23 @@
     }
   }
 
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-top: 1px solid var(--color-border-subtle);
+    background-color: var(--color-bg-surface);
+  }
+
   &__todo {
     margin-right: auto;
   }
 
-  &__footer {
-    @include flex-between;
-    padding-top: var(--spacing-xs);
-    flex-wrap: wrap;
+  &__footer-actions {
+    display: flex;
+    align-items: center;
     gap: var(--spacing-sm);
-  }
-
-  &__buttons {
-    @include flex-center;
-    gap: var(--spacing-xs);
-    margin-left: auto;
   }
 }

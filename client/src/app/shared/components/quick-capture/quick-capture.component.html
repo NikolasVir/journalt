@@ -1,115 +1,152 @@
-<mat-card appearance="outlined" class="capture-card" [class.capture-card--expanded]="isExpanded()">
-  @if (!isExpanded()) {
-    <div class="capture-card__collapsed" (click)="expand()">
-      <span class="capture-card__placeholder">Take a note...</span>
-      <div class="capture-card__actions" (click)="$event.stopPropagation()">
-        <button
-          mat-button
-          class="capture-card__pill capture-card__pill--inbox"
-          (click)="expand('Inbox')"
-        >
-          <mat-icon>inbox</mat-icon>
-          <span>Inbox</span>
-        </button>
-        <button
-          mat-button
-          class="capture-card__pill capture-card__pill--quick"
-          (click)="expand('Quick')"
-        >
-          <mat-icon>edit_note</mat-icon>
-          <span>Quick</span>
-        </button>
-        <button
-          mat-button
-          class="capture-card__pill capture-card__pill--journal"
-          (click)="expand('Journal')"
-        >
-          <mat-icon>menu_book</mat-icon>
-          <span>Journal</span>
-        </button>
-      </div>
+<mat-card appearance="outlined" class="capture-card">
+  <div class="capture-card__collapsed" (click)="expand()">
+    <span class="capture-card__placeholder">Take a note...</span>
+    <div class="capture-card__actions" (click)="$event.stopPropagation()">
+      <button
+        mat-button
+        class="capture-card__pill capture-card__pill--inbox"
+        (click)="expand('Inbox')"
+      >
+        <mat-icon>inbox</mat-icon>
+        <span>Inbox</span>
+      </button>
+      <button
+        mat-button
+        class="capture-card__pill capture-card__pill--quick"
+        (click)="expand('Quick')"
+      >
+        <mat-icon>edit_note</mat-icon>
+        <span>Quick</span>
+      </button>
+      <button
+        mat-button
+        class="capture-card__pill capture-card__pill--journal"
+        (click)="expand('Journal')"
+      >
+        <mat-icon>menu_book</mat-icon>
+        <span>Journal</span>
+      </button>
     </div>
-  } @else {
-    <mat-card-content class="capture-card__expanded">
-      <mat-form-field appearance="outline" class="capture-card__field">
-        <mat-label>Title</mat-label>
-        <input
-          matInput
-          placeholder="Title"
-          [value]="title()"
-          (input)="title.set($any($event.target).value)"
-        />
-      </mat-form-field>
+  </div>
+</mat-card>
 
-      <app-note-content-editor
-        [value]="bodyMarkdown()"
-        (valueChange)="bodyMarkdown.set($event)"
-        placeholder="Note content (Markdown supported)..."
-        ariaLabel="Note content"
-        minHeight="120px"
-      />
-
-      @if (libraries().length > 0) {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="capture-card__field">
-          <mat-label>Library</mat-label>
-          <mat-select
-            [value]="selectedLibraryId()"
-            (selectionChange)="selectedLibraryId.set($event.value)"
-            aria-label="Select Library"
-          >
-            <mat-option [value]="null">No Library (Unfiled)</mat-option>
-            @for (lib of libraries(); track lib.id) {
-              <mat-option [value]="lib.id">{{ lib.name }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      }
-
-      @if (selectedLevel() === 'Journal') {
-        @if (typeDefinitions().length > 0) {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="capture-card__field">
-            <mat-label>Journal Type</mat-label>
-            <mat-select
-              [value]="selectedTypeId()"
-              (selectionChange)="onTypeChange($event.value)"
-              aria-label="Select Journal Type"
-            >
-              @for (type of typeDefinitions(); track type.id) {
-                <mat-option [value]="type.id"> {{ type.name }} (v{{ type.version }}) </mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        } @else {
-          <div class="capture-card__type-notice">
-            <mat-icon>info</mat-icon>
-            <span
-              >No active type definitions found.
-              <a routerLink="/types">Create a type</a> first.</span
-            >
-          </div>
-        }
-      }
-
-      @if (selectedLevel() === 'Journal') {
-        <app-typed-tag-selector
-          [selectedTags]="typedTags()"
-          (selectedTagsChange)="typedTags.set($event)"
-        />
-      } @else if (selectedLevel() === 'Quick') {
-        <mat-form-field appearance="outline" class="capture-card__field">
-          <mat-label>Free-form tags</mat-label>
+@if (isExpanded()) {
+  <div
+    class="dialog-backdrop"
+    (pointerdown)="onBackdropPointerDown($event)"
+    (pointercancel)="onBackdropPointerCancel()"
+    (click)="onBackdropClick($event)"
+  >
+    <div
+      class="dialog-panel capture-card__expanded capture-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Take a note"
+    >
+      <div class="capture-dialog__header">
+        <mat-form-field
+          appearance="outline"
+          class="capture-dialog__title-field"
+          subscriptSizing="dynamic"
+        >
           <input
             matInput
-            placeholder="Comma-separated tags..."
-            [value]="tagsInput()"
-            (input)="tagsInput.set($any($event.target).value)"
+            placeholder="Title"
+            [value]="title()"
+            (input)="title.set($any($event.target).value)"
           />
         </mat-form-field>
-      }
 
-      <div class="capture-card__footer">
+        <div class="capture-dialog__header-controls">
+          @if (libraries().length > 0) {
+            <button
+              type="button"
+              class="capture-dialog__library-btn"
+              [matMenuTriggerFor]="libMenu"
+              aria-label="Select library"
+              matTooltip="Assign to Library"
+            >
+              <mat-icon class="capture-dialog__library-btn-icon">{{ selectedLibraryId() ? 'folder' : 'folder_open' }}</mat-icon>
+              <span class="capture-dialog__library-btn-text">{{ selectedLibraryName() }}</span>
+              <mat-icon class="capture-dialog__library-btn-caret">arrow_drop_down</mat-icon>
+            </button>
+            <mat-menu #libMenu="matMenu">
+              <button mat-menu-item (click)="selectedLibraryId.set(null)">
+                <mat-icon>folder_off</mat-icon>
+                <span>Unfiled (No Library)</span>
+              </button>
+              @for (lib of libraries(); track lib.id) {
+                <button mat-menu-item (click)="selectedLibraryId.set(lib.id)">
+                  <mat-icon>folder</mat-icon>
+                  <span>{{ lib.name }}</span>
+                </button>
+              }
+            </mat-menu>
+          }
+
+          <mat-button-toggle-group
+            [value]="selectedLevel()"
+            (change)="selectLevel($event.value)"
+            aria-label="Note Level"
+            class="capture-dialog__level-toggle"
+          >
+            <mat-button-toggle value="Inbox">Inbox</mat-button-toggle>
+            <mat-button-toggle value="Quick">Quick</mat-button-toggle>
+            <mat-button-toggle value="Journal">Journal</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+      </div>
+
+      <div class="capture-dialog__body">
+        <app-note-content-editor
+          [value]="bodyMarkdown()"
+          (valueChange)="bodyMarkdown.set($event)"
+          placeholder="Note content (Markdown supported)..."
+          ariaLabel="Note content"
+          minHeight="140px"
+        />
+
+        @if (selectedLevel() === 'Journal') {
+          @if (typeDefinitions().length > 0) {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="capture-dialog__field">
+              <mat-label>Journal Type</mat-label>
+              <mat-select
+                [value]="selectedTypeId()"
+                (selectionChange)="onTypeChange($event.value)"
+                aria-label="Select Journal Type"
+              >
+                @for (type of typeDefinitions(); track type.id) {
+                  <mat-option [value]="type.id">{{ type.name }} (v{{ type.version }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          } @else {
+            <div class="capture-dialog__type-notice">
+              <mat-icon>info</mat-icon>
+              <span>No active type definitions found. <a routerLink="/types" (click)="collapse()">Create a type</a> first.</span>
+            </div>
+          }
+
+          <app-typed-tag-selector
+            [selectedTags]="typedTags()"
+            (selectedTagsChange)="typedTags.set($event)"
+          />
+        } @else if (selectedLevel() === 'Quick') {
+          <mat-form-field appearance="outline" class="capture-dialog__field">
+            <mat-label>Free-form tags</mat-label>
+            <input
+              matInput
+              placeholder="Comma-separated tags..."
+              [value]="tagsInput()"
+              (input)="tagsInput.set($any($event.target).value)"
+            />
+          </mat-form-field>
+        }
+      </div>
+
+      <div class="capture-dialog__footer">
         <mat-checkbox
-          class="capture-card__todo"
+          class="capture-dialog__todo"
           [checked]="isTodo()"
           (change)="isTodo.set($event.checked)"
           color="primary"
@@ -117,21 +154,11 @@
           Mark as Todo
         </mat-checkbox>
 
-        <mat-button-toggle-group
-          [value]="selectedLevel()"
-          (change)="selectLevel($event.value)"
-          aria-label="Note Level"
-        >
-          <mat-button-toggle value="Inbox">Inbox</mat-button-toggle>
-          <mat-button-toggle value="Quick">Quick</mat-button-toggle>
-          <mat-button-toggle value="Journal">Journal</mat-button-toggle>
-        </mat-button-toggle-group>
-
-        <div class="capture-card__buttons">
+        <div class="capture-dialog__footer-actions">
           <button mat-button type="button" (click)="collapse()">Close</button>
           <button mat-flat-button color="primary" type="button" (click)="submit()">Save</button>
         </div>
       </div>
-    </mat-card-content>
-  }
-</mat-card>
+    </div>
+  </div>
+}

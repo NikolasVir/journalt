@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -16,7 +17,9 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { LibraryResponse } from '@core/models/library.model';
 import { NoteLevel, TagDto } from '@core/models/note.model';
@@ -72,6 +75,8 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     MatButtonModule,
     MatIconModule,
     MatButtonToggleModule,
+    MatMenuModule,
+    MatTooltipModule,
     TypedTagSelectorComponent,
     NoteContentEditorComponent,
   ],
@@ -95,8 +100,16 @@ export class QuickCaptureComponent implements OnInit {
   protected readonly typedTags = signal<TagDto[]>([]);
   protected readonly libraries = signal<LibraryResponse[]>([]);
   protected readonly selectedLibraryId = signal<string | null>(null);
+  protected readonly selectedLibraryName = computed(() => {
+    const libId = this.selectedLibraryId();
+    if (!libId) return 'Unfiled';
+    const found = this.libraries().find((l) => l.id === libId);
+    return found ? found.name : 'Unfiled';
+  });
   protected readonly typeDefinitions = signal<TypeDefinitionResponse[]>([]);
   protected readonly selectedTypeId = signal<string | null>(null);
+
+  private pointerDownOnBackdrop = false;
 
   constructor() {
     effect(() => {
@@ -137,6 +150,23 @@ export class QuickCaptureComponent implements OnInit {
   public collapse(): void {
     this.isExpanded.set(false);
     this.resetFields();
+  }
+
+  public onBackdropPointerDown(event: PointerEvent): void {
+    this.pointerDownOnBackdrop = event.target === event.currentTarget;
+  }
+
+  public onBackdropPointerCancel(): void {
+    this.pointerDownOnBackdrop = false;
+  }
+
+  public onBackdropClick(event: MouseEvent): void {
+    const shouldClose = this.pointerDownOnBackdrop && event.target === event.currentTarget;
+    this.pointerDownOnBackdrop = false;
+
+    if (shouldClose) {
+      this.submit();
+    }
   }
 
   public selectLevel(level: NoteLevel): void {
