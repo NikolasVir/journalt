@@ -34,7 +34,7 @@ import { TypeDefinitionService } from '@core/services/type-definition.service';
         <div class="types-page__header-text">
           <h1 class="types-page__title">Type Definitions</h1>
           <p class="types-page__subtitle">
-            Manage JSON Schemas and section templates for structured Journal notes.
+            Manage types and section templates for structured Journal notes.
           </p>
         </div>
 
@@ -78,7 +78,7 @@ import { TypeDefinitionService } from '@core/services/type-definition.service';
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="full-width">
-              <mat-label>JSON Schema</mat-label>
+              <mat-label>Type JSON</mat-label>
               <textarea
                 matInput
                 rows="6"
@@ -86,7 +86,7 @@ import { TypeDefinitionService } from '@core/services/type-definition.service';
                 (ngModelChange)="newSchemaJson.set($event)"
                 class="code-font"
               ></textarea>
-              <mat-hint>Valid JSON Schema defining typed metadata fields.</mat-hint>
+              <mat-hint>Valid JSON defining typed metadata fields.</mat-hint>
             </mat-form-field>
           </mat-card-content>
 
@@ -147,7 +147,7 @@ import { TypeDefinitionService } from '@core/services/type-definition.service';
           <mat-icon class="types-page__empty-icon">schema</mat-icon>
           <p class="types-page__empty-title">No type definitions created yet</p>
           <p class="types-page__empty-desc">
-            Define structured schemas and validation rules for Journal notes.
+            Define structured types and validation rules for Journal notes.
           </p>
           <button
             mat-stroked-button
@@ -213,12 +213,12 @@ import { TypeDefinitionService } from '@core/services/type-definition.service';
                   <mat-expansion-panel-header>
                     <mat-panel-title>
                       <mat-icon class="panel-icon">data_object</mat-icon>
-                      <span>Schema & Sections JSON</span>
+                      <span>Type & Sections JSON</span>
                     </mat-panel-title>
                   </mat-expansion-panel-header>
 
                   <div class="type-card__schema">
-                    <span class="type-card__schema-label">Schema:</span>
+                    <span class="type-card__schema-label">Type:</span>
                     <pre class="code-block">{{ formatJson(type.schemaJson) }}</pre>
 
                     @if (type.sectionsJson) {
@@ -511,7 +511,7 @@ export class TypesPageComponent implements OnInit {
     try {
       JSON.parse(schemaJson);
     } catch {
-      this.notification.showError('Schema must be valid JSON.');
+      this.notification.showError('Type must be valid JSON.');
       return;
     }
 

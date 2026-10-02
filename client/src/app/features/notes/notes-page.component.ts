@@ -53,7 +53,7 @@ export class NotesPageComponent implements OnInit {
     const level = this.currentLevel();
     if (level === 'Inbox') return 'Minimal captures awaiting triage or promotion to Quick Note.';
     if (level === 'Quick') return 'Durable free-form notes with tags and relations.';
-    if (level === 'Journal') return 'Structured notes validated against type schemas.';
+    if (level === 'Journal') return 'Structured notes validated against types.';
     return 'Browse and manage your personal knowledge records.';
   });
 
