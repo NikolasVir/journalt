@@ -99,28 +99,28 @@
       </div>
 
       <div class="help-card__footer">
-        <button mat-stroked-button type="button" (click)="isHelpOpen.set(false)">Got it</button>
+        <button mat-button type="button" (click)="isHelpOpen.set(false)">Got it</button>
       </div>
     </mat-card>
   }
 
-  <!-- Guided Type Builder (Create / Edit New Version) -->
+  <!-- Builder / Editor Card -->
   @if (showBuilder()) {
     <mat-card appearance="outlined" class="builder-card">
       <mat-card-header class="builder-card__header">
         <div class="builder-card__title-row">
           <mat-icon class="builder-card__icon">edit_note</mat-icon>
           <div>
-            <mat-card-title class="builder-card__title">
-              {{ editingType() ? 'New Version of "' + editingType()!.name + '"' : 'Create Type Definition' }}
-            </mat-card-title>
-            <mat-card-subtitle class="builder-card__subtitle">
-              {{ editingType() ? 'Publish version ' + (editingType()!.version + 1) + ' with updated fields or sections.' : 'Design structured attributes and section templates.' }}
-            </mat-card-subtitle>
+            <h2 class="builder-card__title">
+              {{ editingType() ? 'Create New Version of ' + editingType()?.name : 'Create Type Definition' }}
+            </h2>
+            <p class="builder-card__subtitle">
+              Design structured attributes and section templates.
+            </p>
           </div>
         </div>
 
-        <!-- Mode Switcher: Visual Builder vs Raw JSON -->
+        <!-- Mode Switcher -->
         <div class="builder-card__mode-toggle">
           <button
             type="button"
@@ -148,7 +148,7 @@
         <div class="builder-card__section">
           <h3 class="builder-card__section-title">General Information</h3>
           <div class="builder-card__row">
-            <mat-form-field appearance="outline" class="flex-grow">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-grow">
               <mat-label>Type Name</mat-label>
               <input
                 matInput
@@ -157,12 +157,9 @@
                 (ngModelChange)="name.set($event)"
                 [disabled]="editingType() !== null"
               />
-              @if (editingType()) {
-                <mat-hint>Name cannot be changed when publishing a new version.</mat-hint>
-              }
             </mat-form-field>
 
-            <mat-form-field appearance="outline" class="flex-grow">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-grow">
               <mat-label>Description (Optional)</mat-label>
               <input
                 matInput
@@ -172,19 +169,28 @@
               />
             </mat-form-field>
           </div>
+          @if (editingType()) {
+            <p class="builder-card__note">
+              <mat-icon>lock</mat-icon>
+              <span>Type name cannot be changed when publishing a new version.</span>
+            </p>
+          }
 
           <!-- Quick Starter Presets (Only when creating brand new) -->
           @if (!editingType() && fields().length === 0 && sections().length === 0 && builderMode() === 'visual') {
             <div class="builder-card__presets">
               <span class="presets-label">Quick Starter Templates:</span>
-              <button mat-stroked-button type="button" (click)="applyPreset('meeting')">
-                Meeting Note
+              <button type="button" class="preset-chip" (click)="applyPreset('meeting')">
+                <mat-icon>groups</mat-icon>
+                <span>Meeting Note</span>
               </button>
-              <button mat-stroked-button type="button" (click)="applyPreset('decision')">
-                Decision Record
+              <button type="button" class="preset-chip" (click)="applyPreset('decision')">
+                <mat-icon>gavel</mat-icon>
+                <span>Decision Record</span>
               </button>
-              <button mat-stroked-button type="button" (click)="applyPreset('book')">
-                Book Review
+              <button type="button" class="preset-chip" (click)="applyPreset('book')">
+                <mat-icon>menu_book</mat-icon>
+                <span>Book Review</span>
               </button>
             </div>
           }
@@ -218,52 +224,69 @@
                 <p>No metadata fields defined. Click <strong>Add Field</strong> to add structured attributes (e.g. author, status, rating).</p>
               </div>
             } @else {
-              <div class="builder-card__items-list">
-                @for (field of fields(); track $index) {
-                  <div class="builder-row">
-                    <mat-form-field appearance="outline" class="builder-row__name">
-                      <mat-label>Field Key</mat-label>
-                      <input
-                        matInput
-                        placeholder="e.g. topic"
-                        [ngModel]="field.name"
-                        (ngModelChange)="updateFieldName($index, $event)"
-                      />
-                    </mat-form-field>
+              <div class="builder-table-wrapper">
+                <table class="builder-table">
+                  <thead>
+                    <tr>
+                      <th class="col-name">Field Key</th>
+                      <th class="col-type">Data Type</th>
+                      <th class="col-check">Required</th>
+                      <th class="col-actions"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (field of fields(); track $index) {
+                      <tr>
+                        <td class="col-name">
+                          <input
+                            type="text"
+                            class="builder-input"
+                            placeholder="e.g. topic, rating, status"
+                            [ngModel]="field.name"
+                            (ngModelChange)="updateFieldName($index, $event)"
+                          />
+                        </td>
 
-                    <mat-form-field appearance="outline" class="builder-row__type">
-                      <mat-label>Data Type</mat-label>
-                      <mat-select
-                        [ngModel]="field.type"
-                        (ngModelChange)="updateFieldType($index, $event)"
-                      >
-                        <mat-option value="string">Text (string)</mat-option>
-                        <mat-option value="number">Number (number)</mat-option>
-                        <mat-option value="boolean">Boolean (true/false)</mat-option>
-                        <mat-option value="array">List (array)</mat-option>
-                      </mat-select>
-                    </mat-form-field>
+                        <td class="col-type">
+                          <div class="builder-select-wrap">
+                            <select
+                              class="builder-select"
+                              [ngModel]="field.type"
+                              (ngModelChange)="updateFieldType($index, $event)"
+                            >
+                              <option value="string">Text (string)</option>
+                              <option value="number">Number</option>
+                              <option value="boolean">Boolean</option>
+                              <option value="array">List (array)</option>
+                            </select>
+                            <mat-icon class="builder-select-arrow">arrow_drop_down</mat-icon>
+                          </div>
+                        </td>
 
-                    <mat-checkbox
-                      class="builder-row__check"
-                      [ngModel]="field.required"
-                      (ngModelChange)="updateFieldRequired($index, $event)"
-                    >
-                      Required
-                    </mat-checkbox>
+                        <td class="col-check">
+                          <mat-checkbox
+                            [ngModel]="field.required"
+                            (ngModelChange)="updateFieldRequired($index, $event)"
+                            aria-label="Required"
+                          />
+                        </td>
 
-                    <button
-                      mat-icon-button
-                      type="button"
-                      color="warn"
-                      (click)="removeField($index)"
-                      matTooltip="Remove Field"
-                      aria-label="Remove Field"
-                    >
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
-                  </div>
-                }
+                        <td class="col-actions">
+                          <button
+                            mat-icon-button
+                            type="button"
+                            class="builder-table__delete-btn"
+                            (click)="removeField($index)"
+                            matTooltip="Remove Field"
+                            aria-label="Remove Field"
+                          >
+                            <mat-icon>delete_outline</mat-icon>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             }
           </div>
@@ -294,83 +317,102 @@
                 <p>No section templates defined. Notes will have an unconstrained, free-form markdown body.</p>
               </div>
             } @else {
-              <div class="builder-card__items-list">
-                @for (sec of sections(); track $index) {
-                  <div class="builder-row">
-                    <div class="builder-row__order-controls">
-                      <button
-                        mat-icon-button
-                        type="button"
-                        (click)="moveSection($index, 'up')"
-                        [disabled]="$index === 0"
-                        matTooltip="Move Up"
-                        aria-label="Move Up"
-                      >
-                        <mat-icon>arrow_upward</mat-icon>
-                      </button>
-                      <button
-                        mat-icon-button
-                        type="button"
-                        (click)="moveSection($index, 'down')"
-                        [disabled]="$index === sections().length - 1"
-                        matTooltip="Move Down"
-                        aria-label="Move Down"
-                      >
-                        <mat-icon>arrow_downward</mat-icon>
-                      </button>
-                    </div>
+              <div class="builder-table-wrapper">
+                <table class="builder-table">
+                  <thead>
+                    <tr>
+                      <th class="col-order">Order</th>
+                      <th class="col-level">Level</th>
+                      <th class="col-heading">Heading Title</th>
+                      <th class="col-check">Required</th>
+                      <th class="col-check">Repeatable</th>
+                      <th class="col-actions"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (sec of sections(); track $index) {
+                      <tr>
+                        <td class="col-order">
+                          <div class="builder-table__order-btns">
+                            <button
+                              type="button"
+                              (click)="moveSection($index, 'up')"
+                              [disabled]="$index === 0"
+                              matTooltip="Move Up"
+                              aria-label="Move Up"
+                            >
+                              <mat-icon>arrow_upward</mat-icon>
+                            </button>
+                            <button
+                              type="button"
+                              (click)="moveSection($index, 'down')"
+                              [disabled]="$index === sections().length - 1"
+                              matTooltip="Move Down"
+                              aria-label="Move Down"
+                            >
+                              <mat-icon>arrow_downward</mat-icon>
+                            </button>
+                          </div>
+                        </td>
 
-                    <mat-form-field appearance="outline" class="builder-row__level">
-                      <mat-label>Level</mat-label>
-                      <mat-select
-                        [ngModel]="sec.level"
-                        (ngModelChange)="updateSectionLevel($index, $event)"
-                      >
-                        <mat-option [value]="1">H1 (#)</mat-option>
-                        <mat-option [value]="2">H2 (##)</mat-option>
-                        <mat-option [value]="3">H3 (###)</mat-option>
-                        <mat-option [value]="4">H4 (####)</mat-option>
-                      </mat-select>
-                    </mat-form-field>
+                        <td class="col-level">
+                          <div class="builder-select-wrap">
+                            <select
+                              class="builder-select"
+                              [ngModel]="sec.level"
+                              (ngModelChange)="updateSectionLevel($index, +$event)"
+                            >
+                              <option [value]="1">H1 (#)</option>
+                              <option [value]="2">H2 (##)</option>
+                              <option [value]="3">H3 (###)</option>
+                              <option [value]="4">H4 (####)</option>
+                            </select>
+                            <mat-icon class="builder-select-arrow">arrow_drop_down</mat-icon>
+                          </div>
+                        </td>
 
-                    <mat-form-field appearance="outline" class="builder-row__name flex-grow">
-                      <mat-label>Heading Text</mat-label>
-                      <input
-                        matInput
-                        placeholder="e.g. Summary, Action Items"
-                        [ngModel]="sec.heading"
-                        (ngModelChange)="updateSectionHeading($index, $event)"
-                      />
-                    </mat-form-field>
+                        <td class="col-heading">
+                          <input
+                            type="text"
+                            class="builder-input"
+                            placeholder="e.g. Summary, Action Items"
+                            [ngModel]="sec.heading"
+                            (ngModelChange)="updateSectionHeading($index, $event)"
+                          />
+                        </td>
 
-                    <mat-checkbox
-                      class="builder-row__check"
-                      [ngModel]="sec.required"
-                      (ngModelChange)="updateSectionRequired($index, $event)"
-                    >
-                      Required
-                    </mat-checkbox>
+                        <td class="col-check">
+                          <mat-checkbox
+                            [ngModel]="sec.required"
+                            (ngModelChange)="updateSectionRequired($index, $event)"
+                            aria-label="Required"
+                          />
+                        </td>
 
-                    <mat-checkbox
-                      class="builder-row__check"
-                      [ngModel]="sec.allowMultiple"
-                      (ngModelChange)="updateSectionAllowMultiple($index, $event)"
-                    >
-                      Repeatable
-                    </mat-checkbox>
+                        <td class="col-check">
+                          <mat-checkbox
+                            [ngModel]="sec.allowMultiple"
+                            (ngModelChange)="updateSectionAllowMultiple($index, $event)"
+                            aria-label="Repeatable"
+                          />
+                        </td>
 
-                    <button
-                      mat-icon-button
-                      type="button"
-                      color="warn"
-                      (click)="removeSection($index)"
-                      matTooltip="Remove Section"
-                      aria-label="Remove Section"
-                    >
-                      <mat-icon>delete_outline</mat-icon>
-                    </button>
-                  </div>
-                }
+                        <td class="col-actions">
+                          <button
+                            mat-icon-button
+                            type="button"
+                            class="builder-table__delete-btn"
+                            (click)="removeSection($index)"
+                            matTooltip="Remove Section"
+                            aria-label="Remove Section"
+                          >
+                            <mat-icon>delete_outline</mat-icon>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             }
           </div>

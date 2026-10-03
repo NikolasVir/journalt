@@ -114,9 +114,54 @@ a {
   @include respond-to('mobile') {
     width: 98vw;
     height: 94vh;
-    min-height: 0;
-    max-height: none;
     border-radius: var(--radius-md);
   }
 }
 
+.flex-grow { flex: 1; }
+.full-width { width: 100%; }
+.code-font { font-family: var(--font-family-mono); font-size: var(--font-size-xs); }
+.code-block {
+  background: var(--color-bg-app, #f8f9fa);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--color-text-primary);
+  overflow-x: auto;
+  margin: 0;
+}
+
+/* ── Type Definition Viewer Chips ─────────────────────────────────────── */
+.field-item, .section-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-bg-surface-hover);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.field-item__name { font-weight: 500; }
+.field-item__type { font-size: 11px; padding: 1px 6px; border-radius: var(--radius-pill); }
+.field-item__type--string { background: #e0f2fe; color: #0369a1; }
+.field-item__type--number { background: #f3e8ff; color: #7e22ce; }
+.field-item__type--boolean { background: #fef3c7; color: #b45309; }
+.field-item__type--array { background: #d1fae5; color: #047857; }
+
+.field-item__badge, .section-chip__tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+}
+.field-item__badge--required, .section-chip__tag--required { color: var(--color-primary); background: #e0f2fe; }
+.field-item__badge--optional, .section-chip__tag--optional { color: var(--color-text-muted); background: var(--color-border-card); }
+.section-chip__tag--repeatable { background: #ecfdf5; color: #059669; }
+
+.section-chip__num { font-size: 11px; color: var(--color-text-muted); }
+.section-chip__level { font-size: 10px; font-weight: 600; background: var(--color-border-card); border-radius: var(--radius-xs); padding: 1px 4px; }
+.section-chip__heading { font-weight: 500; font-size: 13px; flex: 1; }
