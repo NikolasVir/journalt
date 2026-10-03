@@ -480,11 +480,11 @@
     <div class="types-page__list">
       @for (type of types(); track type.id) {
         <mat-card appearance="outlined" class="type-card">
-          <mat-card-header>
+          <div class="type-card__header">
             <div class="type-card__header-top">
               <div class="type-card__title-row">
                 <mat-icon class="type-card__icon">schema</mat-icon>
-                <mat-card-title class="type-card__name">{{ type.name }}</mat-card-title>
+                <h2 class="type-card__name">{{ type.name }}</h2>
                 <span class="type-card__version">v{{ type.version }}</span>
               </div>
 
@@ -532,11 +532,11 @@
             </div>
 
             @if (type.description) {
-              <mat-card-subtitle class="type-card__desc">
+              <p class="type-card__desc">
                 {{ type.description }}
-              </mat-card-subtitle>
+              </p>
             }
-          </mat-card-header>
+          </div>
 
           <mat-card-content class="type-card__content">
             <!-- Human-readable Structured Viewer -->
