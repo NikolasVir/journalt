@@ -99,6 +99,7 @@ export interface NoteSummaryResponse {
   createdAtUtc: string;
   updatedAtUtc: string;
   tags?: TagDto[] | null;
+  typedMetadataJson?: string | null;
 }
 
 export interface CreateNoteRequest {

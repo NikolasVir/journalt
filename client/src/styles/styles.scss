@@ -31,6 +31,8 @@ html.dark-theme {
   --mat-sys-surface: #202124;
   --mat-sys-surface-container: #282a2c;
   --mat-sys-surface-container-high: #2d2e30;
+  --mat-sys-error: #f28b82;
+  --mat-sys-on-error: #202124;
 }
 
 *,
@@ -71,6 +73,24 @@ a {
   .mat-mdc-snack-bar-action {
     font-weight: 600;
     color: var(--mat-sys-inverse-primary, #8ab4f8);
+  }
+}
+
+.mat-mdc-snack-bar-container.snackbar-error {
+  --mdc-snackbar-container-color: var(--color-danger);
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  .mat-mdc-snack-bar-action {
+    color: #ffffff;
+    font-weight: 600;
+  }
+}
+
+.mat-mdc-snack-bar-container.snackbar-warning {
+  --mdc-snackbar-container-color: var(--color-warning);
+  --mdc-snackbar-supporting-text-color: #202124;
+  .mat-mdc-snack-bar-action {
+    color: #202124;
+    font-weight: 600;
   }
 }
 

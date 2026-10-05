@@ -1,0 +1,107 @@
+@if (hasContent()) {
+  <section class="meta-section" aria-label="Note Metadata">
+    @if (cleanSummary(); as s) {
+      <div class="meta-summary">
+        <mat-icon class="meta-summary__icon">format_quote</mat-icon>
+        <p class="meta-summary__text">{{ s }}</p>
+      </div>
+    }
+
+    @if (properties().length > 0) {
+      <div class="meta-card" [class.meta-card--collapsed]="isCollapsed()">
+        <button
+          type="button"
+          class="meta-card__header"
+          (click)="toggleCollapse()"
+          [attr.aria-expanded]="!isCollapsed()"
+          aria-label="Toggle metadata visibility"
+        >
+          <div class="meta-card__header-left">
+            <mat-icon class="meta-card__toggle-icon">
+              {{ isCollapsed() ? 'chevron_right' : 'expand_more' }}
+            </mat-icon>
+            <span class="meta-card__title">Metadata</span>
+          </div>
+          <span class="meta-card__count">{{ properties().length }}</span>
+        </button>
+
+        @if (!isCollapsed()) {
+          <div class="meta-card__content">
+            <dl class="meta-card__grid">
+              @for (prop of properties(); track prop.key) {
+                <div class="meta-card__row">
+                  <dt class="meta-card__key">{{ prop.label }}</dt>
+                  <dd class="meta-card__val">
+                    @switch (prop.type) {
+                      @case ('badge') {
+                        <span class="meta-badge" [class]="'meta-badge--' + prop.badgeVariant">
+                          {{ prop.value }}
+                        </span>
+                      }
+
+                      @case ('chips') {
+                        <div class="meta-chips">
+                          @for (item of prop.value; track $index) {
+                            <span class="meta-chip">{{ item }}</span>
+                          }
+                        </div>
+                      }
+
+                      @case ('skills') {
+                        <div class="meta-skills">
+                          @for (skill of prop.value; track skill.name) {
+                            <span
+                              class="meta-skill"
+                              [matTooltip]="skill.context || ''"
+                              [matTooltipDisabled]="!skill.context"
+                            >
+                              <span class="meta-skill__name">{{ skill.name }}</span>
+                              @if (skill.level) {
+                                <span
+                                  class="meta-skill__level"
+                                  [class]="'meta-skill__level--' + skill.level"
+                                >
+                                  {{ skill.level }}
+                                </span>
+                              }
+                            </span>
+                          }
+                        </div>
+                      }
+
+                      @case ('coordinates') {
+                        <a
+                          [href]="getMapUrl(prop.value)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="meta-coord-link"
+                          matTooltip="Open in OpenStreetMap"
+                        >
+                          <mat-icon class="meta-coord-icon">place</mat-icon>
+                          <span>{{ prop.value.latitude }}, {{ prop.value.longitude }}</span>
+                          <mat-icon class="meta-ext-icon">open_in_new</mat-icon>
+                        </a>
+                      }
+
+                      @case ('date') {
+                        <span class="meta-mono">{{ prop.value }}</span>
+                      }
+
+                      @case ('boolean') {
+                        <span>{{ prop.value ? 'Yes' : 'No' }}</span>
+                      }
+
+                      @default {
+                        <span>{{ prop.value }}</span>
+                      }
+                    }
+                  </dd>
+                </div>
+              }
+            </dl>
+          </div>
+        }
+      </div>
+    }
+  </section>
+}

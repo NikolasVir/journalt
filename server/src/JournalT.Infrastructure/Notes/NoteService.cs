@@ -240,7 +240,8 @@ public sealed class NoteService(
                 n.IsTrashed,
                 n.CreatedAtUtc,
                 n.UpdatedAtUtc,
-                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList()
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(),
+                n.TypedMetadataJson
             ))
             .ToListAsync(ct);
 
@@ -756,7 +757,7 @@ public sealed class NoteService(
             .Take(50)
             .Select(n => new NoteSummaryResponse(
                 n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
-                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList()))
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson))
             .ToListAsync(ct);
 
         var completedNotes = await completedQuery
@@ -764,7 +765,7 @@ public sealed class NoteService(
             .Take(20)
             .Select(n => new NoteSummaryResponse(
                 n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
-                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList()))
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson))
             .ToListAsync(ct);
 
         return new TodoSummaryResponse(pendingCount, completedCount, pendingNotes, completedNotes);

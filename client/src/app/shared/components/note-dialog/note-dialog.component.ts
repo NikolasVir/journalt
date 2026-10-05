@@ -36,6 +36,7 @@ import { NoteService } from '@core/services/note.service';
 import { NotificationService } from '@core/services/notification.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
+import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
 
 export interface NoteDialogSavePayload {
   id: string;
@@ -60,6 +61,7 @@ export interface NoteDialogSavePayload {
     MatTooltipModule,
     TypedTagSelectorComponent,
     NoteEditButtonComponent,
+    NoteMetadataViewComponent,
   ],
   templateUrl: './note-dialog.component.html',
   styleUrl: './note-dialog.component.scss',
@@ -137,6 +139,13 @@ export class NoteDialogComponent {
   protected readonly sourceError = signal<string | null>(null);
   protected readonly renderedHtml = linkedSignal(() => this.note()?.renderedHtml ?? '');
   protected readonly typeValidationWarnings = signal<string[]>([]);
+  protected readonly detailedNote = signal<NoteResponse | null>(null);
+  protected readonly typedMetadata = computed(
+    () => this.detailedNote()?.typedMetadataJson ?? this.note()?.typedMetadataJson ?? null
+  );
+  protected readonly summary = computed(
+    () => this.detailedNote()?.summary ?? this.note()?.summary ?? null
+  );
   private pointerDownOnBackdrop = false;
 
   constructor() {
@@ -164,21 +173,29 @@ export class NoteDialogComponent {
         this.newUrl.set('');
       });
 
-    // Reactively check type compatibility for Journal notes
+    // Reactively fetch full note details (typed metadata, validation warnings) for Journal notes
     toObservable(this.note)
       .pipe(
         switchMap((current) => {
           if (!current || current.level !== 'Journal' || !current.typeId) {
             return of(null);
           }
-          if (current.typeValidationWarnings !== undefined && current.typeValidationWarnings !== null) {
+          if (
+            current.typedMetadataJson !== undefined &&
+            current.typeValidationWarnings !== undefined &&
+            current.typeValidationWarnings !== null
+          ) {
             return of(current);
+          }
+          if (typeof this.noteService.getById !== 'function') {
+            return of(null);
           }
           return this.noteService.getById(current.id).pipe(catchError(() => of(null)));
         }),
         takeUntilDestroyed()
       )
       .subscribe((detailedNote) => {
+        this.detailedNote.set(detailedNote);
         this.typeValidationWarnings.set(detailedNote?.typeValidationWarnings ?? []);
       });
 
