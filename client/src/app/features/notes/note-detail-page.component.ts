@@ -86,6 +86,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   protected readonly noteId = signal<string | null>(null);
   protected readonly isSaving = signal<boolean>(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly typeValidationWarnings = signal<string[]>([]);
   protected readonly typeDefinitions = signal<TypeDefinitionResponse[]>([]);
   protected readonly libraries = signal<LibraryResponse[]>([]);
   protected readonly legacyTags = signal<TagDto[]>([]);
@@ -228,6 +229,8 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
               : '',
           typedTags,
         });
+
+        this.typeValidationWarnings.set(note.typeValidationWarnings ?? []);
 
         if (note.level === 'Journal' || isPromotingToJournal) {
           this.legacyTags.set(nonTypedTags);

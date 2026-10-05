@@ -1,0 +1,371 @@
+<div class="type-detail-page">
+  <div class="type-detail-page__header">
+    <div class="type-detail-page__title-group">
+      <button
+        mat-icon-button
+        type="button"
+        (click)="goBack()"
+        aria-label="Back to type definitions"
+        matTooltip="Back to type definitions"
+        class="type-detail-page__back-btn"
+      >
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+
+      <div>
+        <h1 class="type-detail-page__title">
+          {{ isEdit() ? 'Edit Type: ' + (name() || 'Untitled') : 'New Type Definition' }}
+        </h1>
+        <p class="type-detail-page__subtitle">
+          Configure metadata attributes and markdown section templates for Journal notes.
+        </p>
+      </div>
+    </div>
+
+    <!-- Mode Switcher -->
+    <div class="type-detail-page__mode-toggle">
+      <button
+        type="button"
+        class="mode-btn"
+        [class.mode-btn--active]="builderMode() === 'visual'"
+        (click)="setBuilderMode('visual')"
+      >
+        <mat-icon>view_quilt</mat-icon>
+        <span>Visual Builder</span>
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
+        [class.mode-btn--active]="builderMode() === 'json'"
+        (click)="setBuilderMode('json')"
+      >
+        <mat-icon>code</mat-icon>
+        <span>Raw JSON</span>
+      </button>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="type-detail-page__loading">
+      <mat-icon class="spinning">sync</mat-icon>
+      <span>Loading type definition...</span>
+    </div>
+  } @else {
+    <mat-card appearance="outlined" class="builder-card">
+      <mat-card-content class="builder-card__content">
+        <!-- Basic Details -->
+        <div class="builder-card__section">
+          <h2 class="builder-card__section-title">General Information</h2>
+          <div class="builder-card__row">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-grow">
+              <mat-label>Type Name</mat-label>
+              <input
+                matInput
+                placeholder="e.g. Meeting Note, Book Review, Architecture Decision"
+                [ngModel]="name()"
+                (ngModelChange)="name.set($event)"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-grow">
+              <mat-label>Description (Optional)</mat-label>
+              <input
+                matInput
+                placeholder="Brief description of this type's purpose"
+                [ngModel]="description()"
+                (ngModelChange)="description.set($event)"
+              />
+            </mat-form-field>
+          </div>
+
+          <!-- Quick Starter Presets (Only when creating brand new) -->
+          @if (!isEdit() && fields().length === 0 && sections().length === 0 && builderMode() === 'visual') {
+            <div class="builder-card__presets">
+              <span class="presets-label">Quick Starter Templates:</span>
+              <button type="button" class="preset-chip" (click)="applyPreset('meeting')">
+                <mat-icon>groups</mat-icon>
+                <span>Meeting Note</span>
+              </button>
+              <button type="button" class="preset-chip" (click)="applyPreset('decision')">
+                <mat-icon>gavel</mat-icon>
+                <span>Decision Record</span>
+              </button>
+              <button type="button" class="preset-chip" (click)="applyPreset('book')">
+                <mat-icon>menu_book</mat-icon>
+                <span>Book Review</span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- VISUAL BUILDER MODE -->
+        @if (builderMode() === 'visual') {
+          <!-- 1. Metadata Fields Builder -->
+          <div class="builder-card__section">
+            <div class="builder-card__section-header">
+              <div>
+                <h2 class="builder-card__section-title">1. Metadata Fields</h2>
+                <p class="builder-card__section-desc">
+                  Custom attributes attached to Journal notes. Validated against JSON schema on save.
+                </p>
+              </div>
+              <button
+                mat-stroked-button
+                type="button"
+                color="primary"
+                (click)="addField()"
+                class="add-btn"
+              >
+                <mat-icon>add</mat-icon>
+                <span>Add Field</span>
+              </button>
+            </div>
+
+            @if (fields().length === 0) {
+              <div class="builder-card__empty-box">
+                <p>No metadata fields defined. Click <strong>Add Field</strong> to add structured attributes (e.g. author, status, rating).</p>
+              </div>
+            } @else {
+              <div class="builder-table-wrapper">
+                <table class="builder-table">
+                  <thead>
+                    <tr>
+                      <th class="col-name">Field Key</th>
+                      <th class="col-type">Data Type</th>
+                      <th class="col-check">Required</th>
+                      <th class="col-actions"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (field of fields(); track $index) {
+                      <tr>
+                        <td class="col-name">
+                          <input
+                            type="text"
+                            class="builder-input"
+                            placeholder="e.g. topic, rating, status"
+                            [ngModel]="field.name"
+                            (ngModelChange)="updateFieldName($index, $event)"
+                          />
+                        </td>
+
+                        <td class="col-type">
+                          <div class="builder-select-wrap">
+                            <select
+                              class="builder-select"
+                              [ngModel]="field.type"
+                              (ngModelChange)="updateFieldType($index, $event)"
+                            >
+                              <option value="string">Text (string)</option>
+                              <option value="number">Number</option>
+                              <option value="boolean">Boolean</option>
+                              <option value="array">List (array)</option>
+                            </select>
+                            <mat-icon class="builder-select-arrow">arrow_drop_down</mat-icon>
+                          </div>
+                        </td>
+
+                        <td class="col-check">
+                          <mat-checkbox
+                            [ngModel]="field.required"
+                            (ngModelChange)="updateFieldRequired($index, $event)"
+                            aria-label="Required"
+                          />
+                        </td>
+
+                        <td class="col-actions">
+                          <button
+                            mat-icon-button
+                            type="button"
+                            class="builder-table__delete-btn"
+                            (click)="removeField($index)"
+                            matTooltip="Remove Field"
+                            aria-label="Remove Field"
+                          >
+                            <mat-icon>delete_outline</mat-icon>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+
+          <!-- 2. Body Section Templates Builder -->
+          <div class="builder-card__section">
+            <div class="builder-card__section-header">
+              <div>
+                <h2 class="builder-card__section-title">2. Body Section Templates</h2>
+                <p class="builder-card__section-desc">
+                  Pre-populated Markdown headings (H1-H4). Validated for presence, order, and repeatability.
+                </p>
+              </div>
+              <button
+                mat-stroked-button
+                type="button"
+                color="primary"
+                (click)="addSection()"
+                class="add-btn"
+              >
+                <mat-icon>add</mat-icon>
+                <span>Add Section</span>
+              </button>
+            </div>
+
+            @if (sections().length === 0) {
+              <div class="builder-card__empty-box">
+                <p>No body sections defined. Click <strong>Add Section</strong> to pre-structure notes with headings like Summary, Decisions, or Next Steps.</p>
+              </div>
+            } @else {
+              <div class="builder-table-wrapper">
+                <table class="builder-table">
+                  <thead>
+                    <tr>
+                      <th class="col-order">Order</th>
+                      <th class="col-level">Heading Level</th>
+                      <th class="col-heading">Heading Text</th>
+                      <th class="col-check">Required</th>
+                      <th class="col-check">Repeatable</th>
+                      <th class="col-actions"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (sec of sections(); track $index) {
+                      <tr>
+                        <td class="col-order">
+                          <div class="order-actions">
+                            <button
+                              type="button"
+                              class="order-btn"
+                              [disabled]="$index === 0"
+                              (click)="moveSection($index, 'up')"
+                              matTooltip="Move Up"
+                              aria-label="Move Up"
+                            >
+                              <mat-icon>arrow_upward</mat-icon>
+                            </button>
+                            <button
+                              type="button"
+                              class="order-btn"
+                              [disabled]="$index === sections().length - 1"
+                              (click)="moveSection($index, 'down')"
+                              matTooltip="Move Down"
+                              aria-label="Move Down"
+                            >
+                              <mat-icon>arrow_downward</mat-icon>
+                            </button>
+                          </div>
+                        </td>
+
+                        <td class="col-level">
+                          <div class="builder-select-wrap">
+                            <select
+                              class="builder-select"
+                              [ngModel]="sec.level"
+                              (ngModelChange)="updateSectionLevel($index, +$event)"
+                            >
+                              <option [value]="1">H1 (#)</option>
+                              <option [value]="2">H2 (##)</option>
+                              <option [value]="3">H3 (###)</option>
+                              <option [value]="4">H4 (####)</option>
+                            </select>
+                            <mat-icon class="builder-select-arrow">arrow_drop_down</mat-icon>
+                          </div>
+                        </td>
+
+                        <td class="col-heading">
+                          <input
+                            type="text"
+                            class="builder-input"
+                            placeholder="e.g. Summary, Action Items"
+                            [ngModel]="sec.heading"
+                            (ngModelChange)="updateSectionHeading($index, $event)"
+                          />
+                        </td>
+
+                        <td class="col-check">
+                          <mat-checkbox
+                            [ngModel]="sec.required"
+                            (ngModelChange)="updateSectionRequired($index, $event)"
+                            aria-label="Required"
+                          />
+                        </td>
+
+                        <td class="col-check">
+                          <mat-checkbox
+                            [ngModel]="sec.allowMultiple"
+                            (ngModelChange)="updateSectionAllowMultiple($index, $event)"
+                            aria-label="Repeatable"
+                          />
+                        </td>
+
+                        <td class="col-actions">
+                          <button
+                            mat-icon-button
+                            type="button"
+                            class="builder-table__delete-btn"
+                            (click)="removeSection($index)"
+                            matTooltip="Remove Section"
+                            aria-label="Remove Section"
+                          >
+                            <mat-icon>delete_outline</mat-icon>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- RAW JSON MODE -->
+          <div class="builder-card__section">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Type JSON Schema</mat-label>
+              <textarea
+                matInput
+                rows="8"
+                [ngModel]="rawSchemaJson()"
+                (ngModelChange)="rawSchemaJson.set($event)"
+                class="code-font"
+              ></textarea>
+              <mat-hint>JSON Schema document defining typed metadata fields.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width" style="margin-top: var(--spacing-md);">
+              <mat-label>Sections JSON Array (Optional)</mat-label>
+              <textarea
+                matInput
+                rows="6"
+                [ngModel]="rawSectionsJson()"
+                (ngModelChange)="rawSectionsJson.set($event)"
+                class="code-font"
+              ></textarea>
+              <mat-hint>Array of section objects: [{{ '{' }}"heading": "Summary", "level": 2, "required": true{{ '}' }}].</mat-hint>
+            </mat-form-field>
+          </div>
+        }
+      </mat-card-content>
+
+      <mat-card-actions class="builder-card__actions">
+        <button mat-button type="button" (click)="goBack()">Cancel</button>
+        <button
+          mat-flat-button
+          type="button"
+          color="primary"
+          (click)="saveType()"
+          [disabled]="!name().trim() || isSubmitting()"
+        >
+          @if (isSubmitting()) {
+            <span>Saving...</span>
+          } @else {
+            <span>{{ isEdit() ? 'Save Changes' : 'Create Type' }}</span>
+          }
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+</div>

@@ -81,6 +81,7 @@ export interface NoteResponse {
   outboundRelations?: NoteRelationResponse[] | null;
   backlinks?: NoteBacklinkResponse[] | null;
   unresolvedWikiLinks?: WikiLinkWarning[] | null;
+  typeValidationWarnings?: string[] | null;
 }
 
 export interface NoteSummaryResponse {

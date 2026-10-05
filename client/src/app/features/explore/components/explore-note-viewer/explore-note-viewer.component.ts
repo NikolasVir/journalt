@@ -76,7 +76,7 @@ export class ExploreNoteViewerComponent {
         filter((typeId): typeId is string => !!typeId && !this.typeNames()[typeId]),
         switchMap((typeId) =>
           this.typeService.getById(typeId).pipe(
-            map((type) => ({ typeId, name: `${type.name} v${type.version}` })),
+            map((type) => ({ typeId, name: type.name })),
             catchError(() => of({ typeId, name: 'Typed' }))
           )
         ),

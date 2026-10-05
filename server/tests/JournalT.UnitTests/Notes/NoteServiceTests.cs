@@ -423,6 +423,43 @@ public class NoteServiceTests : IDisposable
         Assert.Contains(updatedSummary.RecentCompletedTodos, t => t.Id == note.Id);
     }
 
+    [Fact]
+    public async Task GetById_WhenNoteIsIncompatibleWithType_ReturnsTypeValidationWarnings()
+    {
+        var typeDef = new TypeDefinition
+        {
+            UserId = _userId,
+            Name = "StrictType",
+            Version = 1,
+            SchemaJson = """{"type":"object","properties":{"score":{"type":"number"}},"required":["score"]}""",
+            SectionsJson = """[{"heading":"Summary","level":2,"required":true}]""",
+            IsActive = true
+        };
+        _db.TypeDefinitions.Add(typeDef);
+        await _db.SaveChangesAsync();
+
+        // Seed a note that is missing required field and section
+        var note = new Note
+        {
+            UserId = _userId,
+            Title = "Legacy Note",
+            Level = NoteLevel.Journal,
+            TypeId = typeDef.Id,
+            TypeVersion = 1,
+            TypedMetadataJson = "{}",
+            BodyMarkdown = "Just some text without headings",
+            RenderedHtml = "<p>Just some text without headings</p>"
+        };
+        _db.Notes.Add(note);
+        await _db.SaveChangesAsync();
+
+        var fetched = await _sut.GetByIdAsync(note.Id);
+        Assert.NotNull(fetched);
+        Assert.NotNull(fetched.TypeValidationWarnings);
+        Assert.NotEmpty(fetched.TypeValidationWarnings);
+        Assert.Contains(fetched.TypeValidationWarnings, w => w.Contains("Summary"));
+    }
+
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser
     {
         public Guid UserId { get; } = userId;

@@ -35,6 +35,17 @@ public class TypesController(ITypeDefinitionService typeDefinitionService) : Con
         return typeDef is not null ? Ok(typeDef) : NotFound();
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTypeDefinitionRequest request, CancellationToken ct)
+    {
+        var result = await _typeService.UpdateAsync(id, request, ct);
+
+        if (!result.Succeeded)
+            return Problem(detail: string.Join("; ", result.Errors), statusCode: result.StatusCode);
+
+        return Ok(result.TypeDefinition);
+    }
+
     [HttpPost("{id:guid}/version")]
     public async Task<IActionResult> CreateNewVersion(Guid id, [FromBody] CreateTypeVersionRequest request, CancellationToken ct)
     {
@@ -57,6 +68,12 @@ public class TypesController(ITypeDefinitionService typeDefinitionService) : Con
         return StatusCode(StatusCodes.Status201Created, result.TypeDefinition);
     }
 
+    [HttpPost("{id:guid}/duplicate")]
+    public async Task<IActionResult> Duplicate(Guid id, [FromBody] CloneTypeRequest request, CancellationToken ct)
+    {
+        return await Clone(id, request, ct);
+    }
+
     [HttpPatch("{id:guid}/toggle-active")]
     public async Task<IActionResult> ToggleActive(Guid id, CancellationToken ct)
     {
@@ -67,8 +84,11 @@ public class TypesController(ITypeDefinitionService typeDefinitionService) : Con
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var deleted = await _typeService.DeleteAsync(id, ct);
-        return deleted ? NoContent() : NotFound();
+        var result = await _typeService.DeleteAsync(id, ct);
+        if (!result.Succeeded)
+            return Problem(detail: string.Join("; ", result.Errors), statusCode: result.StatusCode);
+
+        return NoContent();
     }
 
     [HttpGet("{id:guid}/migrations/preview")]

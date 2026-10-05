@@ -16,6 +16,7 @@ export interface TypeDefinitionResponse {
   sectionsJson?: string | null;
   isActive: boolean;
   createdAtUtc: string;
+  notesCount?: number;
 }
 
 export interface CreateTypeDefinitionRequest {
@@ -31,9 +32,19 @@ export interface CreateTypeVersionRequest {
   sectionsJson?: string | null;
 }
 
+export interface UpdateTypeDefinitionRequest {
+  name: string;
+  description?: string | null;
+  schemaJson?: string;
+  sectionsJson?: string | null;
+}
+
 export interface CloneTypeRequest {
   newName: string;
 }
+
+export type DuplicateTypeRequest = CloneTypeRequest;
+
 
 export interface TypeMigrationPreviewItem {
   noteId: string;

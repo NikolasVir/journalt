@@ -88,12 +88,11 @@
 
         <div class="help-card__column">
           <div class="help-card__col-header">
-            <mat-icon class="help-card__col-icon">update</mat-icon>
-            <h3>3. Versions & Migrations</h3>
+            <mat-icon class="help-card__col-icon">edit_note</mat-icon>
+            <h3>3. Updating Types</h3>
           </div>
           <p>
-            Types have version numbers (<code>v1</code>, <code>v2</code>). Modifying a Type creates a new version.
-            Existing notes remain on their previous version until you inspect and approve a migration, ensuring your notes never break unexpectedly.
+            Types can be changed at will. Updating a Type immediately refreshes its structure across your workspace. If an existing note becomes incompatible with the new schema, a validation warning will appear when viewing the note.
           </p>
         </div>
       </div>
@@ -104,392 +103,37 @@
     </mat-card>
   }
 
-  <!-- Builder / Editor Card -->
-  @if (showBuilder()) {
-    <mat-card appearance="outlined" class="builder-card">
-      <mat-card-header class="builder-card__header">
-        <div class="builder-card__title-row">
-          <mat-icon class="builder-card__icon">edit_note</mat-icon>
-          <div>
-            <h2 class="builder-card__title">
-              {{ editingType() ? 'Create New Version of ' + editingType()?.name : 'Create Type Definition' }}
-            </h2>
-            <p class="builder-card__subtitle">
-              Design structured attributes and section templates.
-            </p>
-          </div>
-        </div>
-
-        <!-- Mode Switcher -->
-        <div class="builder-card__mode-toggle">
-          <button
-            type="button"
-            class="mode-btn"
-            [class.mode-btn--active]="builderMode() === 'visual'"
-            (click)="setBuilderMode('visual')"
-          >
-            <mat-icon>view_quilt</mat-icon>
-            <span>Visual Builder</span>
-          </button>
-          <button
-            type="button"
-            class="mode-btn"
-            [class.mode-btn--active]="builderMode() === 'json'"
-            (click)="setBuilderMode('json')"
-          >
-            <mat-icon>code</mat-icon>
-            <span>Raw JSON</span>
-          </button>
-        </div>
-      </mat-card-header>
-
-      <mat-card-content class="builder-card__content">
-        <!-- Basic Details -->
-        <div class="builder-card__section">
-          <h3 class="builder-card__section-title">General Information</h3>
-          <div class="builder-card__row">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-grow">
-              <mat-label>Type Name</mat-label>
-              <input
-                matInput
-                placeholder="e.g. Meeting Note, Book Review, Architecture Decision"
-                [ngModel]="name()"
-                (ngModelChange)="name.set($event)"
-                [disabled]="editingType() !== null"
-              />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-grow">
-              <mat-label>Description (Optional)</mat-label>
-              <input
-                matInput
-                placeholder="Brief description of this type's purpose"
-                [ngModel]="description()"
-                (ngModelChange)="description.set($event)"
-              />
-            </mat-form-field>
-          </div>
-          @if (editingType()) {
-            <p class="builder-card__note">
-              <mat-icon>lock</mat-icon>
-              <span>Type name cannot be changed when publishing a new version.</span>
-            </p>
-          }
-
-          <!-- Quick Starter Presets (Only when creating brand new) -->
-          @if (!editingType() && fields().length === 0 && sections().length === 0 && builderMode() === 'visual') {
-            <div class="builder-card__presets">
-              <span class="presets-label">Quick Starter Templates:</span>
-              <button type="button" class="preset-chip" (click)="applyPreset('meeting')">
-                <mat-icon>groups</mat-icon>
-                <span>Meeting Note</span>
-              </button>
-              <button type="button" class="preset-chip" (click)="applyPreset('decision')">
-                <mat-icon>gavel</mat-icon>
-                <span>Decision Record</span>
-              </button>
-              <button type="button" class="preset-chip" (click)="applyPreset('book')">
-                <mat-icon>menu_book</mat-icon>
-                <span>Book Review</span>
-              </button>
-            </div>
-          }
-        </div>
-
-        <!-- VISUAL BUILDER MODE -->
-        @if (builderMode() === 'visual') {
-          <!-- 1. Metadata Fields Builder -->
-          <div class="builder-card__section">
-            <div class="builder-card__section-header">
-              <div>
-                <h3 class="builder-card__section-title">1. Metadata Fields</h3>
-                <p class="builder-card__section-desc">
-                  Custom attributes attached to Journal notes. Validated against JSON schema on save.
-                </p>
-              </div>
-              <button
-                mat-stroked-button
-                type="button"
-                color="primary"
-                (click)="addField()"
-                class="add-btn"
-              >
-                <mat-icon>add</mat-icon>
-                <span>Add Field</span>
-              </button>
-            </div>
-
-            @if (fields().length === 0) {
-              <div class="builder-card__empty-box">
-                <p>No metadata fields defined. Click <strong>Add Field</strong> to add structured attributes (e.g. author, status, rating).</p>
-              </div>
-            } @else {
-              <div class="builder-table-wrapper">
-                <table class="builder-table">
-                  <thead>
-                    <tr>
-                      <th class="col-name">Field Key</th>
-                      <th class="col-type">Data Type</th>
-                      <th class="col-check">Required</th>
-                      <th class="col-actions"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (field of fields(); track $index) {
-                      <tr>
-                        <td class="col-name">
-                          <input
-                            type="text"
-                            class="builder-input"
-                            placeholder="e.g. topic, rating, status"
-                            [ngModel]="field.name"
-                            (ngModelChange)="updateFieldName($index, $event)"
-                          />
-                        </td>
-
-                        <td class="col-type">
-                          <div class="builder-select-wrap">
-                            <select
-                              class="builder-select"
-                              [ngModel]="field.type"
-                              (ngModelChange)="updateFieldType($index, $event)"
-                            >
-                              <option value="string">Text (string)</option>
-                              <option value="number">Number</option>
-                              <option value="boolean">Boolean</option>
-                              <option value="array">List (array)</option>
-                            </select>
-                            <mat-icon class="builder-select-arrow">arrow_drop_down</mat-icon>
-                          </div>
-                        </td>
-
-                        <td class="col-check">
-                          <mat-checkbox
-                            [ngModel]="field.required"
-                            (ngModelChange)="updateFieldRequired($index, $event)"
-                            aria-label="Required"
-                          />
-                        </td>
-
-                        <td class="col-actions">
-                          <button
-                            mat-icon-button
-                            type="button"
-                            class="builder-table__delete-btn"
-                            (click)="removeField($index)"
-                            matTooltip="Remove Field"
-                            aria-label="Remove Field"
-                          >
-                            <mat-icon>delete_outline</mat-icon>
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          </div>
-
-          <!-- 2. Body Section Templates Builder -->
-          <div class="builder-card__section">
-            <div class="builder-card__section-header">
-              <div>
-                <h3 class="builder-card__section-title">2. Body Section Templates</h3>
-                <p class="builder-card__section-desc">
-                  Markdown headings that scaffold the note body. Notes must follow required headings, level, and order.
-                </p>
-              </div>
-              <button
-                mat-stroked-button
-                type="button"
-                color="primary"
-                (click)="addSection()"
-                class="add-btn"
-              >
-                <mat-icon>add</mat-icon>
-                <span>Add Section</span>
-              </button>
-            </div>
-
-            @if (sections().length === 0) {
-              <div class="builder-card__empty-box">
-                <p>No section templates defined. Notes will have an unconstrained, free-form markdown body.</p>
-              </div>
-            } @else {
-              <div class="builder-table-wrapper">
-                <table class="builder-table">
-                  <thead>
-                    <tr>
-                      <th class="col-order">Order</th>
-                      <th class="col-level">Level</th>
-                      <th class="col-heading">Heading Title</th>
-                      <th class="col-check">Required</th>
-                      <th class="col-check">Repeatable</th>
-                      <th class="col-actions"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (sec of sections(); track $index) {
-                      <tr>
-                        <td class="col-order">
-                          <div class="builder-table__order-btns">
-                            <button
-                              type="button"
-                              (click)="moveSection($index, 'up')"
-                              [disabled]="$index === 0"
-                              matTooltip="Move Up"
-                              aria-label="Move Up"
-                            >
-                              <mat-icon>arrow_upward</mat-icon>
-                            </button>
-                            <button
-                              type="button"
-                              (click)="moveSection($index, 'down')"
-                              [disabled]="$index === sections().length - 1"
-                              matTooltip="Move Down"
-                              aria-label="Move Down"
-                            >
-                              <mat-icon>arrow_downward</mat-icon>
-                            </button>
-                          </div>
-                        </td>
-
-                        <td class="col-level">
-                          <div class="builder-select-wrap">
-                            <select
-                              class="builder-select"
-                              [ngModel]="sec.level"
-                              (ngModelChange)="updateSectionLevel($index, +$event)"
-                            >
-                              <option [value]="1">H1 (#)</option>
-                              <option [value]="2">H2 (##)</option>
-                              <option [value]="3">H3 (###)</option>
-                              <option [value]="4">H4 (####)</option>
-                            </select>
-                            <mat-icon class="builder-select-arrow">arrow_drop_down</mat-icon>
-                          </div>
-                        </td>
-
-                        <td class="col-heading">
-                          <input
-                            type="text"
-                            class="builder-input"
-                            placeholder="e.g. Summary, Action Items"
-                            [ngModel]="sec.heading"
-                            (ngModelChange)="updateSectionHeading($index, $event)"
-                          />
-                        </td>
-
-                        <td class="col-check">
-                          <mat-checkbox
-                            [ngModel]="sec.required"
-                            (ngModelChange)="updateSectionRequired($index, $event)"
-                            aria-label="Required"
-                          />
-                        </td>
-
-                        <td class="col-check">
-                          <mat-checkbox
-                            [ngModel]="sec.allowMultiple"
-                            (ngModelChange)="updateSectionAllowMultiple($index, $event)"
-                            aria-label="Repeatable"
-                          />
-                        </td>
-
-                        <td class="col-actions">
-                          <button
-                            mat-icon-button
-                            type="button"
-                            class="builder-table__delete-btn"
-                            (click)="removeSection($index)"
-                            matTooltip="Remove Section"
-                            aria-label="Remove Section"
-                          >
-                            <mat-icon>delete_outline</mat-icon>
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          </div>
-        } @else {
-          <!-- RAW JSON MODE -->
-          <div class="builder-card__section">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Type JSON Schema</mat-label>
-              <textarea
-                matInput
-                rows="8"
-                [ngModel]="rawSchemaJson()"
-                (ngModelChange)="rawSchemaJson.set($event)"
-                class="code-font"
-              ></textarea>
-              <mat-hint>JSON Schema document defining typed metadata fields.</mat-hint>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width" style="margin-top: var(--spacing-md);">
-              <mat-label>Sections JSON Array (Optional)</mat-label>
-              <textarea
-                matInput
-                rows="6"
-                [ngModel]="rawSectionsJson()"
-                (ngModelChange)="rawSectionsJson.set($event)"
-                class="code-font"
-              ></textarea>
-              <mat-hint>Array of section objects: [{{ '{' }}"heading": "Summary", "level": 2, "required": true{{ '}' }}].</mat-hint>
-            </mat-form-field>
-          </div>
-        }
-      </mat-card-content>
-
-      <mat-card-actions class="builder-card__actions">
-        <button mat-button type="button" (click)="cancelBuilder()">Cancel</button>
-        <button
-          mat-flat-button
-          type="button"
-          color="primary"
-          (click)="saveType()"
-          [disabled]="!name().trim() || isSubmitting()"
-        >
-          {{ editingType() ? 'Publish New Version' : 'Create Type' }}
-        </button>
-      </mat-card-actions>
-    </mat-card>
-  }
-
-  <!-- Clone Modal -->
-  @if (cloningType(); as type) {
-    <mat-card appearance="outlined" class="builder-card">
+  <!-- Duplicate Modal -->
+  @if (duplicatingType(); as type) {
+    <mat-card appearance="outlined" class="duplicate-card">
       <mat-card-header>
-        <mat-card-title class="builder-card__title">Clone "{{ type.name }}"</mat-card-title>
+        <mat-card-title class="duplicate-card__title">Duplicate "{{ type.name }}"</mat-card-title>
         <mat-card-subtitle>Create a new Type definition starting from this structure.</mat-card-subtitle>
       </mat-card-header>
 
-      <mat-card-content class="builder-card__content">
+      <mat-card-content class="duplicate-card__content">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>New Type Name</mat-label>
           <input
             matInput
-            [ngModel]="cloneName()"
-            (ngModelChange)="cloneName.set($event)"
+            [ngModel]="duplicateName()"
+            (ngModelChange)="duplicateName.set($event)"
+            (keydown.enter)="submitDuplicate()"
+            placeholder="Type name"
           />
         </mat-form-field>
       </mat-card-content>
 
-      <mat-card-actions class="builder-card__actions">
-        <button mat-button type="button" (click)="cloningType.set(null)">Cancel</button>
+      <mat-card-actions class="duplicate-card__actions">
+        <button mat-button type="button" (click)="cancelDuplicate()">Cancel</button>
         <button
           mat-flat-button
           type="button"
           color="primary"
-          (click)="submitClone()"
-          [disabled]="!cloneName().trim() || isSubmitting()"
+          (click)="submitDuplicate()"
+          [disabled]="!duplicateName().trim() || isSubmitting()"
         >
-          Clone Type
+          Duplicate Type
         </button>
       </mat-card-actions>
     </mat-card>
@@ -527,7 +171,11 @@
               <div class="type-card__title-row">
                 <mat-icon class="type-card__icon">schema</mat-icon>
                 <h2 class="type-card__name">{{ type.name }}</h2>
-                <span class="type-card__version">v{{ type.version }}</span>
+                @if ((type.notesCount ?? 0) > 0) {
+                  <span class="type-card__notes-badge" [matTooltip]="type.notesCount + ' notes using this type'">
+                    {{ type.notesCount }} {{ type.notesCount === 1 ? 'note' : 'notes' }}
+                  </span>
+                }
               </div>
 
               <div class="type-card__actions">
@@ -543,29 +191,30 @@
                 <button
                   mat-button
                   type="button"
-                  (click)="openNewVersion(type)"
-                  matTooltip="Create a new version of this Type"
-                  aria-label="New Version"
+                  (click)="openEdit(type)"
+                  matTooltip="Edit this Type"
+                  aria-label="Edit Type"
                 >
-                  <mat-icon>update</mat-icon>
-                  <span>New Version</span>
+                  <mat-icon>edit</mat-icon>
+                  <span>Edit</span>
                 </button>
 
                 <button
-                  mat-icon-button
+                  mat-button
                   type="button"
-                  (click)="openClone(type)"
-                  matTooltip="Clone Type"
-                  aria-label="Clone Type"
+                  (click)="openDuplicate(type)"
+                  matTooltip="Duplicate this Type"
+                  aria-label="Duplicate Type"
                 >
                   <mat-icon>content_copy</mat-icon>
+                  <span>Duplicate</span>
                 </button>
 
                 <button
                   mat-icon-button
                   type="button"
                   (click)="deleteType(type)"
-                  matTooltip="Delete Type"
+                  [matTooltip]="(type.notesCount ?? 0) > 0 ? 'Cannot be deleted (used by notes)' : 'Delete Type'"
                   aria-label="Delete Type"
                 >
                   <mat-icon>delete</mat-icon>
@@ -670,6 +319,70 @@
           </mat-card-content>
         </mat-card>
       }
+    </div>
+  }
+
+  <!-- Blocked Delete Modal -->
+  @if (blockedDeleteType(); as type) {
+    <div
+      class="dialog-backdrop"
+      (click)="closeBlockedDeleteDialog()"
+      role="presentation"
+    >
+      <div
+        class="dialog-panel block-modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="block-dialog-title"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="block-modal__header">
+          <div class="block-modal__title-row">
+            <div class="block-modal__icon-wrap">
+              <mat-icon class="block-modal__icon">delete_forever</mat-icon>
+            </div>
+            <div>
+              <h2 id="block-dialog-title" class="block-modal__title">Cannot Delete Type</h2>
+              <p class="block-modal__subtitle">This type definition is in active use</p>
+            </div>
+          </div>
+          <button
+            mat-icon-button
+            type="button"
+            (click)="closeBlockedDeleteDialog()"
+            aria-label="Close dialog"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="block-modal__body">
+          <p class="block-modal__message">
+            <strong>"{{ type.name }}"</strong> cannot be deleted because it is currently assigned to
+            <span class="block-modal__highlight">
+              {{ type.notesCount }} Journal {{ type.notesCount === 1 ? 'note' : 'notes' }}
+            </span>.
+          </p>
+
+          <div class="block-modal__callout">
+            <mat-icon class="block-modal__callout-icon">info</mat-icon>
+            <div class="block-modal__callout-text">
+              Deleting a type in use would break validation and metadata for those notes. To delete this type, first reassign or remove the associated Journal notes.
+            </div>
+          </div>
+        </div>
+
+        <div class="block-modal__actions">
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            (click)="closeBlockedDeleteDialog()"
+          >
+            Understood
+          </button>
+        </div>
+      </div>
     </div>
   }
 </div>

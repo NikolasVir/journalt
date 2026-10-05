@@ -116,7 +116,7 @@
                 aria-label="Select Journal Type"
               >
                 @for (type of typeDefinitions(); track type.id) {
-                  <mat-option [value]="type.id">{{ type.name }} (v{{ type.version }})</mat-option>
+                  <mat-option [value]="type.id">{{ type.name }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>

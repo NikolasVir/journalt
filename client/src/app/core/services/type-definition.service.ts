@@ -5,6 +5,7 @@ import {
   CloneTypeRequest,
   CreateTypeDefinitionRequest,
   CreateTypeVersionRequest,
+  UpdateTypeDefinitionRequest,
   TypeDefinitionResponse,
   TypeMigrationPreviewItem,
   TypeMigrationRequest,
@@ -31,12 +32,20 @@ export class TypeDefinitionService {
     return this.http.post<TypeDefinitionResponse>(this.baseUrl, request);
   }
 
+  public update(id: string, request: UpdateTypeDefinitionRequest): Observable<TypeDefinitionResponse> {
+    return this.http.put<TypeDefinitionResponse>(`${this.baseUrl}/${id}`, request);
+  }
+
   public createNewVersion(id: string, request: CreateTypeVersionRequest): Observable<TypeDefinitionResponse> {
     return this.http.post<TypeDefinitionResponse>(`${this.baseUrl}/${id}/version`, request);
   }
 
   public clone(id: string, request: CloneTypeRequest): Observable<TypeDefinitionResponse> {
     return this.http.post<TypeDefinitionResponse>(`${this.baseUrl}/${id}/clone`, request);
+  }
+
+  public duplicate(id: string, request: CloneTypeRequest): Observable<TypeDefinitionResponse> {
+    return this.http.post<TypeDefinitionResponse>(`${this.baseUrl}/${id}/duplicate`, request);
   }
 
   public toggleActive(id: string): Observable<void> {

@@ -53,6 +53,43 @@ public class TypeDefinitionService(
         return TypeDefinitionResult.Success(MapToResponse(typeDef), 201);
     }
 
+    public async Task<TypeDefinitionResult> UpdateAsync(Guid id, UpdateTypeDefinitionRequest request, CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId;
+        var existing = await _db.TypeDefinitions
+            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId, ct);
+
+        if (existing is null)
+            return TypeDefinitionResult.NotFound();
+
+        var trimmedName = request.Name?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(trimmedName))
+            return TypeDefinitionResult.Failure("Type name is required.");
+
+        var nameExists = await _db.TypeDefinitions
+            .AnyAsync(t => t.UserId == userId && t.Id != id && t.Name.ToLower() == trimmedName.ToLower(), ct);
+        if (nameExists)
+            return TypeDefinitionResult.Conflict($"A type definition named '{trimmedName}' already exists.");
+
+        var schema = string.IsNullOrWhiteSpace(request.SchemaJson) ? "{}" : request.SchemaJson;
+        var sections = string.IsNullOrWhiteSpace(request.SectionsJson) ? null : request.SectionsJson.Trim();
+
+        var validation = _validationService.ValidateTypeDefinition(schema, sections);
+        if (!validation.IsValid)
+            return TypeDefinitionResult.Failure(validation.Errors.Select(e => $"{e.Path}: {e.Message}"));
+
+        existing.Name = trimmedName;
+        existing.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        existing.SchemaJson = schema;
+        existing.SectionsJson = sections;
+        existing.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+
+        var notesCount = await _db.Notes.CountAsync(n => n.TypeId == id, ct);
+        return TypeDefinitionResult.Success(MapToResponse(existing, notesCount));
+    }
+
     public async Task<TypeDefinitionResult> CreateNewVersionAsync(Guid id, CreateTypeVersionRequest request, CancellationToken ct = default)
     {
         var userId = _currentUser.UserId;
@@ -85,9 +122,34 @@ public class TypeDefinitionService(
         };
 
         _db.TypeDefinitions.Add(newVersion);
+
+        // Automatically replace the old version:
+        // 1. Migrate all notes pointing to previous versions of this type
+        var oldVersionIds = await _db.TypeDefinitions
+            .Where(t => t.UserId == userId && t.Name.ToLower() == existing.Name.ToLower() && t.Id != newVersion.Id)
+            .Select(t => t.Id)
+            .ToListAsync(ct);
+
+        var notesToMigrate = await _db.Notes
+            .Where(n => n.UserId == userId && n.TypeId.HasValue && oldVersionIds.Contains(n.TypeId.Value))
+            .ToListAsync(ct);
+
+        foreach (var note in notesToMigrate)
+        {
+            note.TypeId = newVersion.Id;
+            note.TypeVersion = newVersion.Version;
+        }
+
+        // 2. Remove the old version(s) so the new version cleanly replaces them
+        var oldVersions = await _db.TypeDefinitions
+            .Where(t => t.UserId == userId && t.Name.ToLower() == existing.Name.ToLower() && t.Id != newVersion.Id)
+            .ToListAsync(ct);
+
+        _db.TypeDefinitions.RemoveRange(oldVersions);
+
         await _db.SaveChangesAsync(ct);
 
-        return TypeDefinitionResult.Success(MapToResponse(newVersion), 201);
+        return TypeDefinitionResult.Success(MapToResponse(newVersion, notesToMigrate.Count), 201);
     }
 
     public async Task<TypeDefinitionResult> CloneAsync(Guid id, CloneTypeRequest request, CancellationToken ct = default)
@@ -124,13 +186,14 @@ public class TypeDefinitionService(
         _db.TypeDefinitions.Add(clone);
         await _db.SaveChangesAsync(ct);
 
-        return TypeDefinitionResult.Success(MapToResponse(clone), 201);
+        return TypeDefinitionResult.Success(MapToResponse(clone, 0), 201);
     }
 
     public async Task<TypeDefinitionResponse?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var typeDef = await _db.TypeDefinitions
             .AsNoTracking()
+            .Include(t => t.Notes)
             .FirstOrDefaultAsync(t => t.Id == id && t.UserId == _currentUser.UserId, ct);
 
         return typeDef is not null ? MapToResponse(typeDef) : null;
@@ -148,9 +211,20 @@ public class TypeDefinitionService(
         var list = await query
             .OrderBy(t => t.Name)
             .ThenByDescending(t => t.Version)
+            .Select(t => new TypeDefinitionResponse(
+                t.Id,
+                t.Name,
+                t.Version,
+                t.Description,
+                t.SchemaJson,
+                t.SectionsJson,
+                t.IsActive,
+                t.CreatedAtUtc,
+                t.Notes.Count
+            ))
             .ToListAsync(ct);
 
-        return list.Select(MapToResponse).ToList();
+        return list;
     }
 
     public async Task<bool> ToggleActiveAsync(Guid id, CancellationToken ct = default)
@@ -165,26 +239,23 @@ public class TypeDefinitionService(
         return true;
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task<TypeDefinitionResult> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var typeDef = await _db.TypeDefinitions
             .FirstOrDefaultAsync(t => t.Id == id && t.UserId == _currentUser.UserId, ct);
 
-        if (typeDef is null) return false;
+        if (typeDef is null) return TypeDefinitionResult.NotFound();
 
-        // If existing notes use this type, deactivate instead of hard-deleting
+        // Types that have notes cannot be deleted
         var inUse = await _db.Notes.AnyAsync(n => n.TypeId == id, ct);
         if (inUse)
         {
-            typeDef.IsActive = false;
-        }
-        else
-        {
-            _db.TypeDefinitions.Remove(typeDef);
+            return TypeDefinitionResult.Conflict("Types that have notes cannot be deleted.");
         }
 
+        _db.TypeDefinitions.Remove(typeDef);
         await _db.SaveChangesAsync(ct);
-        return true;
+        return TypeDefinitionResult.Success(null!, 204);
     }
 
     // Migration preview — shows which notes pass/fail the target version schema
@@ -317,6 +388,7 @@ public class TypeDefinitionService(
         return TypeMigrationResult.Success(migratedIds);
     }
 
-    private static TypeDefinitionResponse MapToResponse(TypeDefinition t) =>
-        new(t.Id, t.Name, t.Version, t.Description, t.SchemaJson, t.SectionsJson, t.IsActive, t.CreatedAtUtc);
+    private static TypeDefinitionResponse MapToResponse(TypeDefinition t, int? notesCount = null) =>
+        new(t.Id, t.Name, t.Version, t.Description, t.SchemaJson, t.SectionsJson, t.IsActive, t.CreatedAtUtc, notesCount ?? t.Notes?.Count ?? 0);
 }
+

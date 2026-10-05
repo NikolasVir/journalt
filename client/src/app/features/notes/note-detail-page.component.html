@@ -12,6 +12,20 @@
     </div>
   }
 
+  @if (typeValidationWarnings().length > 0) {
+    <div class="note-editor__alert note-editor__alert--warning" role="alert">
+      <div class="note-editor__alert-header">
+        <mat-icon>warning</mat-icon>
+        <strong>Type Compatibility Warning</strong>
+      </div>
+      <ul class="note-editor__alert-list">
+        @for (w of typeValidationWarnings(); track $index) {
+          <li>{{ w }}</li>
+        }
+      </ul>
+    </div>
+  }
+
   <mat-card appearance="outlined" class="note-card-form">
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="note-form" novalidate>
       <div class="note-form__title-row">
@@ -60,7 +74,7 @@
               <mat-label>Journal Type Definition</mat-label>
               <mat-select formControlName="typeId" aria-label="Select Journal Type">
                 @for (type of typeDefinitions(); track type.id) {
-                  <mat-option [value]="type.id">{{ type.name }} (v{{ type.version }})</mat-option>
+                  <mat-option [value]="type.id">{{ type.name }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>

@@ -35,6 +35,20 @@
       />
     </header>
 
+    @if (n.typeValidationWarnings && n.typeValidationWarnings.length > 0) {
+      <div class="viewer__type-warning" role="alert">
+        <div class="viewer__type-warning-header">
+          <mat-icon class="viewer__type-warning-icon">warning</mat-icon>
+          <strong>Type Compatibility Warning</strong>
+        </div>
+        <ul class="viewer__type-warning-list">
+          @for (w of n.typeValidationWarnings; track $index) {
+            <li>{{ w }}</li>
+          }
+        </ul>
+      </div>
+    }
+
     <div #bodyRef class="viewer__body markdown-body" (click)="onBodyClick($event)">
       @if (n.renderedHtml) {
         <div [innerHTML]="n.renderedHtml"></div>

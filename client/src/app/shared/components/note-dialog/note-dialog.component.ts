@@ -136,6 +136,7 @@ export class NoteDialogComponent {
   protected readonly isSubmittingSource = signal<boolean>(false);
   protected readonly sourceError = signal<string | null>(null);
   protected readonly renderedHtml = linkedSignal(() => this.note()?.renderedHtml ?? '');
+  protected readonly typeValidationWarnings = signal<string[]>([]);
   private pointerDownOnBackdrop = false;
 
   constructor() {
@@ -161,6 +162,24 @@ export class NoteDialogComponent {
         this.isAddingSource.set(false);
         this.newCitation.set('');
         this.newUrl.set('');
+      });
+
+    // Reactively check type compatibility for Journal notes
+    toObservable(this.note)
+      .pipe(
+        switchMap((current) => {
+          if (!current || current.level !== 'Journal' || !current.typeId) {
+            return of(null);
+          }
+          if (current.typeValidationWarnings !== undefined && current.typeValidationWarnings !== null) {
+            return of(current);
+          }
+          return this.noteService.getById(current.id).pipe(catchError(() => of(null)));
+        }),
+        takeUntilDestroyed()
+      )
+      .subscribe((detailedNote) => {
+        this.typeValidationWarnings.set(detailedNote?.typeValidationWarnings ?? []);
       });
 
     effect(() => {

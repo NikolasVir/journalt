@@ -61,7 +61,7 @@ public class TypeDefinitionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateNewVersion_IncrementsVersionNumber_Succeeds()
+    public async Task CreateNewVersion_IncrementsVersionNumber_AndReplacesOldVersion()
     {
         var v1 = (await _sut.CreateAsync(new CreateTypeDefinitionRequest("MeetingNotes"))).TypeDefinition!;
         Assert.Equal(1, v1.Version);
@@ -75,9 +75,42 @@ public class TypeDefinitionServiceTests : IDisposable
         Assert.Equal(2, v2Result.TypeDefinition!.Version);
         Assert.Equal("MeetingNotes", v2Result.TypeDefinition.Name);
 
-        // Verify both versions exist in database
+        // Verify the old version was replaced and only the new version exists
         var allVersions = await _sut.ListAsync();
-        Assert.Equal(2, allVersions.Count);
+        Assert.Single(allVersions);
+        Assert.Equal(2, allVersions[0].Version);
+        Assert.Equal(v2Result.TypeDefinition.Id, allVersions[0].Id);
+    }
+
+    [Fact]
+    public async Task CreateNewVersion_AutomaticallyMigratesNotesFromOldVersion()
+    {
+        var v1 = (await _sut.CreateAsync(new CreateTypeDefinitionRequest("MeetingNotes"))).TypeDefinition!;
+
+        var note = new Note
+        {
+            UserId = _userId,
+            Title = "Team Sync",
+            TypeId = v1.Id,
+            TypeVersion = v1.Version
+        };
+        _db.Notes.Add(note);
+        await _db.SaveChangesAsync();
+
+        var v2Result = await _sut.CreateNewVersionAsync(v1.Id, new CreateTypeVersionRequest(
+            Description: "Updated meeting template"
+        ));
+
+        Assert.True(v2Result.Succeeded);
+
+        // Note should now point to v2
+        var updatedNote = await _db.Notes.FindAsync(note.Id);
+        Assert.NotNull(updatedNote);
+        Assert.Equal(v2Result.TypeDefinition!.Id, updatedNote.TypeId);
+        Assert.Equal(2, updatedNote.TypeVersion);
+
+        // Old version definition should be removed
+        Assert.Null(await _db.TypeDefinitions.FindAsync(v1.Id));
     }
 
     [Fact]
@@ -140,12 +173,13 @@ public class TypeDefinitionServiceTests : IDisposable
         Assert.False(cloneResult.Succeeded);
         Assert.Equal(404, cloneResult.StatusCode);
 
-        var deleted = await _sut.DeleteAsync(otherType.Id);
-        Assert.False(deleted);
+        var deleteResult = await _sut.DeleteAsync(otherType.Id);
+        Assert.False(deleteResult.Succeeded);
+        Assert.Equal(404, deleteResult.StatusCode);
     }
 
     [Fact]
-    public async Task Delete_TypeInUseByNote_SoftDeactivatesInsteadOfHardDelete()
+    public async Task Delete_TypeInUseByNote_ReturnsConflictAndDoesNotDelete()
     {
         var typeDef = (await _sut.CreateAsync(new CreateTypeDefinitionRequest("InUseType"))).TypeDefinition!;
 
@@ -159,17 +193,76 @@ public class TypeDefinitionServiceTests : IDisposable
         });
         await _db.SaveChangesAsync();
 
-        var deleted = await _sut.DeleteAsync(typeDef.Id);
-        Assert.True(deleted);
+        var deleteResult = await _sut.DeleteAsync(typeDef.Id);
+        Assert.False(deleteResult.Succeeded);
+        Assert.Equal(409, deleteResult.StatusCode);
+        Assert.Contains("Types that have notes cannot be deleted.", deleteResult.Errors);
 
-        // Record still exists in DB but IsActive is false
+        // Record still exists in DB and IsActive is true
         var dbRecord = await _db.TypeDefinitions.FindAsync(typeDef.Id);
         Assert.NotNull(dbRecord);
-        Assert.False(dbRecord.IsActive);
+        Assert.True(dbRecord.IsActive);
+    }
 
-        // Excluded from standard active list
-        var activeList = await _sut.ListAsync(includeInactive: false);
-        Assert.Empty(activeList);
+    [Fact]
+    public async Task Delete_TypeWithoutNotes_Succeeds()
+    {
+        var typeDef = (await _sut.CreateAsync(new CreateTypeDefinitionRequest("UnusedType"))).TypeDefinition!;
+
+        var deleteResult = await _sut.DeleteAsync(typeDef.Id);
+        Assert.True(deleteResult.Succeeded);
+
+        // Record is removed from DB
+        var dbRecord = await _db.TypeDefinitions.FindAsync(typeDef.Id);
+        Assert.Null(dbRecord);
+    }
+
+    [Fact]
+    public async Task Update_ValidChanges_UpdatesInPlace_AndKeepsSameId()
+    {
+        var created = (await _sut.CreateAsync(new CreateTypeDefinitionRequest("OriginalName", "Desc 1"))).TypeDefinition!;
+
+        var updateResult = await _sut.UpdateAsync(created.Id, new UpdateTypeDefinitionRequest(
+            Name: "UpdatedName",
+            Description: "Updated Desc",
+            SchemaJson: """{"type":"object","properties":{"score":{"type":"number"}}}""",
+            SectionsJson: """[{"heading":"Analysis","level":2,"required":true}]"""
+        ));
+
+        Assert.True(updateResult.Succeeded);
+        Assert.Equal(created.Id, updateResult.TypeDefinition!.Id);
+        Assert.Equal("UpdatedName", updateResult.TypeDefinition.Name);
+        Assert.Equal("Updated Desc", updateResult.TypeDefinition.Description);
+
+        // Fetch to ensure persisted
+        var fetched = await _sut.GetByIdAsync(created.Id);
+        Assert.NotNull(fetched);
+        Assert.Equal("UpdatedName", fetched.Name);
+        Assert.Equal("Updated Desc", fetched.Description);
+        Assert.Equal("""[{"heading":"Analysis","level":2,"required":true}]""", fetched.SectionsJson);
+    }
+
+    [Fact]
+    public async Task Update_CanUpdateEvenIfTypeHasNotes()
+    {
+        var created = (await _sut.CreateAsync(new CreateTypeDefinitionRequest("InUseForEdit"))).TypeDefinition!;
+
+        _db.Notes.Add(new Note
+        {
+            UserId = _userId,
+            Title = "Linked Note",
+            TypeId = created.Id,
+            TypeVersion = 1
+        });
+        await _db.SaveChangesAsync();
+
+        var updateResult = await _sut.UpdateAsync(created.Id, new UpdateTypeDefinitionRequest(
+            Name: "InUseForEditUpdated",
+            Description: "Changed at will"
+        ));
+
+        Assert.True(updateResult.Succeeded);
+        Assert.Equal(1, updateResult.TypeDefinition!.NotesCount);
     }
 
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser

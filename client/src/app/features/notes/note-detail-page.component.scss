@@ -35,6 +35,31 @@
     border: 1px solid var(--color-danger);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-sm);
+
+    &--warning {
+      background-color: var(--color-warning-bg);
+      color: var(--color-warning);
+      border: 1px solid var(--color-warning);
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--spacing-xs);
+    }
+  }
+
+  &__warning-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+  }
+
+  &__warning-list {
+    margin: 0;
+    padding-left: var(--spacing-lg);
+    font-size: var(--font-size-xs);
+    li {
+      margin-top: 2px;
+    }
   }
 }
 

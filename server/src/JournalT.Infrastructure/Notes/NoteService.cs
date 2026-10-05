@@ -140,7 +140,44 @@ public sealed class NoteService(
         // targets at save time, but notes can be created, renamed, untrashed,
         // or duplicated afterwards.
         var (freshHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, note.BodyMarkdown, ct);
-        return MapToResponse(note, wikiLinks, wikiWarnings, freshHtml);
+
+        List<string>? typeWarnings = null;
+        if (note.Level == NoteLevel.Journal && note.TypeId.HasValue)
+        {
+            var typeDef = await _db.TypeDefinitions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == note.TypeId.Value && t.UserId == userId, ct);
+
+            if (typeDef == null)
+            {
+                typeWarnings = ["Associated type definition not found."];
+            }
+            else
+            {
+                var warnings = new List<string>();
+                var metaValidation = _typeValidationService.ValidateNoteMetadata(note.TypedMetadataJson ?? "{}", typeDef.SchemaJson);
+                if (!metaValidation.IsValid)
+                {
+                    warnings.AddRange(metaValidation.Errors.Select(e => $"Metadata {e.Path}: {e.Message}"));
+                }
+
+                if (!string.IsNullOrWhiteSpace(typeDef.SectionsJson))
+                {
+                    var secValidation = _typeValidationService.ValidateNoteSections(note.BodyMarkdown, typeDef.SectionsJson);
+                    if (!secValidation.IsValid)
+                    {
+                        warnings.AddRange(secValidation.Errors.Select(e => e.Message));
+                    }
+                }
+
+                if (warnings.Count > 0)
+                {
+                    typeWarnings = warnings;
+                }
+            }
+        }
+
+        return MapToResponse(note, wikiLinks, wikiWarnings, freshHtml, typeWarnings);
     }
 
 
@@ -882,7 +919,8 @@ public sealed class NoteService(
         Note note,
         IReadOnlyList<string> wikiLinks,
         IReadOnlyList<WikiLinkWarning>? warnings = null,
-        string? renderedHtml = null) =>
+        string? renderedHtml = null,
+        IReadOnlyList<string>? typeValidationWarnings = null) =>
         new(
             note.Id,
             note.UserId,
@@ -909,6 +947,7 @@ public sealed class NoteService(
                 r.Id, r.SourceNoteId, r.TargetNoteId, r.TargetNote?.Title ?? string.Empty, r.Role, r.Context, r.CreatedAtUtc, r.UpdatedAtUtc)).ToList(),
             Backlinks: note.InboundRelations.Select(r => new NoteBacklinkResponse(
                 r.Id, r.SourceNoteId, r.SourceNote?.Title ?? string.Empty, r.Role, r.Context)).ToList(),
-            UnresolvedWikiLinks: warnings ?? []
+            UnresolvedWikiLinks: warnings ?? [],
+            TypeValidationWarnings: typeValidationWarnings
         );
 }

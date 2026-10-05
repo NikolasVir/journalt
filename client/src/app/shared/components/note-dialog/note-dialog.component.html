@@ -60,6 +60,20 @@
         </div>
       </div>
 
+      @if (typeValidationWarnings().length > 0) {
+        <div class="dialog-panel__type-warning" role="alert">
+          <div class="dialog-panel__type-warning-header">
+            <mat-icon class="dialog-panel__type-warning-icon">warning</mat-icon>
+            <strong>Type Compatibility Warning</strong>
+          </div>
+          <ul class="dialog-panel__type-warning-list">
+            @for (w of typeValidationWarnings(); track $index) {
+              <li>{{ w }}</li>
+            }
+          </ul>
+        </div>
+      }
+
       <div class="dialog-panel__body">
         @if (renderedHtml()) {
           <div

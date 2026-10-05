@@ -8,5 +8,7 @@ public record TypeDefinitionResponse(
     string SchemaJson,
     string? SectionsJson,
     bool IsActive,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    int NotesCount = 0
 );
+

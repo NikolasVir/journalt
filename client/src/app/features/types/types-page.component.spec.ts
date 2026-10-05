@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { TypeDefinitionResponse } from '@core/models/type-definition.model';
 import { NotificationService } from '@core/services/notification.service';
@@ -18,15 +19,19 @@ describe('TypesPageComponent', () => {
   let mockTypeService: {
     list: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
-    createNewVersion: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
     toggleActive: ReturnType<typeof vi.fn>;
     clone: ReturnType<typeof vi.fn>;
+    duplicate: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
   };
   let mockNotification: {
     showSuccess: ReturnType<typeof vi.fn>;
     showError: ReturnType<typeof vi.fn>;
     showInfo: ReturnType<typeof vi.fn>;
+  };
+  let mockRouter: {
+    navigate: ReturnType<typeof vi.fn>;
   };
 
   const sampleTypes: TypeDefinitionResponse[] = [
@@ -71,9 +76,10 @@ describe('TypesPageComponent', () => {
     mockTypeService = {
       list: vi.fn().mockReturnValue(of(sampleTypes)),
       create: vi.fn(),
-      createNewVersion: vi.fn(),
+      update: vi.fn(),
       toggleActive: vi.fn(),
       clone: vi.fn(),
+      duplicate: vi.fn(),
       delete: vi.fn(),
     };
 
@@ -83,12 +89,17 @@ describe('TypesPageComponent', () => {
       showInfo: vi.fn(),
     };
 
+    mockRouter = {
+      navigate: vi.fn().mockReturnValue(Promise.resolve(true)),
+    };
+
     await TestBed.configureTestingModule({
       imports: [TypesPageComponent],
       providers: [
         provideNoopAnimations(),
         { provide: TypeDefinitionService, useValue: mockTypeService },
         { provide: NotificationService, useValue: mockNotification },
+        { provide: Router, useValue: mockRouter },
       ],
     }).compileComponents();
 
@@ -209,167 +220,24 @@ describe('TypesPageComponent', () => {
     });
   });
 
-  describe('Visual builder & presets', () => {
-    it('openCreate resets form and opens builder', () => {
+  describe('Navigation', () => {
+    it('openCreate navigates to /types/new', () => {
       component.openCreate();
-      expect(component['showBuilder']()).toBe(true);
-      expect(component['editingType']()).toBeNull();
-      expect(component['name']()).toBe('');
-      expect(component['fields']()).toEqual([]);
-      expect(component['sections']()).toEqual([]);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types/new']);
     });
 
-    it('applyPreset sets up Meeting Note preset', () => {
-      component.openCreate();
-      component.applyPreset('meeting');
-      expect(component['name']()).toBe('Meeting Note');
-      expect(component['fields']().length).toBe(2);
-      expect(component['sections']().length).toBe(3);
+    it('openEdit navigates to /types/:id', () => {
+      component.openEdit(sampleTypes[0]);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types', 'type-1']);
     });
 
-    it('applyPreset sets up Decision Record preset', () => {
-      component.openCreate();
-      component.applyPreset('decision');
-      expect(component['name']()).toBe('Decision Record');
-      expect(component['fields']().length).toBe(2);
-      expect(component['sections']().length).toBe(4);
-    });
-
-    it('applyPreset sets up Book Review preset', () => {
-      component.openCreate();
-      component.applyPreset('book');
-      expect(component['name']()).toBe('Book Review');
-      expect(component['fields']().length).toBe(3);
-      expect(component['sections']().length).toBe(3);
-    });
-
-    it('manages metadata fields: add, update, remove', () => {
-      component.openCreate();
-      component.addField();
-      expect(component['fields']().length).toBe(1);
-
-      component.updateFieldName(0, 'summary');
-      component.updateFieldType(0, 'string');
-      component.updateFieldRequired(0, true);
-      expect(component['fields']()[0]).toEqual({
-        name: 'summary',
-        type: 'string',
-        required: true,
-      });
-
-      component.removeField(0);
-      expect(component['fields']().length).toBe(0);
-    });
-
-    it('manages section templates: add, update, move, remove', () => {
-      component.openCreate();
-      component.addSection();
-      component.addSection();
-      expect(component['sections']().length).toBe(2);
-
-      component.updateSectionHeading(0, 'First Section');
-      component.updateSectionLevel(0, 1);
-      component.updateSectionHeading(1, 'Second Section');
-      component.updateSectionAllowMultiple(1, true);
-
-      // Move section 0 down
-      component.moveSection(0, 'down');
-      expect(component['sections']()[0].heading).toBe('Second Section');
-      expect(component['sections']()[1].heading).toBe('First Section');
-
-      // Move section 1 up
-      component.moveSection(1, 'up');
-      expect(component['sections']()[0].heading).toBe('First Section');
-
-      component.removeSection(0);
-      expect(component['sections']().length).toBe(1);
-      expect(component['sections']()[0].heading).toBe('Second Section');
-    });
-
-    it('synchronizes state when switching builder mode between visual and json', () => {
-      component.openCreate();
-      component.addField();
-      component.updateFieldName(0, 'priority');
-      component.updateFieldType(0, 'number');
-
-      // Switch to JSON
-      component.setBuilderMode('json');
-      expect(component['builderMode']()).toBe('json');
-      const parsed = JSON.parse(component['rawSchemaJson']());
-      expect(parsed.properties.priority.type).toBe('number');
-
-      // Switch back to visual
-      component.setBuilderMode('visual');
-      expect(component['builderMode']()).toBe('visual');
-      expect(component['fields']()[0].name).toBe('priority');
+    it('openNewVersion navigates to /types/:id', () => {
+      component.openNewVersion(sampleTypes[0]);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types', 'type-1']);
     });
   });
 
-  describe('Saving and versioning', () => {
-    it('creates a new type definition when saveType is called for a new type', () => {
-      const createdType: TypeDefinitionResponse = {
-        ...sampleTypes[0],
-        id: 'new-type-id',
-        name: 'New Custom Type',
-        version: 1,
-      };
-      mockTypeService.create.mockReturnValue(of(createdType));
-
-      component.openCreate();
-      (component as unknown as { name: { set: (v: string) => void } }).name.set('New Custom Type');
-      component.addField();
-      component.updateFieldName(0, 'tags');
-      component.updateFieldType(0, 'array');
-
-      component.saveType();
-
-      expect(mockTypeService.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: 'New Custom Type',
-          schemaJson: expect.stringContaining('"tags"'),
-        }),
-      );
-      expect(mockNotification.showSuccess).toHaveBeenCalledWith('Type "New Custom Type" created.');
-      expect(component['showBuilder']()).toBe(false);
-    });
-
-    it('rejects duplicate field names in visual builder mode', () => {
-      component.openCreate();
-      (component as unknown as { name: { set: (v: string) => void } }).name.set('Duplicate Field Test');
-      component.addField();
-      component.updateFieldName(0, 'sameName');
-      component.addField();
-      component.updateFieldName(1, 'sameName');
-
-      component.saveType();
-
-      expect(mockNotification.showError).toHaveBeenCalledWith('Field names must be unique.');
-      expect(mockTypeService.create).not.toHaveBeenCalled();
-    });
-
-    it('publishes a new version when editingType is present', () => {
-      const newVersionType: TypeDefinitionResponse = {
-        ...sampleTypes[0],
-        version: 2,
-      };
-      mockTypeService.createNewVersion.mockReturnValue(of(newVersionType));
-
-      component.openNewVersion(sampleTypes[0]);
-      expect(component['editingType']()).toEqual(sampleTypes[0]);
-      expect(component['name']()).toBe('Meeting Note');
-
-      component.saveType();
-
-      expect(mockTypeService.createNewVersion).toHaveBeenCalledWith(
-        sampleTypes[0].id,
-        expect.objectContaining({
-          schemaJson: expect.any(String),
-        }),
-      );
-      expect(mockNotification.showSuccess).toHaveBeenCalledWith('Version 2 of "Meeting Note" published.');
-      expect(component['showBuilder']()).toBe(false);
-    });
-
+  describe('Duplicate, clone and actions', () => {
     it('handles cloning a type definition', () => {
       mockTypeService.clone.mockReturnValue(of({ ...sampleTypes[0], id: 'cloned-id' }));
 
@@ -384,6 +252,52 @@ describe('TypesPageComponent', () => {
       });
       expect(mockNotification.showSuccess).toHaveBeenCalledWith('Type cloned as "Meeting Note (Copy)".');
       expect(component['cloningType']()).toBeNull();
+    });
+
+    it('handles duplicating a type definition', () => {
+      mockTypeService.duplicate.mockReturnValue(of({ ...sampleTypes[0], id: 'duplicated-id' }));
+
+      component.openDuplicate(sampleTypes[0]);
+      expect(component['duplicatingType']()).toEqual(sampleTypes[0]);
+      expect(component['duplicateName']()).toBe('Meeting Note (Copy)');
+
+      component.submitDuplicate();
+
+      expect(mockTypeService.duplicate).toHaveBeenCalledWith(sampleTypes[0].id, {
+        newName: 'Meeting Note (Copy)',
+      });
+      expect(mockNotification.showSuccess).toHaveBeenCalledWith('Type "Meeting Note (Copy)" created.');
+      expect(component['duplicatingType']()).toBeNull();
+    });
+
+    it('generates unique copy names when duplicates already exist', () => {
+      component['types'].set([
+        ...sampleTypes,
+        { ...sampleTypes[0], id: 'type-copy-1', name: 'Meeting Note (Copy)' },
+      ]);
+      expect(component.getNextDuplicateName('Meeting Note')).toBe('Meeting Note (Copy 2)');
+    });
+
+    it('cancels duplicate', () => {
+      component.openDuplicate(sampleTypes[0]);
+      expect(component['duplicatingType']()).not.toBeNull();
+      component.cancelDuplicate();
+      expect(component['duplicatingType']()).toBeNull();
+    });
+
+    it('prevents deleting type definition when it has notes and opens blocked dialog', () => {
+      const typeWithNotes: TypeDefinitionResponse = {
+        ...sampleTypes[0],
+        notesCount: 2,
+      };
+
+      component.deleteType(typeWithNotes);
+
+      expect(component['blockedDeleteType']()).toEqual(typeWithNotes);
+      expect(mockTypeService.delete).not.toHaveBeenCalled();
+
+      component.closeBlockedDeleteDialog();
+      expect(component['blockedDeleteType']()).toBeNull();
     });
 
     it('toggles type active state', () => {
