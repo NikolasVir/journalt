@@ -59,6 +59,13 @@
         </div>
       }
 
+      @if (currentNote(); as cn) {
+        <app-note-metadata-view
+          [metadataJson]="cn.typedMetadataJson"
+          [summary]="cn.summary"
+        />
+      }
+
       <label class="note-form__label" for="note-content-editor">Content (Markdown)</label>
       <app-note-content-editor
         formControlName="bodyMarkdown"

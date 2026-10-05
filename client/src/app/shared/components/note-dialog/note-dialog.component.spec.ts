@@ -56,6 +56,7 @@ describe('NoteDialogComponent', () => {
           useValue: {
             renderPreview: () => ({ subscribe: () => undefined }),
             getSources: () => of([]),
+            getById: () => of(null),
             addSource: () => of({} as unknown as NoteSourceResponse),
             deleteSource: () => of(void 0),
           },

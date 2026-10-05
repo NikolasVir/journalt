@@ -19,6 +19,7 @@ import { formatTag, NoteResponse } from '@core/models/note.model';
 import { MarkdownEnhancerService } from '@core/services/markdown-enhancer.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
 import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
+import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
 
 /**
  * Right pane of Explore. Renders a note read-only and intercepts wiki-links so
@@ -27,7 +28,7 @@ import { NoteEditButtonComponent } from '@shared/components/note-edit-button/not
 @Component({
   selector: 'app-explore-note-viewer',
   standalone: true,
-  imports: [DatePipe, MatIconModule, MatButtonModule, NoteEditButtonComponent],
+  imports: [DatePipe, MatIconModule, MatButtonModule, NoteEditButtonComponent, NoteMetadataViewComponent],
   templateUrl: './explore-note-viewer.component.html',
   styleUrl: './explore-note-viewer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

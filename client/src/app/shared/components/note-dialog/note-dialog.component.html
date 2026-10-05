@@ -74,6 +74,14 @@
         </div>
       }
 
+      <div class="dialog-panel__layout">
+      <aside class="dialog-panel__meta">
+        <app-note-metadata-view
+          [metadataJson]="typedMetadata()"
+          [summary]="summary()"
+        />
+      </aside>
+
       <div class="dialog-panel__body">
         @if (renderedHtml()) {
           <div
@@ -272,6 +280,7 @@
             </div>
           }
         </div>
+      </div>
       </div>
 
       <div class="dialog-panel__actions">

@@ -18,6 +18,7 @@ import { NotificationService } from '@core/services/notification.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 import { NoteContentEditorComponent } from '@shared/components/note-content-editor/note-content-editor.component';
+import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
 
 interface NoteForm {
   title: FormControl<string>;
@@ -67,6 +68,7 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     MatIconModule,
     TypedTagSelectorComponent,
     NoteContentEditorComponent,
+    NoteMetadataViewComponent,
   ],
   templateUrl: './note-detail-page.component.html',
   styleUrl: './note-detail-page.component.scss',
@@ -84,6 +86,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   private readonly contentEditor = viewChild(NoteContentEditorComponent);
 
   protected readonly noteId = signal<string | null>(null);
+  protected readonly currentNote = signal<NoteResponse | null>(null);
   protected readonly isSaving = signal<boolean>(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly typeValidationWarnings = signal<string[]>([]);
@@ -211,6 +214,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   private loadNote(id: string): void {
     this.noteService.getById(id).subscribe({
       next: (note: NoteResponse) => {
+        this.currentNote.set(note);
         const tags = note.tags ?? [];
         const typedTags = tags.filter((tag) => tag.tagType === 'Typed');
         const nonTypedTags = tags.filter((tag) => tag.tagType !== 'Typed');

@@ -16,5 +16,6 @@ public sealed record NoteSummaryResponse(
     bool IsTrashed,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
-    IReadOnlyList<TagDto>? Tags = null
+    IReadOnlyList<TagDto>? Tags = null,
+    string? TypedMetadataJson = null
 );

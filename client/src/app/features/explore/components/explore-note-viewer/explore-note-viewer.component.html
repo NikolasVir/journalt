@@ -49,12 +49,21 @@
       </div>
     }
 
-    <div #bodyRef class="viewer__body markdown-body" (click)="onBodyClick($event)">
-      @if (n.renderedHtml) {
-        <div [innerHTML]="n.renderedHtml"></div>
-      } @else {
-        <p class="viewer__blank">This note has no content yet.</p>
-      }
+    <div class="viewer__layout">
+      <aside class="viewer__side">
+        <app-note-metadata-view
+          [metadataJson]="n.typedMetadataJson"
+          [summary]="n.summary"
+        />
+      </aside>
+
+      <div #bodyRef class="viewer__body markdown-body" (click)="onBodyClick($event)">
+        @if (n.renderedHtml) {
+          <div [innerHTML]="n.renderedHtml"></div>
+        } @else {
+          <p class="viewer__blank">This note has no content yet.</p>
+        }
+      </div>
     </div>
 
     <aside class="viewer__panels">
