@@ -345,28 +345,33 @@
   }
 
   &__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-    gap: var(--spacing-md);
-    align-items: start;
+    column-width: 270px;
+    column-gap: var(--spacing-md);
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
 
     ::ng-deep app-note-card {
-      margin-bottom: 0;
+      display: block;
+      margin-bottom: var(--spacing-md);
+      break-inside: avoid;
+      -webkit-column-break-inside: avoid;
       min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
     }
 
     @include respond-to('mobile') {
-      grid-template-columns: 1fr;
-      gap: var(--spacing-sm);
+      column-count: 1;
+      column-gap: var(--spacing-sm);
+
+      ::ng-deep app-note-card {
+        margin-bottom: var(--spacing-sm);
+      }
     }
 
     &--list {
-      grid-template-columns: 1fr !important;
+      column-count: 1 !important;
       max-width: 800px;
       margin: 0 auto;
     }
