@@ -2,6 +2,8 @@
 
 :host {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   break-inside: avoid;
   margin-bottom: var(--spacing-md);
 }
@@ -17,6 +19,9 @@
   background-color: var(--color-bg-surface);
   border-color: var(--color-border-card);
   height: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow: hidden;
 
   &:hover,
@@ -125,6 +130,10 @@
     }
 
     ::ng-deep {
+      > h1:first-child {
+        display: none;
+      }
+
       h1,
       h2,
       h3,

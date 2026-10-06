@@ -8,7 +8,7 @@
   [attr.aria-label]="note().title"
 >
   <mat-card-header class="note-card__header">
-    <mat-card-title class="note-card__title">
+    <mat-card-title class="note-card__title" [matTooltip]="tooltipText()">
       {{ note().title || 'Untitled Note' }}
     </mat-card-title>
     <span

@@ -18,6 +18,15 @@ import { NoteEditButtonComponent } from '@shared/components/note-edit-button/not
 export class NoteCardComponent {
   public readonly note = input.required<NoteResponse>();
 
+  protected readonly tooltipText = computed<string>(() => {
+    const n = this.note();
+    const createdDate = new Date(n.createdAtUtc);
+    const updatedDate = new Date(n.updatedAtUtc);
+    const createdStr = Number.isNaN(createdDate.getTime()) ? '' : createdDate.toLocaleString();
+    const updatedStr = Number.isNaN(updatedDate.getTime()) ? '' : updatedDate.toLocaleString();
+    return `Created: ${createdStr}${updatedStr ? '\nModified: ' + updatedStr : ''}`;
+  });
+
   public readonly cardClick = output<NoteResponse>();
   public readonly tagClick = output<string>();
   public readonly toggleTodo = output<NoteResponse>();
