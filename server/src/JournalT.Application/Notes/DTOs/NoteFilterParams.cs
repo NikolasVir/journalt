@@ -10,6 +10,8 @@ public sealed record NoteFilterParams(
     bool? IsTrashed = false,
     bool? IsTodo = null,
     string? Search = null,
+    string? SortBy = null,
+    string? SortOrder = null,
     int Page = 1,
     int PageSize = 50
 );

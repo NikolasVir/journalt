@@ -222,8 +222,14 @@ public sealed class NoteService(
         var page = Math.Max(1, filter.Page);
         var pageSize = Math.Clamp(filter.PageSize, 1, 100);
 
-        var items = await query
-            .OrderByDescending(n => n.UpdatedAtUtc)
+        var isAsc = string.Equals(filter.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
+        var sortByCreated = string.Equals(filter.SortBy, "createdAt", StringComparison.OrdinalIgnoreCase);
+
+        var orderedQuery = sortByCreated
+            ? (isAsc ? query.OrderBy(n => n.CreatedAtUtc) : query.OrderByDescending(n => n.CreatedAtUtc))
+            : (isAsc ? query.OrderBy(n => n.UpdatedAtUtc) : query.OrderByDescending(n => n.UpdatedAtUtc));
+
+        var items = await orderedQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(n => new NoteSummaryResponse(

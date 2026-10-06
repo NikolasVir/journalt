@@ -144,6 +144,8 @@ export interface NoteFilterParams {
   tag?: string;
   page?: number;
   pageSize?: number;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 export interface TodoSummaryResponse {

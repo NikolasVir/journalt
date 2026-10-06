@@ -62,6 +62,8 @@ export class NoteService {
       if (filter.tag) params = params.set('tag', filter.tag);
       if (filter.page) params = params.set('page', filter.page.toString());
       if (filter.pageSize) params = params.set('pageSize', filter.pageSize.toString());
+      if (filter.sortBy) params = params.set('sortBy', filter.sortBy);
+      if (filter.sortOrder) params = params.set('sortOrder', filter.sortOrder);
     }
     return this.http.get<PagedResult<NoteResponse>>(this.baseUrl, { params });
   }
