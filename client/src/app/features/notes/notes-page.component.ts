@@ -5,16 +5,24 @@ import { NoteService } from '@core/services/note.service';
 import { LayoutService } from '@layout/layout.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { NotificationService } from '@core/services/notification.service';
 import { NoteCardComponent } from '@shared/components/note-card/note-card.component';
 import { NoteDialogComponent, NoteDialogSavePayload } from '@shared/components/note-dialog/note-dialog.component';
 import { QuickCaptureComponent, QuickCapturePayload } from '@shared/components/quick-capture/quick-capture.component';
 import { openNoteEditor } from '@shared/utils/note-navigation';
 
+export interface TimelineGroup {
+  dateKey: string;
+  dateLabel: string;
+  relativeLabel?: string;
+  notes: NoteResponse[];
+}
+
 @Component({
   selector: 'app-notes-page',
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, QuickCaptureComponent, NoteCardComponent, NoteDialogComponent],
+  imports: [MatIconModule, MatButtonModule, MatTooltipModule, QuickCaptureComponent, NoteCardComponent, NoteDialogComponent],
   templateUrl: './notes-page.component.html',
   styleUrl: './notes-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -77,6 +85,110 @@ export class NotesPageComponent implements OnInit {
       );
     });
   });
+
+  public readonly timelineBasis = signal<'createdAt' | 'updatedAt'>(this.getStoredTimelineBasis());
+  public readonly sortDirection = signal<'desc' | 'asc'>(this.getStoredSortDirection());
+
+  public readonly timelineGroups = computed<TimelineGroup[]>(() => {
+    const notes = this.filteredNotes();
+    if (notes.length === 0) return [];
+
+    const basis = this.timelineBasis();
+    const isDesc = this.sortDirection() === 'desc';
+
+    // 1. Sort notes chronologically by chosen date
+    const sorted = [...notes].sort((a, b) => {
+      const timeA = new Date(basis === 'createdAt' ? a.createdAtUtc : a.updatedAtUtc).getTime() || 0;
+      const timeB = new Date(basis === 'createdAt' ? b.createdAtUtc : b.updatedAtUtc).getTime() || 0;
+      return isDesc ? timeB - timeA : timeA - timeB;
+    });
+
+    // 2. Group notes by calendar day in local time
+    const groupsMap = new Map<string, { date: Date; notes: NoteResponse[] }>();
+
+    for (const note of sorted) {
+      const rawDate = basis === 'createdAt' ? note.createdAtUtc : note.updatedAtUtc;
+      const d = new Date(rawDate);
+      const validDate = Number.isNaN(d.getTime()) ? new Date(0) : d;
+      const year = validDate.getFullYear();
+      const month = String(validDate.getMonth() + 1).padStart(2, '0');
+      const day = String(validDate.getDate()).padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
+
+      let group = groupsMap.get(dateKey);
+      if (!group) {
+        group = { date: validDate, notes: [] };
+        groupsMap.set(dateKey, group);
+      }
+      group.notes.push(note);
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const result: TimelineGroup[] = [];
+
+    for (const [dateKey, { date, notes: groupNotes }] of groupsMap) {
+      const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const diffTime = today.getTime() - targetDay.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+      let relativeLabel: string | undefined;
+      if (diffDays === 0) {
+        relativeLabel = 'Today';
+      } else if (diffDays === 1) {
+        relativeLabel = 'Yesterday';
+      } else if (diffDays === -1) {
+        relativeLabel = 'Tomorrow';
+      }
+
+      const dateLabel = date.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      result.push({
+        dateKey,
+        dateLabel,
+        relativeLabel,
+        notes: groupNotes
+      });
+    }
+
+    return result;
+  });
+
+  public setTimelineBasis(basis: 'createdAt' | 'updatedAt'): void {
+    if (this.timelineBasis() === basis) return;
+    this.timelineBasis.set(basis);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('journalt-timeline-basis', basis);
+    }
+    this.loadNotes(this.currentLevel());
+  }
+
+  public toggleSortDirection(): void {
+    const next = this.sortDirection() === 'desc' ? 'asc' : 'desc';
+    this.sortDirection.set(next);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('journalt-timeline-direction', next);
+    }
+    this.loadNotes(this.currentLevel());
+  }
+
+  private getStoredTimelineBasis(): 'createdAt' | 'updatedAt' {
+    if (typeof localStorage === 'undefined') return 'createdAt';
+    const stored = localStorage.getItem('journalt-timeline-basis');
+    return stored === 'updatedAt' ? 'updatedAt' : 'createdAt';
+  }
+
+  private getStoredSortDirection(): 'desc' | 'asc' {
+    if (typeof localStorage === 'undefined') return 'desc';
+    const stored = localStorage.getItem('journalt-timeline-direction');
+    return stored === 'asc' ? 'asc' : 'desc';
+  }
 
   constructor() {
     effect(() => {
@@ -143,13 +255,20 @@ export class NotesPageComponent implements OnInit {
 
   public loadNotes(level?: NoteLevel): void {
     this.isLoading.set(true);
-    this.noteService.list({ level, isTrashed: false }).subscribe({
-      next: (result) => {
-        this.notes.set(result.items);
-        this.isLoading.set(false);
-      },
-      error: () => this.isLoading.set(false)
-    });
+    this.noteService
+      .list({
+        level,
+        isTrashed: false,
+        sortBy: this.timelineBasis(),
+        sortOrder: this.sortDirection()
+      })
+      .subscribe({
+        next: (result) => {
+          this.notes.set(result.items);
+          this.isLoading.set(false);
+        },
+        error: () => this.isLoading.set(false)
+      });
   }
 
   public handleCreateNote(payload: QuickCapturePayload): void {

@@ -1,10 +1,73 @@
 <div class="notes-page">
-  @if (currentLevel() || layoutService.searchQuery()) {
-    <header class="notes-page__header">
+  <header class="notes-page__header">
+    <div class="notes-page__header-text">
       <h1 class="notes-page__title">{{ pageTitle() }}</h1>
       <p class="notes-page__subtitle">{{ pageSubtitle() }}</p>
-    </header>
-  }
+    </div>
+
+    <div class="notes-page__header-actions">
+      <!-- Compact Timeline Basis Toggle -->
+      <div class="timeline-basis-compact" role="group" aria-label="Timeline date basis">
+        <button
+          type="button"
+          class="timeline-pill-btn"
+          [class.timeline-pill-btn--active]="timelineBasis() === 'createdAt'"
+          (click)="setTimelineBasis('createdAt')"
+          matTooltip="Group notes by creation date"
+        >
+          <mat-icon class="timeline-pill-btn__icon">add_circle_outline</mat-icon>
+          <span>Created</span>
+        </button>
+        <button
+          type="button"
+          class="timeline-pill-btn"
+          [class.timeline-pill-btn--active]="timelineBasis() === 'updatedAt'"
+          (click)="setTimelineBasis('updatedAt')"
+          matTooltip="Group notes by last access or modification date"
+        >
+          <mat-icon class="timeline-pill-btn__icon">schedule</mat-icon>
+          <span>Updated</span>
+        </button>
+      </div>
+
+      <!-- Compact Sort Direction Toggle -->
+      <button
+        mat-icon-button
+        class="timeline-direction-btn"
+        (click)="toggleSortDirection()"
+        [matTooltip]="sortDirection() === 'desc' ? 'Newest first' : 'Oldest first'"
+        [attr.aria-label]="sortDirection() === 'desc' ? 'Newest first' : 'Oldest first'"
+      >
+        <mat-icon>{{ sortDirection() === 'desc' ? 'south' : 'north' }}</mat-icon>
+      </button>
+
+      <div class="header-actions-divider" aria-hidden="true"></div>
+
+      <!-- Grid / List Arrangement Toggle -->
+      <div class="view-mode-toggle" role="group" aria-label="View layout">
+        <button
+          type="button"
+          class="view-mode-toggle__btn"
+          [class.view-mode-toggle__btn--active]="layoutService.viewMode() === 'grid'"
+          (click)="layoutService.setViewMode('grid')"
+          matTooltip="Grid view"
+          aria-label="Grid view"
+        >
+          <mat-icon>grid_view</mat-icon>
+        </button>
+        <button
+          type="button"
+          class="view-mode-toggle__btn"
+          [class.view-mode-toggle__btn--active]="layoutService.viewMode() === 'list'"
+          (click)="layoutService.setViewMode('list')"
+          matTooltip="List view"
+          aria-label="List view"
+        >
+          <mat-icon>view_agenda</mat-icon>
+        </button>
+      </div>
+    </div>
+  </header>
 
   <!-- Quick Capture defaulted to current level -->
   <app-quick-capture
@@ -54,21 +117,43 @@
       <div class="notes-page__loading">
         <p>Loading {{ pageTitle() }}...</p>
       </div>
-    } @else if (filteredNotes().length > 0) {
-      <div
-        class="notes-page__grid"
-        [class.notes-page__grid--list]="layoutService.viewMode() === 'list'"
-      >
-        @for (note of filteredNotes(); track note.id) {
-          <app-note-card
-            [note]="note"
-            (cardClick)="openNoteDialog($event)"
-            (editRequested)="openFullEditor($event)"
-            (tagClick)="onTagClick($event)"
-            (toggleTodo)="handleToggleTodo($event)"
-            (trashNote)="handleTrashNote($event)"
-            (promoteNote)="handlePromoteNote($event)"
-          />
+    } @else if (timelineGroups().length > 0) {
+      <!-- Timeline Date Sections -->
+      <div class="timeline-container">
+        @for (group of timelineGroups(); track group.dateKey) {
+          <section class="timeline-section" [attr.aria-label]="group.dateLabel">
+            <header class="timeline-section__header">
+              <div class="timeline-section__badge-group">
+                <div class="timeline-section__dot"></div>
+                <div class="timeline-section__date-pill">
+                  <mat-icon class="timeline-section__calendar-icon">calendar_today</mat-icon>
+                  <h2 class="timeline-section__title">{{ group.dateLabel }}</h2>
+                  @if (group.relativeLabel) {
+                    <span class="timeline-section__relative-badge">{{ group.relativeLabel }}</span>
+                  }
+                </div>
+                <span class="timeline-section__count">{{ group.notes.length }} {{ group.notes.length === 1 ? 'note' : 'notes' }}</span>
+              </div>
+              <div class="timeline-section__line" aria-hidden="true"></div>
+            </header>
+
+            <div
+              class="notes-page__grid"
+              [class.notes-page__grid--list]="layoutService.viewMode() === 'list'"
+            >
+              @for (note of group.notes; track note.id) {
+                <app-note-card
+                  [note]="note"
+                  (cardClick)="openNoteDialog($event)"
+                  (editRequested)="openFullEditor($event)"
+                  (tagClick)="onTagClick($event)"
+                  (toggleTodo)="handleToggleTodo($event)"
+                  (trashNote)="handleTrashNote($event)"
+                  (promoteNote)="handlePromoteNote($event)"
+                />
+              }
+            </div>
+          </section>
         }
       </div>
     } @else {

@@ -79,15 +79,6 @@
         </button>
       }
 
-      <button
-        mat-icon-button
-        (click)="layoutService.toggleViewMode()"
-        [matTooltip]="layoutService.viewMode() === 'grid' ? 'Switch to list view' : 'Switch to grid view'"
-        [attr.aria-label]="layoutService.viewMode() === 'grid' ? 'Switch to list view' : 'Switch to grid view'"
-      >
-        <mat-icon>{{ layoutService.viewMode() === 'grid' ? 'view_agenda' : 'grid_view' }}</mat-icon>
-      </button>
-
       @if (authService.currentUser(); as user) {
         <span class="header-toolbar__username">{{ user.userName || user.email }}</span>
       }
