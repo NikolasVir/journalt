@@ -3,14 +3,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
-import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 
 @Component({
   selector: 'app-note-card',
   standalone: true,
-  imports: [MatCardModule, MatChipsModule, MatButtonModule, MatIconModule, MatTooltipModule, NoteEditButtonComponent],
+  imports: [MatCardModule, MatChipsModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
   templateUrl: './note-card.component.html',
   styleUrl: './note-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -52,7 +52,8 @@ export class NoteCardComponent {
     this.cardClick.emit(this.note());
   }
 
-  public onEdit(): void {
+  public onEdit(event?: Event): void {
+    event?.stopPropagation();
     this.editRequested.emit(this.note());
   }
 

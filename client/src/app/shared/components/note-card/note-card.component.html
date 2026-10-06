@@ -11,12 +11,25 @@
     <mat-card-title class="note-card__title" [matTooltip]="tooltipText()">
       {{ note().title || 'Untitled Note' }}
     </mat-card-title>
-    <span
-      class="note-card__level-badge"
-      [class]="'note-card__level-badge--' + note().level.toLowerCase()"
-    >
-      {{ note().level }}
-    </span>
+    <div class="note-card__header-actions">
+      <span
+        class="note-card__level-badge"
+        [class]="'note-card__level-badge--' + note().level.toLowerCase()"
+      >
+        {{ note().level }}
+      </span>
+
+      <button
+        mat-icon-button
+        class="note-card__menu-btn"
+        [matMenuTriggerFor]="cardMenu"
+        (click)="$event.stopPropagation()"
+        aria-label="Note options"
+        matTooltip="More options"
+      >
+        <mat-icon>more_vert</mat-icon>
+      </button>
+    </div>
   </mat-card-header>
 
   <mat-card-content class="note-card__content">
@@ -40,38 +53,41 @@
       </mat-chip-set>
     }
   </mat-card-content>
-
-  <mat-card-actions align="end" class="note-card__actions">
-    <app-note-edit-button (editRequested)="onEdit()" />
-
-    <button
-      mat-icon-button
-      [color]="note().isTodo ? 'primary' : undefined"
-      (click)="onToggleTodo($event)"
-      [matTooltip]="note().isTodo ? 'Mark todo completed/pending' : 'Flag as Todo'"
-      aria-label="Toggle Todo"
-    >
-      <mat-icon>{{ note().isTodo ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
-    </button>
-
-    @if (nextPromoteLevel(); as nextLevel) {
-      <button
-        mat-icon-button
-        (click)="onPromote($event)"
-        [matTooltip]="'Promote to ' + nextLevel"
-        aria-label="Promote note"
-      >
-        <mat-icon>arrow_upward</mat-icon>
-      </button>
-    }
-
-    <button
-      mat-icon-button
-      (click)="onTrash($event)"
-      matTooltip="Delete note"
-      aria-label="Delete note"
-    >
-      <mat-icon>delete_outline</mat-icon>
-    </button>
-  </mat-card-actions>
 </mat-card>
+
+<mat-menu #cardMenu="matMenu" class="note-card-menu">
+  <button mat-menu-item (click)="onEdit($event)" aria-label="Edit note">
+    <mat-icon>edit</mat-icon>
+    <span>Edit note</span>
+  </button>
+
+  <button
+    mat-menu-item
+    (click)="onToggleTodo($event)"
+    aria-label="Toggle Todo"
+  >
+    <mat-icon>{{ note().isTodo ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+    <span>{{ note().isTodo ? (note().todoCompletedAtUtc ? 'Mark as incomplete' : 'Mark as completed') : 'Flag as Todo' }}</span>
+  </button>
+
+  @if (nextPromoteLevel(); as nextLevel) {
+    <button
+      mat-menu-item
+      (click)="onPromote($event)"
+      [attr.aria-label]="'Promote to ' + nextLevel"
+    >
+      <mat-icon>arrow_upward</mat-icon>
+      <span>Promote to {{ nextLevel }}</span>
+    </button>
+  }
+
+  <button
+    mat-menu-item
+    (click)="onTrash($event)"
+    class="note-card-menu__item--danger"
+    aria-label="Delete note"
+  >
+    <mat-icon>delete_outline</mat-icon>
+    <span>Delete note</span>
+  </button>
+</mat-menu>

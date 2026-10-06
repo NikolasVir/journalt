@@ -53,16 +53,52 @@ describe('NoteCardComponent', () => {
     expect(clickedNote).toEqual(mockNote);
   });
 
-  it('should emit toggleTodo when todo action button is clicked', () => {
+  it('should emit toggleTodo when todo action button is clicked in menu', () => {
     let toggledNote: NoteResponse | null = null;
     component.toggleTodo.subscribe((n) => {
       toggledNote = n;
     });
 
-    const todoBtn = fixture.nativeElement.querySelector('button[aria-label="Toggle Todo"]') as HTMLButtonElement;
+    const menuBtn = fixture.nativeElement.querySelector('.note-card__menu-btn') as HTMLButtonElement;
+    menuBtn.click();
+    fixture.detectChanges();
+
+    const todoBtn = document.querySelector('button[aria-label="Toggle Todo"]') as HTMLButtonElement;
     todoBtn.click();
 
     expect(toggledNote).toEqual(mockNote);
+  });
+
+  it('should emit editRequested when edit menu item is clicked', () => {
+    let editedNote: NoteResponse | null = null;
+    component.editRequested.subscribe((n) => {
+      editedNote = n;
+    });
+
+    const menuBtn = fixture.nativeElement.querySelector('.note-card__menu-btn') as HTMLButtonElement;
+    menuBtn.click();
+    fixture.detectChanges();
+
+    const editBtn = document.querySelector('button[aria-label="Edit note"]') as HTMLButtonElement;
+    editBtn.click();
+
+    expect(editedNote).toEqual(mockNote);
+  });
+
+  it('should emit trashNote when delete menu item is clicked', () => {
+    let trashedNote: NoteResponse | null = null;
+    component.trashNote.subscribe((n) => {
+      trashedNote = n;
+    });
+
+    const menuBtn = fixture.nativeElement.querySelector('.note-card__menu-btn') as HTMLButtonElement;
+    menuBtn.click();
+    fixture.detectChanges();
+
+    const trashBtn = document.querySelector('button[aria-label="Delete note"]') as HTMLButtonElement;
+    trashBtn.click();
+
+    expect(trashedNote).toEqual(mockNote);
   });
 
   it('should emit tagClick when tag chip is clicked and stop propagation to cardClick', () => {
