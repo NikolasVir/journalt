@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 .typed-tags {
   display: flex;
   flex-direction: column;
@@ -24,6 +26,33 @@
 
     @media (max-width: 700px) {
       grid-template-columns: 1fr;
+    }
+
+    @include mat.form-field-overrides((
+      container-height: 40px,
+      container-vertical-padding: 6px,
+      outlined-label-text-size: var(--font-size-xs),
+    ));
+
+    ::ng-deep {
+      .mat-mdc-form-field-infix {
+        min-height: 40px;
+        padding-top: 6px !important;
+        padding-bottom: 6px !important;
+      }
+
+      .mat-mdc-text-field-wrapper {
+        min-height: 40px;
+      }
+
+      .mat-mdc-select-trigger,
+      .mat-mdc-select-value {
+        font-size: var(--font-size-sm);
+      }
+
+      input.mat-mdc-input-element {
+        font-size: var(--font-size-sm);
+      }
     }
   }
 
@@ -66,6 +95,24 @@
 
   &__chips {
     margin-top: var(--spacing-2xs);
+
+    @include mat.chips-overrides((
+      container-height: 24px,
+      label-text-size: var(--font-size-xs),
+    ));
+
+    mat-chip-row {
+      font-size: var(--font-size-xs);
+      min-height: 24px;
+      height: 24px;
+      padding-inline: 8px 4px !important;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+      }
+    }
   }
 
   &__spinner {
