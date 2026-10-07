@@ -69,6 +69,8 @@
       <label class="note-form__label" for="note-content-editor">Content (Markdown)</label>
       <app-note-content-editor
         formControlName="bodyMarkdown"
+        [collabNoteId]="noteId()"
+        [collabUser]="collabUser()"
         placeholder="Write in Markdown..."
         ariaLabel="Note content (Markdown)"
         minHeight="62vh"

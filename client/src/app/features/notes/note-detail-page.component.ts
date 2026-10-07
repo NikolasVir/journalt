@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, OnInit, signal, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, HostListener, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -12,6 +12,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LibraryResponse } from '@core/models/library.model';
 import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
 import { SectionDefinition, TypeDefinitionResponse } from '@core/models/type-definition.model';
+import { AuthService } from '@core/services/auth.service';
 import { LibraryService } from '@core/services/library.service';
 import { NoteService } from '@core/services/note.service';
 import { NotificationService } from '@core/services/notification.service';
@@ -81,11 +82,20 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   private readonly typeService = inject(TypeDefinitionService);
   private readonly libraryService = inject(LibraryService);
   private readonly notification = inject(NotificationService);
+  private readonly authService = inject(AuthService);
 
   private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
   private readonly contentEditor = viewChild(NoteContentEditorComponent);
 
   protected readonly noteId = signal<string | null>(null);
+  protected readonly collabUser = computed(() => {
+    const user = this.authService.currentUser();
+    const name = user?.email?.split('@')[0] ?? 'User';
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    const color = `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
+    return { name, color };
+  });
   protected readonly currentNote = signal<NoteResponse | null>(null);
   protected readonly isSaving = signal<boolean>(false);
   protected readonly errorMessage = signal<string | null>(null);

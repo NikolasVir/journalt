@@ -15,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
+builder.Services.AddSignalR();
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ValidateCookieAntiforgeryFilter>();
@@ -81,6 +82,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health").AllowAnonymous();
+app.MapHub<JournalT.Api.Hubs.CollaborationHub>("/hubs/collaboration");
 app.MapControllers();
 
 // SPA fallback: any unmapped route returns index.html for Angular client routing

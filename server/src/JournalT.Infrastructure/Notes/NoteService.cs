@@ -132,21 +132,21 @@ public sealed class NoteService(
                 .ThenInclude(r => r.TargetNote)
             .Include(n => n.InboundRelations.Where(r => !r.SourceNote.IsTrashed))
                 .ThenInclude(r => r.SourceNote)
-            .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId, ct);
+            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Tags.Any(t => t.Value != null && t.Value.ToLower() == "shared")), ct);
 
         if (note is null) return null;
 
         // Re-resolve wiki-links on every read: the stored HTML freezes link
         // targets at save time, but notes can be created, renamed, untrashed,
         // or duplicated afterwards.
-        var (freshHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, note.BodyMarkdown, ct);
+        var (freshHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(note.UserId, note.BodyMarkdown, ct);
 
         List<string>? typeWarnings = null;
         if (note.Level == NoteLevel.Journal && note.TypeId.HasValue)
         {
             var typeDef = await _db.TypeDefinitions
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == note.TypeId.Value && t.UserId == userId, ct);
+                .FirstOrDefaultAsync(t => t.Id == note.TypeId.Value && t.UserId == note.UserId, ct);
 
             if (typeDef == null)
             {
@@ -185,7 +185,7 @@ public sealed class NoteService(
     {
         var query = _db.Notes
             .AsNoTracking()
-            .Where(n => n.UserId == _currentUser.UserId);
+            .Where(n => n.UserId == _currentUser.UserId || n.Tags.Any(t => t.Value != null && t.Value.ToLower() == "shared"));
 
         if (filter.IsTrashed.HasValue)
             query = query.Where(n => n.IsTrashed == filter.IsTrashed.Value);
@@ -292,7 +292,7 @@ public sealed class NoteService(
             .Include(n => n.Sources)
             .Include(n => n.OutboundRelations)
                 .ThenInclude(r => r.TargetNote)
-            .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId, ct);
+            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Tags.Any(t => t.Value != null && t.Value.ToLower() == "shared")), ct);
 
         if (note is null)
             return NoteResult.NotFound();
@@ -306,12 +306,12 @@ public sealed class NoteService(
         if (request.LibraryId.HasValue && request.LibraryId != note.LibraryId)
         {
             var libraryExists = await _db.Libraries
-                .AnyAsync(l => l.Id == request.LibraryId.Value && l.UserId == userId, ct);
+                .AnyAsync(l => l.Id == request.LibraryId.Value && l.UserId == note.UserId, ct);
             if (!libraryExists)
                 return NoteResult.Failure("Library not found.");
         }
 
-        var (normalizedTags, tagValidationError) = await ValidateTagsAsync(userId, note.Level, request.Tags, ct);
+        var (normalizedTags, tagValidationError) = await ValidateTagsAsync(note.UserId, note.Level, request.Tags, ct);
         if (tagValidationError != null)
             return NoteResult.Failure(tagValidationError);
 
@@ -321,7 +321,7 @@ public sealed class NoteService(
         {
             var typeDef = await _db.TypeDefinitions
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == note.TypeId && t.UserId == userId, ct);
+                .FirstOrDefaultAsync(t => t.Id == note.TypeId && t.UserId == note.UserId, ct);
 
             if (typeDef != null)
             {
@@ -339,7 +339,7 @@ public sealed class NoteService(
             }
         }
 
-        var (renderedHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, body, ct);
+        var (renderedHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(note.UserId, body, ct);
 
         note.Title = request.Title.Trim();
         note.Summary = string.IsNullOrWhiteSpace(request.Summary) ? null : request.Summary.Trim();
@@ -360,10 +360,17 @@ public sealed class NoteService(
 
         if (request.Tags != null)
         {
+            var isSharedNote = note.Tags.Any(t => string.Equals(t.Value, "shared", StringComparison.OrdinalIgnoreCase));
             var existingTags = await _db.NoteTags.Where(t => t.NoteId == note.Id).ToListAsync(ct);
             _db.NoteTags.RemoveRange(existingTags);
 
-            foreach (var tag in normalizedTags ?? [])
+            var tagsToApply = (normalizedTags ?? []).ToList();
+            if (isSharedNote && !tagsToApply.Any(t => string.Equals(t.Value, "shared", StringComparison.OrdinalIgnoreCase)))
+            {
+                tagsToApply.Add(new TagDto(TagType.FreeForm, null, "shared"));
+            }
+
+            foreach (var tag in tagsToApply)
             {
                 _db.NoteTags.Add(new NoteTag
                 {
