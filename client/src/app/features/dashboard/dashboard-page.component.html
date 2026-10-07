@@ -1,7 +1,7 @@
 <div class="dashboard">
   <!-- Google Keep-style Quick Capture -->
   <app-quick-capture
-    [defaultLevel]="'Quick'"
+    [defaultLevel]="'Note'"
     (createNote)="handleCreateNote($event)"
   />
 
@@ -69,7 +69,7 @@
       <div class="dashboard__empty">
         <mat-icon class="dashboard__empty-icon">lightbulb</mat-icon>
         <p class="dashboard__empty-title">Notes you add appear here</p>
-        <p class="dashboard__empty-subtitle">Capture thoughts as Inbox, Quick, or Journal notes above.</p>
+        <p class="dashboard__empty-subtitle">Capture thoughts as Inbox, Note, or Journal notes above.</p>
       </div>
     }
   </section>

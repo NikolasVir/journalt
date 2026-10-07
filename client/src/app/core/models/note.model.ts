@@ -1,4 +1,4 @@
-export type NoteLevel = 'Inbox' | 'Quick' | 'Journal';
+export type NoteLevel = 'Inbox' | 'Note' | 'Journal';
 
 export interface WikiLinkWarning {
   title: string;

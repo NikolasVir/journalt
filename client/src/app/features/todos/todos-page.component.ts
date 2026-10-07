@@ -508,7 +508,7 @@ export class TodosPageComponent implements OnInit {
     this.isCreating.set(true);
     this.noteService
       .create({
-        level: 'Quick',
+        level: 'Note',
         title,
         isTodo: true,
       })

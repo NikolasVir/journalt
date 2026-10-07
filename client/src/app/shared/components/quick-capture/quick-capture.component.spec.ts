@@ -53,7 +53,7 @@ describe('QuickCaptureComponent', () => {
       emittedPayload = payload;
     });
 
-    component.expand('Quick');
+    component.expand('Note');
     fixture.detectChanges();
 
     (component as unknown as { title: { set: (v: string) => void } }).title.set('My Note Title');
@@ -63,7 +63,7 @@ describe('QuickCaptureComponent', () => {
     expect(emittedPayload).toEqual({
       title: 'My Note Title',
       bodyMarkdown: 'Some markdown body',
-      level: 'Quick',
+      level: 'Note',
       isTodo: false,
       tags: undefined
     });
@@ -75,7 +75,7 @@ describe('QuickCaptureComponent', () => {
       emittedPayload = payload;
     });
 
-    component.expand('Quick');
+    component.expand('Note');
     fixture.detectChanges();
 
     (component as unknown as { title: { set: (v: string) => void } }).title.set('Work Note');
@@ -86,7 +86,7 @@ describe('QuickCaptureComponent', () => {
     expect(emittedPayload).toEqual({
       title: 'Work Note',
       bodyMarkdown: 'Work content',
-      level: 'Quick',
+      level: 'Note',
       isTodo: false,
       libraryId: 'lib-work-123',
       tags: undefined,

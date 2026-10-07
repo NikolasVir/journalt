@@ -115,14 +115,14 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   protected readonly returnUrl = signal<string | null>(null);
 
   protected readonly separatorKeysCodes = [ENTER, COMMA] as const;
-  protected readonly quickTags = signal<string[]>([]);
+  protected readonly freeFormTags = signal<string[]>([]);
   protected readonly tagInputQuery = signal<string>('');
   protected readonly tagSuggestions = signal<string[]>([]);
   protected readonly tagInput = viewChild<ElementRef<HTMLInputElement>>('tagInput');
 
   protected readonly filteredTagSuggestions = computed(() => {
     const query = this.tagInputQuery().toLowerCase().trim();
-    const current = new Set(this.quickTags().map((t) => t.toLowerCase()));
+    const current = new Set(this.freeFormTags().map((t) => t.toLowerCase()));
     return this.tagSuggestions()
       .filter((tag) => !current.has(tag.toLowerCase()))
       .filter((tag) => !query || tag.toLowerCase().includes(query));
@@ -131,7 +131,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   protected readonly form = new FormGroup<NoteForm>({
     title: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     bodyMarkdown: new FormControl('', { nonNullable: true }),
-    level: new FormControl<NoteLevel>('Quick', { nonNullable: true }),
+    level: new FormControl<NoteLevel>('Note', { nonNullable: true }),
     typeId: new FormControl<string | null>(null),
     libraryId: new FormControl<string | null>(null),
     isTodo: new FormControl(false, { nonNullable: true }),
@@ -178,8 +178,8 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
 
     this.form.controls.level.valueChanges.subscribe((lvl) => {
       if (lvl === 'Journal') {
-        if (this.quickTags().length > 0) {
-          this.quickTags.set([]);
+        if (this.freeFormTags().length > 0) {
+          this.freeFormTags.set([]);
           this.errorMessage.set(
             'Draft free-form tags were removed. Select registered Journal tags instead.',
           );
@@ -262,12 +262,12 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
           typedTags,
         });
 
-        if (note.level === 'Quick' && !isPromotingToJournal) {
-          this.quickTags.set(
+        if (note.level === 'Note' && !isPromotingToJournal) {
+          this.freeFormTags.set(
             tags.map((t) => (t.value ?? '').trim().replace(/^#/, '')).filter(Boolean),
           );
         } else {
-          this.quickTags.set([]);
+          this.freeFormTags.set([]);
         }
 
         this.typeValidationWarnings.set(note.typeValidationWarnings ?? []);
@@ -281,7 +281,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
           }
         } else if (tags.some((tag) => tag.tagType === 'Typed')) {
           this.errorMessage.set(
-            'This Quick Note contains legacy typed tags. Replace them with free-form tags before saving.',
+            'This Note contains legacy typed tags. Replace them with free-form tags before saving.',
           );
         }
       },
@@ -291,24 +291,24 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
     });
   }
 
-  protected addQuickTag(event: MatChipInputEvent): void {
+  protected addFreeFormTag(event: MatChipInputEvent): void {
     const value = (event.value || '').replace(/^#/, '').trim();
-    if (value && !this.quickTags().some((t) => t.toLowerCase() === value.toLowerCase())) {
-      this.quickTags.update((tags) => [...tags, value]);
+    if (value && !this.freeFormTags().some((t) => t.toLowerCase() === value.toLowerCase())) {
+      this.freeFormTags.update((tags) => [...tags, value]);
     }
     event.chipInput?.clear();
     this.tagInputQuery.set('');
   }
 
-  protected removeQuickTag(tagToRemove: string): void {
-    this.quickTags.update((tags) => tags.filter((t) => t !== tagToRemove));
+  protected removeFreeFormTag(tagToRemove: string): void {
+    this.freeFormTags.update((tags) => tags.filter((t) => t !== tagToRemove));
   }
 
-  protected selectedQuickTag(event: MatAutocompleteSelectedEvent): void {
+  protected selectedFreeFormTag(event: MatAutocompleteSelectedEvent): void {
     const rawVal = (event.option.value ?? event.option.viewValue ?? '') as string;
     const tag = rawVal.replace(/^#/, '').trim();
-    if (tag && !this.quickTags().some((t) => t.toLowerCase() === tag.toLowerCase())) {
-      this.quickTags.update((tags) => [...tags, tag]);
+    if (tag && !this.freeFormTags().some((t) => t.toLowerCase() === tag.toLowerCase())) {
+      this.freeFormTags.update((tags) => [...tags, tag]);
     }
     const inputEl = this.tagInput()?.nativeElement;
     if (inputEl) {
@@ -330,7 +330,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
 
     const val = this.form.getRawValue();
     const isJournal = val.level === 'Journal';
-    const tags: (TagDto | string)[] = isJournal ? val.typedTags : this.quickTags();
+    const tags: (TagDto | string)[] = isJournal ? val.typedTags : this.freeFormTags();
     const typeId = isJournal ? val.typeId || undefined : undefined;
     const id = this.noteId();
     const selectedTypeDef =

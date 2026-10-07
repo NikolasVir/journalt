@@ -31,8 +31,10 @@
   /* ── JournalT Lifecycle Badges ───────────────────────────────────────── */
   --color-level-inbox: #b45309;
   --color-level-inbox-bg: #fef3c7;
-  --color-level-quick: #0369a1;
-  --color-level-quick-bg: #e0f2fe;
+  --color-level-note: #0369a1;
+  --color-level-note-bg: #e0f2fe;
+  --color-level-quick: var(--color-level-note);
+  --color-level-quick-bg: var(--color-level-note-bg);
   --color-level-journal: #047857;
   --color-level-journal-bg: #d1fae5;
 
@@ -149,8 +151,10 @@ html.dark-theme {
   /* ── JournalT Lifecycle Badges (Non-yellow harmonious Keep style) ────── */
   --color-level-inbox: #9aa0a6;
   --color-level-inbox-bg: rgba(154, 160, 166, 0.15);
-  --color-level-quick: #8ab4f8;
-  --color-level-quick-bg: rgba(138, 180, 248, 0.15);
+  --color-level-note: #8ab4f8;
+  --color-level-note-bg: rgba(138, 180, 248, 0.15);
+  --color-level-quick: var(--color-level-note);
+  --color-level-quick-bg: var(--color-level-note-bg);
   --color-level-journal: #81c995;
   --color-level-journal-bg: rgba(129, 201, 149, 0.15);
 

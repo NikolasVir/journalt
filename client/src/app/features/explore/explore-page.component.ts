@@ -56,7 +56,7 @@ export class ExplorePageComponent implements OnInit {
   private readonly wikiIndex = signal<NoteWikiIndexItem[]>([]);
 
   /**
-   * Journal notes are always wiki members. A Quick note joins once filed into a
+   * Journal notes are always wiki members. A Note joins once filed into a
    * library or referenced by another note, so scratch notes never dilute the
    * tree. Inbox is excluded. The server applies this filter; repeating it
    * client-side keeps a stale payload from leaking scratch notes.

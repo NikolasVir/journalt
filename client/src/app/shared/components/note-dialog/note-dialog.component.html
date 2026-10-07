@@ -212,7 +212,7 @@
             }
           </div>
 
-          @if (n.level === 'Journal' || n.level === 'Quick') {
+          @if (n.level === 'Journal' || n.level === 'Note') {
             <div class="dialog-panel__tags-section">
               <div class="tags-header" (click)="toggleTags()" role="button" tabindex="0">
                 <div class="tags-header__title">
@@ -260,7 +260,7 @@
                       [selectedTags]="editTypedTags()"
                       (selectedTagsChange)="editTypedTags.set($event)"
                     />
-                  } @else if (n.level === 'Quick') {
+                  } @else if (n.level === 'Note') {
                     <mat-form-field
                       appearance="outline"
                       class="dialog-panel__tags-field"

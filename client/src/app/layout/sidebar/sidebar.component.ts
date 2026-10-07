@@ -52,7 +52,7 @@ export class SidebarComponent {
     { label: 'Todos', route: '/todos', icon: 'check_circle' },
     { label: 'Explore', route: '/explore', icon: 'account_tree', exact: true },
     { label: 'Inbox', route: '/notes/inbox', icon: 'inbox' },
-    { label: 'Quick Notes', route: '/notes/quick', icon: 'edit_note' },
+    { label: 'Notes', route: '/notes/notes', icon: 'edit_note' },
     { label: 'Journal', route: '/notes/journal', icon: 'menu_book' }
   ];
 

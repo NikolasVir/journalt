@@ -22,7 +22,7 @@ describe('NoteDialogComponent', () => {
   const note: NoteResponse = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     userId: '123e4567-e89b-12d3-a456-426614174001',
-    level: 'Quick',
+    level: 'Note',
     title: 'Test note',
     bodyMarkdown: '',
     renderedHtml: '',
@@ -214,7 +214,7 @@ describe('NoteDialogComponent', () => {
     component.toggleTags();
     expect(component['isTagsExpanded']()).toBe(false);
 
-    // Quick level tag count
+    // Note level tag count
     (component as unknown as { editTags: { set: (v: string) => void } }).editTags.set('tag1, tag2, tag3');
     expect(component['tagCount']()).toBe(3);
 

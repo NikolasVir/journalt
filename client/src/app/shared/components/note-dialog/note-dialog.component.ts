@@ -88,7 +88,7 @@ export class NoteDialogComponent {
   protected readonly editBody = linkedSignal(() => this.note()?.bodyMarkdown ?? '');
   protected readonly editTags = linkedSignal(() => {
     const current = this.note();
-    if (!current || current.level !== 'Quick') return '';
+    if (!current || current.level !== 'Note') return '';
     return (current.tags ?? []).map(formatTag).filter(Boolean).join(', ');
   });
   protected readonly editTypedTags = linkedSignal<TagDto[]>(() => {
@@ -112,7 +112,7 @@ export class NoteDialogComponent {
     if (current.level === 'Journal') {
       return this.editTypedTags().length;
     }
-    if (current.level === 'Quick') {
+    if (current.level === 'Note') {
       const raw = this.editTags() ?? '';
       return raw
         .split(',')
@@ -226,8 +226,8 @@ export class NoteDialogComponent {
 
   public get nextPromoteLevel(): NoteLevel | null {
     const level = this.note()?.level;
-    if (level === 'Inbox') return 'Quick';
-    if (level === 'Quick') return 'Journal';
+    if (level === 'Inbox') return 'Note';
+    if (level === 'Note') return 'Journal';
     return null;
   }
 

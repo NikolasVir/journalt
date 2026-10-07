@@ -88,11 +88,11 @@ export class QuickCaptureComponent implements OnInit {
   private readonly typeService = inject(TypeDefinitionService);
   private readonly libraryService = inject(LibraryService);
 
-  public readonly defaultLevel = input<NoteLevel>('Quick');
+  public readonly defaultLevel = input<NoteLevel>('Note');
   public readonly createNote = output<QuickCapturePayload>();
 
   protected readonly isExpanded = signal<boolean>(false);
-  protected readonly selectedLevel = signal<NoteLevel>('Quick');
+  protected readonly selectedLevel = signal<NoteLevel>('Note');
   protected readonly title = signal<string>('');
   protected readonly bodyMarkdown = signal<string>('');
   protected readonly isTodo = signal<boolean>(false);

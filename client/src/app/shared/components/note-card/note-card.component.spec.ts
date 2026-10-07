@@ -9,7 +9,7 @@ describe('NoteCardComponent', () => {
   const mockNote: NoteResponse = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     userId: '123e4567-e89b-12d3-a456-426614174001',
-    level: 'Quick',
+    level: 'Note',
     title: 'Test Note Title',
     summary: 'Test summary',
     bodyMarkdown: 'Test markdown content',

@@ -78,9 +78,10 @@
       background-color: var(--color-level-inbox-bg);
     }
 
+    &--note,
     &--quick {
-      color: var(--color-level-quick);
-      background-color: var(--color-level-quick-bg);
+      color: var(--color-level-note);
+      background-color: var(--color-level-note-bg);
     }
 
     &--journal {

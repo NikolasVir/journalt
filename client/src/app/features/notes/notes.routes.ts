@@ -13,10 +13,21 @@ export const NOTES_ROUTES: Routes = [
     data: { level: 'Inbox' }
   },
   {
-    path: 'quick',
+    path: 'notes',
     loadComponent: () =>
       import('./notes-page.component').then((m) => m.NotesPageComponent),
-    data: { level: 'Quick' }
+    data: { level: 'Note' }
+  },
+  {
+    path: 'note',
+    loadComponent: () =>
+      import('./notes-page.component').then((m) => m.NotesPageComponent),
+    data: { level: 'Note' }
+  },
+  {
+    path: 'quick',
+    redirectTo: 'notes',
+    pathMatch: 'full'
   },
   {
     path: 'journal',

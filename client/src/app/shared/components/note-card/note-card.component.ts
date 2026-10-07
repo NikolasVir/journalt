@@ -43,8 +43,8 @@ export class NoteCardComponent {
 
   protected readonly nextPromoteLevel = computed<NoteLevel | null>(() => {
     const level = this.note().level;
-    if (level === 'Inbox') return 'Quick';
-    if (level === 'Quick') return 'Journal';
+    if (level === 'Inbox') return 'Note';
+    if (level === 'Note') return 'Journal';
     return null;
   });
 

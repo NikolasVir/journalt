@@ -17,7 +17,7 @@ export interface ExploreNode {
   /** Only library and unfiled nodes can be expanded. */
   expandable: boolean;
   noteLevel?: NoteLevel;
-  /** Quick notes reach the wiki by being linked from another note. */
+  /** Notes reach the wiki by being linked from another note. */
   isReferenced?: boolean;
   children: ExploreNode[];
 }

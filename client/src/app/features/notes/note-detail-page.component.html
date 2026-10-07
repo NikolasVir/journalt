@@ -53,7 +53,7 @@
           <label class="note-form__label">Note Level</label>
           <mat-radio-group formControlName="level" class="note-form__radio-group">
             <mat-radio-button value="Inbox">Inbox</mat-radio-button>
-            <mat-radio-button value="Quick">Quick</mat-radio-button>
+            <mat-radio-button value="Note">Note</mat-radio-button>
             <mat-radio-button value="Journal">Journal</mat-radio-button>
           </mat-radio-group>
         </div>
@@ -107,12 +107,12 @@
           </mat-select>
         </mat-form-field>
 
-        @if (form.controls.level.value === 'Quick') {
+        @if (form.controls.level.value === 'Note') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="note-form__field">
             <mat-label>Tags</mat-label>
             <mat-chip-grid #chipGrid aria-label="Note tags">
-              @for (tag of quickTags(); track tag) {
-                <mat-chip-row (removed)="removeQuickTag(tag)" class="note-form__tag-chip">
+              @for (tag of freeFormTags(); track tag) {
+                <mat-chip-row (removed)="removeFreeFormTag(tag)" class="note-form__tag-chip">
                   #{{ tag }}
                   <button matChipRemove aria-label="Remove tag">
                     <mat-icon>cancel</mat-icon>
@@ -124,12 +124,12 @@
                 placeholder="New tag..."
                 [matChipInputFor]="chipGrid"
                 [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-                (matChipInputTokenEnd)="addQuickTag($event)"
+                (matChipInputTokenEnd)="addFreeFormTag($event)"
                 [matAutocomplete]="autoTags"
                 (input)="tagInputQuery.set(tagInput.value)"
               />
             </mat-chip-grid>
-            <mat-autocomplete #autoTags="matAutocomplete" (optionSelected)="selectedQuickTag($event)">
+            <mat-autocomplete #autoTags="matAutocomplete" (optionSelected)="selectedFreeFormTag($event)">
               @for (suggestion of filteredTagSuggestions(); track suggestion) {
                 <mat-option [value]="suggestion">#{{ suggestion }}</mat-option>
               }
