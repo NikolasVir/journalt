@@ -66,14 +66,13 @@
         />
       }
 
-      <label class="note-form__label" for="note-content-editor">Content (Markdown)</label>
       <app-note-content-editor
         formControlName="bodyMarkdown"
         [collabNoteId]="noteId()"
         [collabUser]="collabUser()"
         placeholder="Write in Markdown..."
         ariaLabel="Note content (Markdown)"
-        minHeight="62vh"
+        minHeight="55vh"
       />
 
       <div class="note-form__meta-grid">
@@ -98,15 +97,24 @@
           }
         }
 
-        @if (libraries().length > 0) {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="note-form__field">
+          <mat-label>Library</mat-label>
+          <mat-select formControlName="libraryId" aria-label="Select library">
+            <mat-option [value]="null">Unfiled (No Library)</mat-option>
+            @for (lib of libraries(); track lib.id) {
+              <mat-option [value]="lib.id">{{ lib.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        @if (form.controls.level.value === 'Quick') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="note-form__field">
-            <mat-label>Library</mat-label>
-            <mat-select formControlName="libraryId" aria-label="Select library">
-              <mat-option [value]="null">Unfiled (No Library)</mat-option>
-              @for (lib of libraries(); track lib.id) {
-                <mat-option [value]="lib.id">{{ lib.name }}</mat-option>
-              }
-            </mat-select>
+            <mat-label>Tags</mat-label>
+            <input
+              matInput
+              formControlName="tagsInput"
+              placeholder="e.g. dev, ideas"
+            />
           </mat-form-field>
         }
       </div>
@@ -116,16 +124,6 @@
           [selectedTags]="form.controls.typedTags.value"
           (selectedTagsChange)="form.controls.typedTags.setValue($event)"
         />
-      } @else if (form.controls.level.value === 'Quick') {
-        <mat-form-field appearance="outline" class="note-form__field">
-          <mat-label>Free-form tags</mat-label>
-          <input
-            matInput
-            formControlName="tagsInput"
-            placeholder="Comma-separated tags (e.g. dev, ideas)"
-          />
-          <mat-hint>Quick Note tags are intentionally unconstrained.</mat-hint>
-        </mat-form-field>
       }
 
       <div class="note-form__checkbox">
@@ -134,9 +132,9 @@
 
       <mat-card-actions class="note-form__actions">
         @if (noteId()) {
-          <button mat-button color="warn" type="button" (click)="onDelete()">
+          <button mat-button color="warn" type="button" (click)="onDelete()" class="note-form__delete-btn">
             <mat-icon>delete_outline</mat-icon>
-            <span>Move to Trash</span>
+            <span class="note-form__delete-label">Move to Trash</span>
           </button>
         }
 

@@ -75,7 +75,7 @@ public sealed class NoteService(
         if (request.LibraryId.HasValue)
         {
             var libraryExists = await _db.Libraries
-                .AnyAsync(l => l.Id == request.LibraryId.Value && l.UserId == userId, ct);
+                .AnyAsync(l => l.Id == request.LibraryId.Value, ct);
             if (!libraryExists)
                 return NoteResult.Failure("Library not found.");
         }
@@ -306,7 +306,7 @@ public sealed class NoteService(
         if (request.LibraryId.HasValue && request.LibraryId != note.LibraryId)
         {
             var libraryExists = await _db.Libraries
-                .AnyAsync(l => l.Id == request.LibraryId.Value && l.UserId == note.UserId, ct);
+                .AnyAsync(l => l.Id == request.LibraryId.Value, ct);
             if (!libraryExists)
                 return NoteResult.Failure("Library not found.");
         }

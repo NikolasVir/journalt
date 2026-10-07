@@ -2,12 +2,16 @@
 
 .note-editor {
   @include flex-column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   max-width: var(--editor-max-width);
   margin: 0 auto;
   width: 100%;
-  padding-inline: var(--spacing-md);
-  padding-bottom: var(--spacing-xl);
+  padding-inline: 0;
+  padding-bottom: var(--spacing-lg);
+
+  @media (max-width: 600px) {
+    padding-bottom: var(--spacing-md);
+  }
 
   // Visually hidden but announced: there is no visible page heading
   // (Back lives on the Title row), so New-vs-Edit context lives here
@@ -64,36 +68,49 @@
 }
 
 .note-card-form {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
+
+  @media (max-width: 600px) {
+    padding: var(--spacing-sm) var(--spacing-xs);
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+  }
 }
 
 .note-form {
   @include flex-column;
-  // Single rhythm token for all sections (editor, meta, tags, todo,
-  // actions). No per-block bottom margins — the gap owns the rhythm.
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 
   &__field {
     width: 100%;
   }
 
-  // Title row sticks under the app header so context survives long
-  // scrolls. Exits live in the sticky bottom bar (Cancel) + browser-back.
+  // Title row sticks flush under the app header when scrolling
   &__title-row {
     position: sticky;
-    top: calc(var(--header-height) + var(--spacing-sm));
+    top: 0;
     z-index: 5;
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
     background-color: var(--color-bg-surface);
+    padding-top: var(--spacing-xs);
+    padding-bottom: var(--spacing-2xs);
   }
 
   &__title-field {
     flex: 1;
     min-width: 0;
+
+    input {
+      font-size: var(--font-size-lg, 1.125rem);
+      font-weight: var(--font-weight-medium, 500);
+      letter-spacing: -0.01em;
+    }
   }
 
   &__level-section {
@@ -137,32 +154,53 @@
     flex-wrap: wrap;
   }
 
-  // Tighten the gap between the Type/Library meta-grid and the tags
-  // section — the form gap is --spacing-md but these two belong together.
+  app-note-content-editor {
+    display: block;
+    width: 100%;
+
+    @media (max-width: 600px) {
+      ::ng-deep .cm-host {
+        min-height: 40vh !important;
+      }
+    }
+  }
+
   app-typed-tag-selector {
-    margin-top: calc(var(--spacing-sm) - var(--spacing-md));
+    margin-top: calc(var(--spacing-xs) - var(--spacing-sm));
   }
 
   &__meta-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
 
-    @media (max-width: 700px) {
+    @media (max-width: 600px) {
       grid-template-columns: 1fr;
     }
+  }
+
+  &__checkbox {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-2xs) 0;
   }
 
   &__actions {
     @include flex-between;
     position: sticky;
     bottom: 0;
-    z-index: 1;
+    z-index: 5;
     background-color: var(--color-bg-surface);
-    padding: var(--spacing-md) 0;
+    padding: var(--spacing-sm) 0;
     border-top: 1px solid var(--color-border-subtle);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: var(--spacing-sm);
+
+    @media (max-width: 480px) {
+      .note-form__delete-label {
+        display: none;
+      }
+    }
   }
 
   &__buttons {

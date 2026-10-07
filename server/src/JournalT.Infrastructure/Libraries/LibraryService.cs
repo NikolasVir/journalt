@@ -59,7 +59,6 @@ public sealed class LibraryService(
     {
         var items = await _db.Libraries
             .AsNoTracking()
-            .Where(l => l.UserId == _currentUser.UserId)
             .OrderBy(l => l.Name)
             .Select(l => new LibraryResponse(
                 l.Id,
@@ -77,7 +76,6 @@ public sealed class LibraryService(
     {
         var allLibraries = await _db.Libraries
             .AsNoTracking()
-            .Where(l => l.UserId == _currentUser.UserId)
             .OrderBy(l => l.Name)
             .ToListAsync(ct);
 

@@ -16,7 +16,13 @@
 
   ::ng-deep .cm-content {
     min-height: 160px;
-    padding: 12px;
+    padding: 12px 14px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    line-height: 1.6;
+
+    @media (max-width: 600px) {
+      padding: 10px 12px;
+      font-size: 15px;
+    }
   }
 }

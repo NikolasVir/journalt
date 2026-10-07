@@ -38,18 +38,18 @@
 
   &__content {
     flex: 1;
-    padding: var(--spacing-xl) var(--spacing-2xl) 4rem;
+    padding: var(--spacing-md) var(--spacing-xl) 3rem;
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
     outline: none;
 
     @include respond-to('tablet') {
-      padding: var(--spacing-md) var(--spacing-lg) 3rem;
+      padding: var(--spacing-sm) var(--spacing-md) 2.5rem;
     }
 
     @include respond-to('mobile') {
-      padding: var(--spacing-sm) var(--spacing-md-sm) 3rem;
+      padding: var(--spacing-xs) var(--spacing-sm) 2rem;
     }
 
     // Full-bleed routes (Explore) manage their own pane padding so the
