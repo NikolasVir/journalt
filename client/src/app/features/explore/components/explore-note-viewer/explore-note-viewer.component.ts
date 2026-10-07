@@ -18,8 +18,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { formatTag, NoteResponse } from '@core/models/note.model';
 import { MarkdownEnhancerService } from '@core/services/markdown-enhancer.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
+import { LayoutService } from '@layout/layout.service';
 import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
+import { ExplorePaneResizerComponent } from '../explore-pane-resizer/explore-pane-resizer.component';
 
 /**
  * Right pane of Explore. Renders a note read-only and intercepts wiki-links so
@@ -28,7 +30,14 @@ import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view
 @Component({
   selector: 'app-explore-note-viewer',
   standalone: true,
-  imports: [DatePipe, MatIconModule, MatButtonModule, NoteEditButtonComponent, NoteMetadataViewComponent],
+  imports: [
+    DatePipe,
+    MatIconModule,
+    MatButtonModule,
+    NoteEditButtonComponent,
+    NoteMetadataViewComponent,
+    ExplorePaneResizerComponent,
+  ],
   templateUrl: './explore-note-viewer.component.html',
   styleUrl: './explore-note-viewer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,6 +45,7 @@ import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view
 export class ExploreNoteViewerComponent {
   private readonly markdownEnhancer = inject(MarkdownEnhancerService);
   private readonly typeService = inject(TypeDefinitionService);
+  protected readonly layoutService = inject(LayoutService);
 
   public readonly note = input<NoteResponse | null>(null);
   public readonly isLoading = input.required<boolean>();
@@ -60,6 +70,29 @@ export class ExploreNoteViewerComponent {
     const typeId = this.note()?.typeId;
     if (!typeId) return null;
     return this.typeNames()[typeId] ?? null;
+  });
+
+  protected readonly hasMetadata = computed(() => {
+    const n = this.note();
+    if (!n) return false;
+    if (n.summary && typeof n.summary === 'string' && n.summary.trim()) return true;
+    if (!n.typedMetadataJson) return false;
+    try {
+      const parsed =
+        typeof n.typedMetadataJson === 'string'
+          ? JSON.parse(n.typedMetadataJson)
+          : n.typedMetadataJson;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+      return Object.values(parsed).some(
+        (val) =>
+          val !== null &&
+          val !== undefined &&
+          val !== '' &&
+          !(Array.isArray(val) && val.length === 0)
+      );
+    } catch {
+      return false;
+    }
   });
 
   public constructor() {

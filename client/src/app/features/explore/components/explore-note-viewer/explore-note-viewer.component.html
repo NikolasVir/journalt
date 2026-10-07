@@ -50,12 +50,19 @@
     }
 
     <div class="viewer__layout">
-      <aside class="viewer__side">
-        <app-note-metadata-view
-          [metadataJson]="n.typedMetadataJson"
-          [summary]="n.summary"
-        />
-      </aside>
+      @if (hasMetadata()) {
+        <aside
+          class="viewer__side"
+          [style.width.px]="layoutService.noteMetadataWidth()"
+        >
+          <app-note-metadata-view
+            [metadataJson]="n.typedMetadataJson"
+            [summary]="n.summary"
+          />
+        </aside>
+
+        <app-explore-pane-resizer target="metadata" />
+      }
 
       <div #bodyRef class="viewer__body markdown-body" (click)="onBodyClick($event)">
         @if (n.renderedHtml) {

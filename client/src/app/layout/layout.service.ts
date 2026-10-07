@@ -8,6 +8,10 @@ export const EXPLORE_TREE_MIN_WIDTH = 220;
 export const EXPLORE_TREE_MAX_WIDTH = 560;
 export const EXPLORE_TREE_DEFAULT_WIDTH = 340;
 
+export const NOTE_METADATA_MIN_WIDTH = 180;
+export const NOTE_METADATA_MAX_WIDTH = 500;
+export const NOTE_METADATA_DEFAULT_WIDTH = 260;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -15,6 +19,7 @@ export class LayoutService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly treeWidthStorageKey = 'journalt-explore-tree-width';
+  private readonly metadataWidthStorageKey = 'journalt-note-metadata-width';
   private readonly viewModeStorageKey = 'journalt-note-view-mode';
 
   public readonly isHandset: Signal<boolean> = toSignal(
@@ -30,6 +35,7 @@ export class LayoutService {
   private readonly searchQueryState = signal<string>('');
   private readonly sidebarHiddenState = signal<boolean>(false);
   private readonly exploreTreeWidthState = signal<number>(this.readStoredTreeWidth());
+  private readonly noteMetadataWidthState = signal<number>(this.readStoredMetadataWidth());
   private readonly viewModeState = signal<'grid' | 'list'>(this.readStoredViewMode());
 
   public readonly isMobileMenuOpen: Signal<boolean> = this.mobileMenuOpenState.asReadonly();
@@ -38,6 +44,7 @@ export class LayoutService {
   public readonly searchQuery: Signal<string> = this.searchQueryState.asReadonly();
   public readonly isSidebarHidden: Signal<boolean> = this.sidebarHiddenState.asReadonly();
   public readonly exploreTreeWidth: Signal<number> = this.exploreTreeWidthState.asReadonly();
+  public readonly noteMetadataWidth: Signal<number> = this.noteMetadataWidthState.asReadonly();
   public readonly viewMode: Signal<'grid' | 'list'> = this.viewModeState.asReadonly();
 
   public toggleViewMode(): void {
@@ -108,12 +115,33 @@ export class LayoutService {
     this.setExploreTreeWidth(EXPLORE_TREE_DEFAULT_WIDTH);
   }
 
+  public setNoteMetadataWidth(width: number): void {
+    const next = Math.round(width);
+    if (next === this.noteMetadataWidthState()) return;
+    this.noteMetadataWidthState.set(next);
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.metadataWidthStorageKey, String(next));
+    }
+  }
+
+  public resetNoteMetadataWidth(): void {
+    this.setNoteMetadataWidth(NOTE_METADATA_DEFAULT_WIDTH);
+  }
+
   private readStoredTreeWidth(): number {
     if (!isPlatformBrowser(this.platformId)) return EXPLORE_TREE_DEFAULT_WIDTH;
     const raw = localStorage.getItem(this.treeWidthStorageKey);
     const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
     if (!Number.isFinite(parsed)) return EXPLORE_TREE_DEFAULT_WIDTH;
     return Math.min(Math.max(parsed, EXPLORE_TREE_MIN_WIDTH), EXPLORE_TREE_MAX_WIDTH);
+  }
+
+  private readStoredMetadataWidth(): number {
+    if (!isPlatformBrowser(this.platformId)) return NOTE_METADATA_DEFAULT_WIDTH;
+    const raw = localStorage.getItem(this.metadataWidthStorageKey);
+    const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+    if (!Number.isFinite(parsed)) return NOTE_METADATA_DEFAULT_WIDTH;
+    return Math.min(Math.max(parsed, NOTE_METADATA_MIN_WIDTH), NOTE_METADATA_MAX_WIDTH);
   }
 
   private readStoredViewMode(): 'grid' | 'list' {

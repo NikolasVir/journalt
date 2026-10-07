@@ -85,7 +85,7 @@ describe('NoteMetadataViewComponent', () => {
     expect(skillLevel.textContent.trim()).toBe('substantial');
   });
 
-  it('should toggle collapse when clicking metadata header', () => {
+  it('should render uncollapsible metadata card content', () => {
     fixture.componentRef.setInput('metadataJson', JSON.stringify({ locality: 'Athens' }));
     fixture.detectChanges();
 
@@ -93,11 +93,6 @@ describe('NoteMetadataViewComponent', () => {
     expect(fixture.nativeElement.querySelector('.meta-card__content')).not.toBeNull();
 
     const header = fixture.nativeElement.querySelector('.meta-card__header');
-    header.click();
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('.meta-card__content')).toBeNull();
-
     header.click();
     fixture.detectChanges();
 

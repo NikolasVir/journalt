@@ -1,21 +1,25 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   ElementRef,
   inject,
+  input,
   OnDestroy,
   signal,
 } from '@angular/core';
 import {
   EXPLORE_TREE_MAX_WIDTH,
   EXPLORE_TREE_MIN_WIDTH,
+  NOTE_METADATA_MAX_WIDTH,
+  NOTE_METADATA_MIN_WIDTH,
   LayoutService,
 } from '@layout/layout.service';
 
 /**
- * Drag handle between the Explore tree and the reader. While dragging, window
- * listeners track the pointer so the drag survives leaving the handle, and the
- * width is committed to LayoutService so it survives navigation and reloads.
+ * Drag handle between Explore panes. While dragging, window listeners track
+ * the pointer so the drag survives leaving the handle, and the width is
+ * committed to LayoutService so it survives navigation and reloads.
  */
 @Component({
   selector: 'app-explore-pane-resizer',
@@ -26,10 +30,10 @@ import {
     role: 'separator',
     tabindex: '0',
     'aria-orientation': 'vertical',
-    '[attr.aria-label]': "'Resize tree column'",
-    '[attr.aria-valuenow]': 'layoutService.exploreTreeWidth()',
-    '[attr.aria-valuemin]': 'minWidth',
-    '[attr.aria-valuemax]': 'maxWidth',
+    '[attr.aria-label]': "target() === 'tree' ? 'Resize tree column' : 'Resize metadata column'",
+    '[attr.aria-valuenow]': "target() === 'tree' ? layoutService.exploreTreeWidth() : layoutService.noteMetadataWidth()",
+    '[attr.aria-valuemin]': 'minWidth()',
+    '[attr.aria-valuemax]': 'maxWidth()',
     '[class.resizer--active]': 'isResizing()',
     '(pointerdown)': 'onPointerDown($event)',
     '(keydown)': 'onKeyDown($event)',
@@ -65,9 +69,14 @@ import {
 })
 export class ExplorePaneResizerComponent implements OnDestroy {
   protected readonly layoutService = inject(LayoutService);
+  public readonly target = input<'tree' | 'metadata'>('tree');
 
-  protected readonly minWidth = EXPLORE_TREE_MIN_WIDTH;
-  protected readonly maxWidth = EXPLORE_TREE_MAX_WIDTH;
+  protected readonly minWidth = computed(() =>
+    this.target() === 'tree' ? EXPLORE_TREE_MIN_WIDTH : NOTE_METADATA_MIN_WIDTH
+  );
+  protected readonly maxWidth = computed(() =>
+    this.target() === 'tree' ? EXPLORE_TREE_MAX_WIDTH : NOTE_METADATA_MAX_WIDTH
+  );
 
   private readonly hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -81,9 +90,12 @@ export class ExplorePaneResizerComponent implements OnDestroy {
 
   private readonly onWindowPointerMove = (event: PointerEvent): void => {
     if (!this.dragging) return;
-    this.layoutService.setExploreTreeWidth(
-      this.clamp(this.startWidth + (event.clientX - this.startX)),
-    );
+    const nextWidth = this.clamp(this.startWidth + (event.clientX - this.startX));
+    if (this.target() === 'tree') {
+      this.layoutService.setExploreTreeWidth(nextWidth);
+    } else {
+      this.layoutService.setNoteMetadataWidth(nextWidth);
+    }
   };
 
   private readonly onWindowPointerUp = (): void => {
@@ -103,7 +115,9 @@ export class ExplorePaneResizerComponent implements OnDestroy {
     event.preventDefault();
     this.hostRef.nativeElement.focus({ preventScroll: true });
     this.startX = event.clientX;
-    this.startWidth = this.layoutService.exploreTreeWidth();
+    this.startWidth = this.target() === 'tree'
+      ? this.layoutService.exploreTreeWidth()
+      : this.layoutService.noteMetadataWidth();
     this.dragging = true;
     this.isResizing.set(true);
     this.lockTextSelection();
@@ -115,7 +129,12 @@ export class ExplorePaneResizerComponent implements OnDestroy {
 
   public onKeyDown(event: KeyboardEvent): void {
     const step = event.shiftKey ? 48 : 16;
-    const current = this.layoutService.exploreTreeWidth();
+    const isTree = this.target() === 'tree';
+    const current = isTree
+      ? this.layoutService.exploreTreeWidth()
+      : this.layoutService.noteMetadataWidth();
+    const min = isTree ? EXPLORE_TREE_MIN_WIDTH : NOTE_METADATA_MIN_WIDTH;
+    const max = isTree ? EXPLORE_TREE_MAX_WIDTH : NOTE_METADATA_MAX_WIDTH;
     let next: number | null = null;
 
     switch (event.key) {
@@ -126,21 +145,30 @@ export class ExplorePaneResizerComponent implements OnDestroy {
         next = current + step;
         break;
       case 'Home':
-        next = this.minWidth;
+        next = min;
         break;
       case 'End':
-        next = this.maxWidth;
+        next = max;
         break;
       default:
         return;
     }
 
     event.preventDefault();
-    this.layoutService.setExploreTreeWidth(this.clamp(next));
+    const clamped = this.clamp(next);
+    if (isTree) {
+      this.layoutService.setExploreTreeWidth(clamped);
+    } else {
+      this.layoutService.setNoteMetadataWidth(clamped);
+    }
   }
 
   public onDoubleClick(): void {
-    this.layoutService.resetExploreTreeWidth();
+    if (this.target() === 'tree') {
+      this.layoutService.resetExploreTreeWidth();
+    } else {
+      this.layoutService.resetNoteMetadataWidth();
+    }
   }
 
   public ngOnDestroy(): void {
@@ -149,21 +177,22 @@ export class ExplorePaneResizerComponent implements OnDestroy {
   }
 
   /**
-   * Caps the tree at half the available width so the reader never collapses to
-   * nothing on a narrow window, regardless of a stored width from a wide one.
-   * Measured from the parent grid element, not the 8px handle itself.
+   * Caps the column at half the available container width.
    */
   private clamp(width: number): number {
+    const isTree = this.target() === 'tree';
+    const min = isTree ? EXPLORE_TREE_MIN_WIDTH : NOTE_METADATA_MIN_WIDTH;
+    const max = isTree ? EXPLORE_TREE_MAX_WIDTH : NOTE_METADATA_MAX_WIDTH;
     const containerWidth =
-      this.hostRef.nativeElement.parentElement?.clientWidth || EXPLORE_TREE_MAX_WIDTH * 2;
+      this.hostRef.nativeElement.parentElement?.clientWidth || max * 2;
     const ceiling = Math.min(
-      EXPLORE_TREE_MAX_WIDTH,
-      Math.max(this.minWidth, Math.floor(containerWidth / 2)),
+      max,
+      Math.max(min, Math.floor(containerWidth / 2)),
     );
-    return Math.min(Math.max(Math.round(width), this.minWidth), ceiling);
+    return Math.min(Math.max(Math.round(width), min), ceiling);
   }
 
-  /** Stops the drag from selecting text in the tree or reader. */
+  /** Stops the drag from selecting text in neighboring panes. */
   private lockTextSelection(): void {
     if (typeof document === 'undefined') return;
     this.savedUserSelect = document.body.style.userSelect;

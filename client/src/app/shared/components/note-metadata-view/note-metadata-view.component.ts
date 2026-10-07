@@ -3,7 +3,6 @@ import {
   Component,
   computed,
   input,
-  signal,
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -88,8 +87,6 @@ function formatLabel(key: string): string {
 export class NoteMetadataViewComponent {
   public readonly metadataJson = input<string | null | undefined>(null);
   public readonly summary = input<string | null | undefined>(null);
-
-  protected readonly isCollapsed = signal<boolean>(false);
 
   protected readonly cleanSummary = computed(() => {
     const s = this.summary();
@@ -233,10 +230,6 @@ export class NoteMetadataViewComponent {
   protected readonly hasContent = computed(() => {
     return !!this.cleanSummary() || this.properties().length > 0;
   });
-
-  protected toggleCollapse(): void {
-    this.isCollapsed.update((val) => !val);
-  }
 
   protected getMapUrl(coords: CoordinatesValue): string {
     return `https://www.openstreetmap.org/?mlat=${coords.latitude}&mlon=${coords.longitude}#map=14/${coords.latitude}/${coords.longitude}`;

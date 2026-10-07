@@ -8,26 +8,14 @@
     }
 
     @if (properties().length > 0) {
-      <div class="meta-card" [class.meta-card--collapsed]="isCollapsed()">
-        <button
-          type="button"
-          class="meta-card__header"
-          (click)="toggleCollapse()"
-          [attr.aria-expanded]="!isCollapsed()"
-          aria-label="Toggle metadata visibility"
-        >
-          <div class="meta-card__header-left">
-            <mat-icon class="meta-card__toggle-icon">
-              {{ isCollapsed() ? 'chevron_right' : 'expand_more' }}
-            </mat-icon>
-            <span class="meta-card__title">Metadata</span>
-          </div>
+      <div class="meta-card">
+        <div class="meta-card__header">
+          <span class="meta-card__title">Metadata</span>
           <span class="meta-card__count">{{ properties().length }}</span>
-        </button>
+        </div>
 
-        @if (!isCollapsed()) {
-          <div class="meta-card__content">
-            <dl class="meta-card__grid">
+        <div class="meta-card__content">
+          <dl class="meta-card__grid">
               @for (prop of properties(); track prop.key) {
                 <div class="meta-card__row">
                   <dt class="meta-card__key">{{ prop.label }}</dt>
@@ -100,7 +88,6 @@
               }
             </dl>
           </div>
-        }
       </div>
     }
   </section>
