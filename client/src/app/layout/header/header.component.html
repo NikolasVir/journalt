@@ -80,7 +80,7 @@
       }
 
       @if (authService.currentUser(); as user) {
-        <span class="header-toolbar__username">{{ user.userName || user.email }}</span>
+        <span class="header-toolbar__username">{{ user.userName }}</span>
       }
       <button
         mat-icon-button

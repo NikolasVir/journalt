@@ -67,12 +67,11 @@
   <div class="sidebar__footer">
     <mat-divider class="sidebar__divider" />
     @if (authService.currentUser(); as user) {
-      <div class="sidebar__user" [matTooltip]="(layoutService.isSidebarCollapsed() && !layoutService.isHandset()) ? (user.userName || user.email) : ''" matTooltipPosition="right">
+      <div class="sidebar__user" [matTooltip]="(layoutService.isSidebarCollapsed() && !layoutService.isHandset()) ? user.userName : ''" matTooltipPosition="right">
         <mat-icon class="sidebar__user-icon">account_circle</mat-icon>
         @if (!layoutService.isSidebarCollapsed() || layoutService.isHandset()) {
           <div class="sidebar__user-info">
-            <span class="sidebar__user-name">{{ user.userName || user.email }}</span>
-            <span class="sidebar__user-email">{{ user.email }}</span>
+            <span class="sidebar__user-name">{{ user.userName }}</span>
           </div>
           <button
             mat-icon-button

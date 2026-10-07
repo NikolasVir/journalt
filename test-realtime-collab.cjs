@@ -1,12 +1,12 @@
 const { chromium } = require('playwright');
 
 const BASE_URL = 'http://localhost:5050';
-const USER = { email: 'collab@journalt.dev', password: 'Password123!' };
+const USER = { userName: 'collab', password: 'Password123!' };
 
 async function login(page, user) {
   await page.goto(`${BASE_URL}/auth/login`);
-  await page.waitForSelector('input[formControlName="email"]');
-  await page.fill('input[formControlName="email"]', user.email);
+  await page.waitForSelector('input[formControlName="userName"]');
+  await page.fill('input[formControlName="userName"]', user.userName);
   await page.fill('input[formControlName="password"]', user.password);
   await page.click('button[type="submit"]');
   await page.waitForURL((url) => !url.pathname.includes('/auth/login'), { timeout: 10000 });

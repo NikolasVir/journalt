@@ -1,12 +1,11 @@
 export interface LoginRequest {
-  email: string;
+  userName: string;
   password: string;
   rememberMe?: boolean;
 }
 
 export interface RegisterRequest {
   userName: string;
-  email: string;
   password: string;
   confirmPassword?: string;
 }
@@ -14,6 +13,5 @@ export interface RegisterRequest {
 export interface UserResponse {
   id: string;
   userName: string;
-  email: string;
   registrationEnabled?: boolean;
 }

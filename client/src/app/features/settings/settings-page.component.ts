@@ -55,11 +55,6 @@ import { NotificationService } from '@core/services/notification.service';
                 </div>
 
                 <div class="profile-field">
-                  <span class="profile-field__label">Email</span>
-                  <span class="profile-field__value">{{ user.email }}</span>
-                </div>
-
-                <div class="profile-field">
                   <span class="profile-field__label">User ID</span>
                   <span class="profile-field__value profile-field__value--mono">{{ user.id }}</span>
                 </div>

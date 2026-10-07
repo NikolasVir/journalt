@@ -125,14 +125,6 @@
       text-overflow: ellipsis;
     }
 
-    &-email {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
     &-logout {
       flex-shrink: 0;
       width: 32px;

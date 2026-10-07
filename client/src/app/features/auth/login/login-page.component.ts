@@ -10,7 +10,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 
 interface LoginForm {
-  email: FormControl<string>;
+  userName: FormControl<string>;
   password: FormControl<string>;
   rememberMe: FormControl<boolean>;
 }
@@ -41,7 +41,7 @@ export class LoginPageComponent {
   protected readonly hidePassword = signal<boolean>(true);
 
   protected readonly form = new FormGroup<LoginForm>({
-    email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+    userName: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     rememberMe: new FormControl(false, { nonNullable: true })
   });
@@ -55,9 +55,9 @@ export class LoginPageComponent {
     this.errorMessage.set(null);
     this.isSubmitting.set(true);
 
-    const { email, password, rememberMe } = this.form.getRawValue();
+    const { userName, password, rememberMe } = this.form.getRawValue();
 
-    this.authService.login({ email, password, rememberMe }).subscribe({
+    this.authService.login({ userName, password, rememberMe }).subscribe({
       next: () => {
         this.isSubmitting.set(false);
         void this.router.navigate(['/dashboard']);
@@ -65,7 +65,7 @@ export class LoginPageComponent {
       error: (err: { error?: { detail?: string; title?: string; errors?: Record<string, string[]> } }) => {
         this.isSubmitting.set(false);
         const errObj = err.error;
-        let detail = 'Invalid email or password.';
+        let detail = 'Invalid username or password.';
         if (errObj?.detail) {
           detail = errObj.detail;
         } else if (errObj?.errors) {

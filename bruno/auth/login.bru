@@ -12,14 +12,14 @@ post {
 
 body:json {
   {
-    "email": "admin@journalt.dev",
+    "userName": "admin",
     "password": "password",
     "rememberMe": false
   }
 }
 
 docs {
-  Expects 200 with user (id, userName, email).
+  Expects 200 with user (id, userName).
   Bruno stores the session cookie automatically — Me and Logout will use it.
 
   Wrong credentials return 401 with a generic message (intentional — prevents user enumeration).

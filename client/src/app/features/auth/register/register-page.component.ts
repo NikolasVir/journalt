@@ -10,7 +10,6 @@ import { AuthService } from '@core/services/auth.service';
 
 interface RegisterForm {
   username: FormControl<string>;
-  email: FormControl<string>;
   password: FormControl<string>;
   confirmPassword: FormControl<string>;
 }
@@ -50,7 +49,6 @@ export class RegisterPageComponent {
   protected readonly form = new FormGroup<RegisterForm>(
     {
       username: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
-      email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
       password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] }),
       confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] })
     },
@@ -66,9 +64,9 @@ export class RegisterPageComponent {
     this.errorMessage.set(null);
     this.isSubmitting.set(true);
 
-    const { username, email, password } = this.form.getRawValue();
+    const { username, password } = this.form.getRawValue();
 
-    this.authService.register({ userName: username, email, password }).subscribe({
+    this.authService.register({ userName: username, password }).subscribe({
       next: () => {
         this.isSubmitting.set(false);
         void this.router.navigate(['/dashboard']);

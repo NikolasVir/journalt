@@ -12,14 +12,13 @@ post {
 
 body:json {
   {
-    "email": "admin@journalt.dev",
     "userName": "admin",
     "password": "password"
   }
 }
 
 docs {
-  Expects 200 with user (id, userName, email). Session cookie is set automatically.
+  Expects 200 with user (id, userName). Session cookie is set automatically.
 
   Note: select the "local" environment (top-right in Bruno) or {{baseUrl}} will not resolve.
 }

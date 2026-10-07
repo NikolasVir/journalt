@@ -94,7 +94,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   protected readonly noteId = signal<string | null>(null);
   protected readonly collabUser = computed(() => {
     const user = this.authService.currentUser();
-    const name = user?.email?.split('@')[0] ?? 'User';
+    const name = user?.userName || 'User';
     let hash = 0;
     for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
     const color = `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
