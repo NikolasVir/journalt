@@ -3,6 +3,6 @@ namespace JournalT.Domain.Enums;
 public enum NoteLevel
 {
     Inbox,
-    Quick,
+    Note,
     Journal
 }

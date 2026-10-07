@@ -1,6 +1,7 @@
 namespace JournalT.Infrastructure.Persistence.Configurations;
 
 using JournalT.Domain.Entities;
+using JournalT.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -32,7 +33,9 @@ public class NoteConfiguration : IEntityTypeConfiguration<Note>
 
         builder.Property(n => n.Level)
             .IsRequired()
-            .HasConversion<string>()
+            .HasConversion(
+                v => v.ToString(),
+                v => v == "Quick" ? NoteLevel.Note : Enum.Parse<NoteLevel>(v, true))
             .HasMaxLength(20);
 
         builder.HasOne(n => n.Library)

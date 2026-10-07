@@ -35,10 +35,10 @@ public sealed class NoteService(
             if (request.TypeId.HasValue)
                 return NoteResult.Failure("Inbox notes cannot specify a TypeId.");
         }
-        else if (request.Level == NoteLevel.Quick)
+        else if (request.Level == NoteLevel.Note)
         {
             if (request.TypeId.HasValue)
-                return NoteResult.Failure("Quick notes cannot specify a TypeId.");
+                return NoteResult.Failure("Notes cannot specify a TypeId.");
         }
         else if (request.Level == NoteLevel.Journal)
         {
@@ -107,7 +107,7 @@ public sealed class NoteService(
                 note.Tags.Add(new NoteTag
                 {
                     NoteId = note.Id,
-                    TagType = request.Level == NoteLevel.Quick ? TagType.FreeForm : tag.TagType,
+                    TagType = request.Level == NoteLevel.Note ? TagType.FreeForm : tag.TagType,
                     Category = string.IsNullOrWhiteSpace(tag.Category) ? null : tag.Category.Trim().ToLowerInvariant(),
                     Value = tag.Value,
                 });
@@ -257,7 +257,7 @@ public sealed class NoteService(
 
     /// <summary>
     /// Returns a lightweight projection of every wiki-eligible note so the Explore tree can render
-    /// counts without loading note bodies. Journal notes are always members; a Quick note is a
+    /// counts without loading note bodies. Journal notes are always members; a Note is a
     /// member only once filed into a library or referenced by a relation from another note, so
     /// unfiled scratch notes never dilute the tree. Inbox is excluded entirely.
     /// </summary>
@@ -375,7 +375,7 @@ public sealed class NoteService(
                 _db.NoteTags.Add(new NoteTag
                 {
                     NoteId = note.Id,
-                    TagType = note.Level == NoteLevel.Quick ? TagType.FreeForm : tag.TagType,
+                    TagType = note.Level == NoteLevel.Note ? TagType.FreeForm : tag.TagType,
                     Category = string.IsNullOrWhiteSpace(tag.Category) ? null : tag.Category.Trim().ToLowerInvariant(),
                     Value = tag.Value,
                 });
@@ -501,7 +501,7 @@ public sealed class NoteService(
                 _db.NoteTags.Add(new NoteTag
                 {
                     NoteId = note.Id,
-                    TagType = request.TargetLevel == NoteLevel.Quick ? TagType.FreeForm : tag.TagType,
+                    TagType = request.TargetLevel == NoteLevel.Note ? TagType.FreeForm : tag.TagType,
                     Category = string.IsNullOrWhiteSpace(tag.Category) ? null : tag.Category.Trim().ToLowerInvariant(),
                     Value = tag.Value,
                 });
@@ -756,11 +756,11 @@ public sealed class NoteService(
 
         var pendingQuery = _db.Notes
             .AsNoTracking()
-            .Where(n => n.UserId == userId && !n.IsTrashed && n.IsTodo && (n.Level == NoteLevel.Quick || n.Level == NoteLevel.Journal));
+            .Where(n => n.UserId == userId && !n.IsTrashed && n.IsTodo && (n.Level == NoteLevel.Note || n.Level == NoteLevel.Journal));
 
         var completedQuery = _db.Notes
             .AsNoTracking()
-            .Where(n => n.UserId == userId && !n.IsTrashed && !n.IsTodo && n.TodoCompletedAtUtc != null && (n.Level == NoteLevel.Quick || n.Level == NoteLevel.Journal));
+            .Where(n => n.UserId == userId && !n.IsTrashed && !n.IsTodo && n.TodoCompletedAtUtc != null && (n.Level == NoteLevel.Note || n.Level == NoteLevel.Journal));
 
         var pendingCount = await pendingQuery.CountAsync(ct);
         var completedCount = await completedQuery.CountAsync(ct);
@@ -804,8 +804,8 @@ public sealed class NoteService(
         if (normalizedTags.Any(tag => tag.TagType == TagType.FreeForm && tag.Value is null))
             return (null, "Free-form tag values cannot be empty.");
 
-        if (level == NoteLevel.Quick && normalizedTags.Any(t => t.TagType == TagType.Typed))
-            return (null, "Quick notes only support free-form tags.");
+        if (level == NoteLevel.Note && normalizedTags.Any(t => t.TagType == TagType.Typed))
+            return (null, "Notes only support free-form tags.");
 
         if (level == NoteLevel.Journal && normalizedTags.Any(t => t.TagType != TagType.Typed))
             return (null, "Journal notes only support registered typed tags.");

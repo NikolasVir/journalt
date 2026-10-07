@@ -70,6 +70,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<JournalTDbContext>();
     db.Database.Migrate();
+    db.Database.ExecuteSqlRaw("UPDATE Notes SET Level = 'Note' WHERE Level = 'Quick';");
 }
 
 app.UseHttpsRedirection();

@@ -80,7 +80,7 @@ public class NoteServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task PromoteAsync_InboxToQuickToJournal_Succeeds()
+    public async Task PromoteAsync_InboxToNoteToJournal_Succeeds()
     {
         var typeDef = new TypeDefinition
         {
@@ -97,12 +97,12 @@ public class NoteServiceTests : IDisposable
         var note = (await _sut.CreateAsync(new CreateNoteRequest("Initial Capture", NoteLevel.Inbox))).Note!;
         Assert.Equal(NoteLevel.Inbox, note.Level);
 
-        // 2. Promote Inbox -> Quick
-        var toQuick = await _sut.PromoteAsync(note.Id, new PromoteNoteRequest(TargetLevel: NoteLevel.Quick));
-        Assert.True(toQuick.Succeeded);
-        Assert.Equal(NoteLevel.Quick, toQuick.Note!.Level);
+        // 2. Promote Inbox -> Note
+        var toNote = await _sut.PromoteAsync(note.Id, new PromoteNoteRequest(TargetLevel: NoteLevel.Note));
+        Assert.True(toNote.Succeeded);
+        Assert.Equal(NoteLevel.Note, toNote.Note!.Level);
 
-        // 3. Promote Quick -> Journal
+        // 3. Promote Note -> Journal
         var toJournal = await _sut.PromoteAsync(note.Id, new PromoteNoteRequest(
             TargetLevel: NoteLevel.Journal,
             TypeId: typeDef.Id,
@@ -116,8 +116,8 @@ public class NoteServiceTests : IDisposable
     [Fact]
     public async Task SourcesAndRelations_Lifecycle_Succeeds()
     {
-        var note1 = (await _sut.CreateAsync(new CreateNoteRequest("Subject Note", NoteLevel.Quick))).Note!;
-        var note2 = (await _sut.CreateAsync(new CreateNoteRequest("Target Note", NoteLevel.Quick))).Note!;
+        var note1 = (await _sut.CreateAsync(new CreateNoteRequest("Subject Note", NoteLevel.Note))).Note!;
+        var note2 = (await _sut.CreateAsync(new CreateNoteRequest("Target Note", NoteLevel.Note))).Note!;
 
         // Add source
         var source = await _sut.AddSourceAsync(note1.Id, new CreateNoteSourceRequest("Doc Citation", Url: "https://example.com"));
@@ -157,17 +157,17 @@ public class NoteServiceTests : IDisposable
         var inboxWithType = await _sut.CreateAsync(new CreateNoteRequest("Inbox", NoteLevel.Inbox, TypeId: Guid.NewGuid()));
         Assert.False(inboxWithType.Succeeded);
 
-        // 2. Quick note cannot have TypeId
-        var quickWithType = await _sut.CreateAsync(new CreateNoteRequest("Quick", NoteLevel.Quick, TypeId: Guid.NewGuid()));
-        Assert.False(quickWithType.Succeeded);
+        // 2. Note level note cannot have TypeId
+        var noteWithType = await _sut.CreateAsync(new CreateNoteRequest("Note", NoteLevel.Note, TypeId: Guid.NewGuid()));
+        Assert.False(noteWithType.Succeeded);
 
-        // 3. Quick note cannot have Typed tag
-        var quickWithTypedTag = await _sut.CreateAsync(new CreateNoteRequest(
-            "Quick",
-            NoteLevel.Quick,
+        // 3. Note level note cannot have Typed tag
+        var noteWithTypedTag = await _sut.CreateAsync(new CreateNoteRequest(
+            "Note",
+            NoteLevel.Note,
             Tags: [new TagDto(TagType.Typed, "status", "active")]
         ));
-        Assert.False(quickWithTypedTag.Succeeded);
+        Assert.False(noteWithTypedTag.Succeeded);
 
         // 4. Journal note requires TypeId
         var journalNoType = await _sut.CreateAsync(new CreateNoteRequest("Journal", NoteLevel.Journal));
@@ -185,10 +185,10 @@ public class NoteServiceTests : IDisposable
     [Fact]
     public async Task PromoteAsync_DemotionOrTrashedNote_Rejected()
     {
-        // Setup Quick note
-        var note = (await _sut.CreateAsync(new CreateNoteRequest("Quick", NoteLevel.Quick))).Note!;
+        // Setup Note level note
+        var note = (await _sut.CreateAsync(new CreateNoteRequest("Note", NoteLevel.Note))).Note!;
 
-        // Attempt demotion Quick -> Inbox
+        // Attempt demotion Note -> Inbox
         var demoteResult = await _sut.PromoteAsync(note.Id, new PromoteNoteRequest(TargetLevel: NoteLevel.Inbox));
         Assert.False(demoteResult.Succeeded);
         Assert.Contains("Cannot demote", demoteResult.Errors[0]);
@@ -204,15 +204,15 @@ public class NoteServiceTests : IDisposable
     public async Task Relations_CannotAddOnInbox_AndExcludesTrashedTargets()
     {
         var inboxNote = (await _sut.CreateAsync(new CreateNoteRequest("Inbox Note", NoteLevel.Inbox))).Note!;
-        var targetNote = (await _sut.CreateAsync(new CreateNoteRequest("Target Note", NoteLevel.Quick))).Note!;
+        var targetNote = (await _sut.CreateAsync(new CreateNoteRequest("Target Note", NoteLevel.Note))).Note!;
 
         // Inbox notes cannot have outbound relations
         var inboxRel = await _sut.AddRelationAsync(inboxNote.Id, new CreateNoteRelationRequest(targetNote.Id, "about"));
         Assert.False(inboxRel.Succeeded);
         Assert.Contains("Inbox notes cannot define explicit outbound relations", inboxRel.Errors[0]);
 
-        // Add relation from Quick note to Target note
-        var sourceNote = (await _sut.CreateAsync(new CreateNoteRequest("Source Quick", NoteLevel.Quick))).Note!;
+        // Add relation from Note to Target note
+        var sourceNote = (await _sut.CreateAsync(new CreateNoteRequest("Source Note", NoteLevel.Note))).Note!;
         await _sut.AddRelationAsync(sourceNote.Id, new CreateNoteRelationRequest(targetNote.Id, "relates_to"));
 
         var relationsBeforeTrash = await _sut.GetRelationsAsync(sourceNote.Id);
@@ -233,13 +233,13 @@ public class NoteServiceTests : IDisposable
     public async Task WikiLinks_AmbiguousOrMissingTarget_RemainsUnresolvedSpan()
     {
         // Create two notes with the exact same title
-        await _sut.CreateAsync(new CreateNoteRequest("Ambiguous Note", NoteLevel.Quick));
-        await _sut.CreateAsync(new CreateNoteRequest("Ambiguous Note", NoteLevel.Quick));
+        await _sut.CreateAsync(new CreateNoteRequest("Ambiguous Note", NoteLevel.Note));
+        await _sut.CreateAsync(new CreateNoteRequest("Ambiguous Note", NoteLevel.Note));
 
         // Note linking to the ambiguous title
         var referencingNote = (await _sut.CreateAsync(new CreateNoteRequest(
             "Referencing Note",
-            NoteLevel.Quick,
+            NoteLevel.Note,
             BodyMarkdown: "See [[Ambiguous Note]] and [[NonExistent Note]]."
         ))).Note!;
 
@@ -381,8 +381,8 @@ public class NoteServiceTests : IDisposable
     public async Task Search_MatchesBodyMarkdownAndTag_FiltersCorrectly()
     {
         // 1. Note matching keyword in body markdown
-        await _sut.CreateAsync(new CreateNoteRequest("Common Title", NoteLevel.Quick, BodyMarkdown: "Deep architectural insights about indexing"));
-        await _sut.CreateAsync(new CreateNoteRequest("Unrelated", NoteLevel.Quick, BodyMarkdown: "Just notes"));
+        await _sut.CreateAsync(new CreateNoteRequest("Common Title", NoteLevel.Note, BodyMarkdown: "Deep architectural insights about indexing"));
+        await _sut.CreateAsync(new CreateNoteRequest("Unrelated", NoteLevel.Note, BodyMarkdown: "Just notes"));
 
         var bodySearch = await _sut.ListAsync(new NoteFilterParams(Search: "architectural"));
         Assert.Single(bodySearch.Items);
@@ -391,7 +391,7 @@ public class NoteServiceTests : IDisposable
         // 2. Tag filter matching
         await _sut.CreateAsync(new CreateNoteRequest(
             "Tagged Note",
-            NoteLevel.Quick,
+            NoteLevel.Note,
             Tags: [new TagDto(TagType.FreeForm, null, "performance")]
         ));
 
@@ -403,7 +403,7 @@ public class NoteServiceTests : IDisposable
     [Fact]
     public async Task TodoHub_ToggleAndSummary_TracksPendingAndCompleted()
     {
-        var note = (await _sut.CreateAsync(new CreateNoteRequest("Fix memory leak", NoteLevel.Quick, IsTodo: true))).Note!;
+        var note = (await _sut.CreateAsync(new CreateNoteRequest("Fix memory leak", NoteLevel.Note, IsTodo: true))).Note!;
         Assert.True(note.IsTodo);
         Assert.Null(note.TodoCompletedAtUtc);
 
