@@ -1,8 +1,11 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, HostListener, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -28,7 +31,6 @@ interface NoteForm {
   typeId: FormControl<string | null>;
   libraryId: FormControl<string | null>;
   isTodo: FormControl<boolean>;
-  tagsInput: FormControl<string>;
   typedTags: FormControl<TagDto[]>;
 }
 
@@ -67,6 +69,8 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
+    MatChipsModule,
+    MatAutocompleteModule,
     TypedTagSelectorComponent,
     NoteContentEditorComponent,
     NoteMetadataViewComponent,
@@ -110,6 +114,20 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
    */
   protected readonly returnUrl = signal<string | null>(null);
 
+  protected readonly separatorKeysCodes = [ENTER, COMMA] as const;
+  protected readonly quickTags = signal<string[]>([]);
+  protected readonly tagInputQuery = signal<string>('');
+  protected readonly tagSuggestions = signal<string[]>([]);
+  protected readonly tagInput = viewChild<ElementRef<HTMLInputElement>>('tagInput');
+
+  protected readonly filteredTagSuggestions = computed(() => {
+    const query = this.tagInputQuery().toLowerCase().trim();
+    const current = new Set(this.quickTags().map((t) => t.toLowerCase()));
+    return this.tagSuggestions()
+      .filter((tag) => !current.has(tag.toLowerCase()))
+      .filter((tag) => !query || tag.toLowerCase().includes(query));
+  });
+
   protected readonly form = new FormGroup<NoteForm>({
     title: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     bodyMarkdown: new FormControl('', { nonNullable: true }),
@@ -117,7 +135,6 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
     typeId: new FormControl<string | null>(null),
     libraryId: new FormControl<string | null>(null),
     isTodo: new FormControl(false, { nonNullable: true }),
-    tagsInput: new FormControl('', { nonNullable: true }),
     typedTags: new FormControl<TagDto[]>([], { nonNullable: true }),
   });
 
@@ -141,6 +158,11 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
       error: () => this.libraries.set([])
     });
 
+    this.noteService.getTags().subscribe({
+      next: (tags) => this.tagSuggestions.set(tags),
+      error: () => this.tagSuggestions.set([]),
+    });
+
     this.typeService.list(false).subscribe({
       next: (types) => {
         this.typeDefinitions.set(types);
@@ -156,8 +178,8 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
 
     this.form.controls.level.valueChanges.subscribe((lvl) => {
       if (lvl === 'Journal') {
-        if (this.form.controls.tagsInput.value.trim()) {
-          this.form.controls.tagsInput.setValue('', { emitEvent: false });
+        if (this.quickTags().length > 0) {
+          this.quickTags.set([]);
           this.errorMessage.set(
             'Draft free-form tags were removed. Select registered Journal tags instead.',
           );
@@ -237,12 +259,16 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
           typeId: note.typeId ?? null,
           libraryId: note.libraryId ?? null,
           isTodo: note.isTodo,
-          tagsInput:
-            note.level === 'Quick' && !isPromotingToJournal
-              ? tags.map(formatTag).filter(Boolean).join(', ')
-              : '',
           typedTags,
         });
+
+        if (note.level === 'Quick' && !isPromotingToJournal) {
+          this.quickTags.set(
+            tags.map((t) => (t.value ?? '').trim().replace(/^#/, '')).filter(Boolean),
+          );
+        } else {
+          this.quickTags.set([]);
+        }
 
         this.typeValidationWarnings.set(note.typeValidationWarnings ?? []);
 
@@ -265,6 +291,33 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
     });
   }
 
+  protected addQuickTag(event: MatChipInputEvent): void {
+    const value = (event.value || '').replace(/^#/, '').trim();
+    if (value && !this.quickTags().some((t) => t.toLowerCase() === value.toLowerCase())) {
+      this.quickTags.update((tags) => [...tags, value]);
+    }
+    event.chipInput?.clear();
+    this.tagInputQuery.set('');
+  }
+
+  protected removeQuickTag(tagToRemove: string): void {
+    this.quickTags.update((tags) => tags.filter((t) => t !== tagToRemove));
+  }
+
+  protected selectedQuickTag(event: MatAutocompleteSelectedEvent): void {
+    const rawVal = (event.option.value ?? event.option.viewValue ?? '') as string;
+    const tag = rawVal.replace(/^#/, '').trim();
+    if (tag && !this.quickTags().some((t) => t.toLowerCase() === tag.toLowerCase())) {
+      this.quickTags.update((tags) => [...tags, tag]);
+    }
+    const inputEl = this.tagInput()?.nativeElement;
+    if (inputEl) {
+      inputEl.value = '';
+    }
+    this.tagInputQuery.set('');
+    event.option.deselect();
+  }
+
   public onSubmit(): void {
     if (this.form.invalid || this.isSaving()) return;
     if (this.legacyTags().length > 0) {
@@ -277,12 +330,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
 
     const val = this.form.getRawValue();
     const isJournal = val.level === 'Journal';
-    const tags: (TagDto | string)[] = isJournal
-      ? val.typedTags
-      : val.tagsInput
-          .split(',')
-          .map((tag) => tag.trim())
-          .filter(Boolean);
+    const tags: (TagDto | string)[] = isJournal ? val.typedTags : this.quickTags();
     const typeId = isJournal ? val.typeId || undefined : undefined;
     const id = this.noteId();
     const selectedTypeDef =

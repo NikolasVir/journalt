@@ -34,4 +34,7 @@ public interface INoteService
 
     // Markdown Preview
     Task<string> RenderPreviewAsync(string markdown, CancellationToken ct = default);
+
+    // Tags
+    Task<IReadOnlyList<string>> GetDistinctTagsAsync(CancellationToken ct = default);
 }

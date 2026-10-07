@@ -179,6 +179,16 @@
     }
   }
 
+  &__tag-chip {
+    font-size: var(--font-size-xs);
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
   &__checkbox {
     display: flex;
     align-items: center;

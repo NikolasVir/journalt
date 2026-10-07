@@ -110,11 +110,30 @@
         @if (form.controls.level.value === 'Quick') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="note-form__field">
             <mat-label>Tags</mat-label>
-            <input
-              matInput
-              formControlName="tagsInput"
-              placeholder="e.g. dev, ideas"
-            />
+            <mat-chip-grid #chipGrid aria-label="Note tags">
+              @for (tag of quickTags(); track tag) {
+                <mat-chip-row (removed)="removeQuickTag(tag)" class="note-form__tag-chip">
+                  #{{ tag }}
+                  <button matChipRemove aria-label="Remove tag">
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                </mat-chip-row>
+              }
+              <input
+                #tagInput
+                placeholder="New tag..."
+                [matChipInputFor]="chipGrid"
+                [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                (matChipInputTokenEnd)="addQuickTag($event)"
+                [matAutocomplete]="autoTags"
+                (input)="tagInputQuery.set(tagInput.value)"
+              />
+            </mat-chip-grid>
+            <mat-autocomplete #autoTags="matAutocomplete" (optionSelected)="selectedQuickTag($event)">
+              @for (suggestion of filteredTagSuggestions(); track suggestion) {
+                <mat-option [value]="suggestion">#{{ suggestion }}</mat-option>
+              }
+            </mat-autocomplete>
           </mat-form-field>
         }
       </div>

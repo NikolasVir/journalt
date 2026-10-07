@@ -964,4 +964,15 @@ public sealed class NoteService(
             UnresolvedWikiLinks: warnings ?? [],
             TypeValidationWarnings: typeValidationWarnings
         );
+
+    public async Task<IReadOnlyList<string>> GetDistinctTagsAsync(CancellationToken ct = default)
+    {
+        return await _db.NoteTags
+            .AsNoTracking()
+            .Where(t => !string.IsNullOrWhiteSpace(t.Value))
+            .Select(t => t.Value!)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToListAsync(ct);
+    }
 }

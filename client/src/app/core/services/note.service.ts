@@ -162,4 +162,8 @@ export class NoteService {
   public renderPreview(markdown: string): Observable<{ renderedHtml: string }> {
     return this.http.post<{ renderedHtml: string }>(`${this.baseUrl}/render`, { markdown });
   }
+
+  public getTags(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/tags`);
+  }
 }

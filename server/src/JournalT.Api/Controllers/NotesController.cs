@@ -43,6 +43,13 @@ public class NotesController(INoteService noteService) : ControllerBase
         return Ok(index);
     }
 
+    [HttpGet("tags")]
+    public async Task<IActionResult> GetTags(CancellationToken ct)
+    {
+        var tags = await _noteService.GetDistinctTagsAsync(ct);
+        return Ok(tags);
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateNoteRequest request, CancellationToken ct)
     {
