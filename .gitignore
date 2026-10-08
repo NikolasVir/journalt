@@ -13,3 +13,10 @@ node_modules/
 dist/
 .angular/
 server/src/JournalT.Api/wwwroot/
+
+# Secrets & Environment variables
+*.env
+.env*
+!.env.example
+appsettings.Production.json
+appsettings.*.local.json
