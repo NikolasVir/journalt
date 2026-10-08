@@ -104,6 +104,18 @@ import { AvatarComponent } from '@shared/components/avatar/avatar.component';
               </div>
             }
           </mat-card-content>
+
+          <mat-card-actions class="settings-card__actions">
+            <button
+              mat-stroked-button
+              color="warn"
+              type="button"
+              (click)="onLogout()"
+            >
+              <mat-icon>logout</mat-icon>
+              <span>Sign Out</span>
+            </button>
+          </mat-card-actions>
         </mat-card>
       </section>
 
