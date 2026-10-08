@@ -244,9 +244,11 @@ import { NotificationService } from '@core/services/notification.service';
 
       &__avatar-icon {
         color: var(--color-primary);
-        font-size: 32px;
-        width: 32px;
-        height: 32px;
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+        margin-right: var(--spacing-md);
+        flex-shrink: 0;
       }
 
       &__header-right {

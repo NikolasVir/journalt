@@ -17,11 +17,11 @@
         <input
           matInput
           type="text"
-          formControlName="userName"
+          formControlName="username"
           autocomplete="username"
           placeholder="Enter your username"
         />
-        @if (form.controls.userName.invalid && form.controls.userName.touched) {
+        @if (form.controls.username.invalid && form.controls.username.touched) {
           <mat-error>Username is required.</mat-error>
         }
       </mat-form-field>
