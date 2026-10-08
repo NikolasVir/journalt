@@ -35,5 +35,9 @@ public sealed record NoteResponse(
     /// <summary>Wiki-links that could not be resolved (not_found or ambiguous). Does not prevent saving.</summary>
     IReadOnlyList<WikiLinkWarning>? UnresolvedWikiLinks = null,
     /// <summary>Validation warnings when note content/metadata is incompatible with its current Type definition.</summary>
-    IReadOnlyList<string>? TypeValidationWarnings = null
+    IReadOnlyList<string>? TypeValidationWarnings = null,
+    bool IsOwner = true,
+    bool IsShared = false,
+    string? OwnerUserName = null,
+    IReadOnlyList<NoteShareUserDto>? Shares = null
 );

@@ -4,6 +4,7 @@ using JournalT.Application.Common.Interfaces;
 using JournalT.Application.Notes.DTOs;
 using JournalT.Domain.Entities;
 using JournalT.Domain.Enums;
+using JournalT.Infrastructure.Identity;
 using JournalT.Infrastructure.Markdown;
 using JournalT.Infrastructure.Notes;
 using JournalT.Infrastructure.Persistence;
@@ -30,6 +31,10 @@ public class NoteServiceTests : IDisposable
 
         _db = new JournalTDbContext(options);
         _db.Database.EnsureCreated();
+
+        _db.Users.Add(new AppUser { Id = _userId, UserName = "owneruser", NormalizedUserName = "OWNERUSER" });
+        _db.Users.Add(new AppUser { Id = _otherUserId, UserName = "otheruser", NormalizedUserName = "OTHERUSER" });
+        _db.SaveChanges();
 
         var currentUser = new TestCurrentUser(_userId);
         var markdownService = new MarkdownService();
@@ -516,6 +521,136 @@ public class NoteServiceTests : IDisposable
         var promoteRes = await _sut.PromoteAsync(created.Id, new PromoteNoteRequest(NoteLevel.Journal, Guid.NewGuid()));
         Assert.False(promoteRes.Succeeded);
         Assert.Contains("List notes cannot be promoted to Journal", promoteRes.Errors.First());
+    }
+
+    // --- Note Sharing Tests ---
+
+    [Fact]
+    public async Task ShareNoteAsync_ByOwner_WithValidUser_SucceedsAndAllowsCollaboratorAccess()
+    {
+        var created = (await _sut.CreateAsync(new CreateNoteRequest("Owner Note", NoteLevel.Note, BodyMarkdown: "Hello world"))).Note!;
+
+        // Share with otheruser by username
+        var shareResult = await _sut.ShareNoteAsync(created.Id, new ShareNoteRequest(UserName: "otheruser"));
+        Assert.True(shareResult.Succeeded);
+        Assert.NotNull(shareResult.Shares);
+        Assert.Single(shareResult.Shares.Shares);
+        Assert.Equal("otheruser", shareResult.Shares.Shares[0].UserName);
+        Assert.Equal(_otherUserId, shareResult.Shares.Shares[0].UserId);
+
+        // Check shares list
+        var shares = await _sut.GetSharesAsync(created.Id);
+        Assert.NotNull(shares);
+        Assert.True(shares.IsOwner);
+        Assert.Single(shares.Shares);
+
+        // Other user perspective
+        var otherSut = new NoteService(_db, new TestCurrentUser(_otherUserId), new MarkdownService(), new TypeValidationService());
+        var fetchedByOther = await otherSut.GetByIdAsync(created.Id);
+        Assert.NotNull(fetchedByOther);
+        Assert.False(fetchedByOther.IsOwner);
+        Assert.True(fetchedByOther.IsShared);
+        Assert.Equal("owneruser", fetchedByOther.OwnerUserName);
+
+        // Other user can list the shared note
+        var otherList = await otherSut.ListAsync(new NoteFilterParams());
+        Assert.Contains(otherList.Items, n => n.Id == created.Id);
+        var summary = otherList.Items.First(n => n.Id == created.Id);
+        Assert.False(summary.IsOwner);
+        Assert.True(summary.IsShared);
+        Assert.Equal("owneruser", summary.OwnerUserName);
+
+        // Other user can edit the shared note
+        var updateResult = await otherSut.UpdateAsync(created.Id, new UpdateNoteRequest("Collaboratively Edited Title"));
+        Assert.True(updateResult.Succeeded);
+        Assert.Equal("Collaboratively Edited Title", updateResult.Note!.Title);
+    }
+
+    [Fact]
+    public async Task ShareNoteAsync_ByNonOwner_ReturnsForbidden()
+    {
+        var created = (await _sut.CreateAsync(new CreateNoteRequest("Private Note", NoteLevel.Note))).Note!;
+
+        var thirdUserId = Guid.NewGuid();
+        _db.Users.Add(new AppUser { Id = thirdUserId, UserName = "thirduser", NormalizedUserName = "THIRDUSER" });
+        await _db.SaveChangesAsync();
+
+        var otherSut = new NoteService(_db, new TestCurrentUser(_otherUserId), new MarkdownService(), new TypeValidationService());
+        var res = await otherSut.ShareNoteAsync(created.Id, new ShareNoteRequest(UserName: "thirduser"));
+
+        Assert.False(res.Succeeded);
+        Assert.Equal(403, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task ShareNoteAsync_WithSelf_Fails()
+    {
+        var created = (await _sut.CreateAsync(new CreateNoteRequest("Self Note", NoteLevel.Note))).Note!;
+        var res = await _sut.ShareNoteAsync(created.Id, new ShareNoteRequest(UserName: "owneruser"));
+
+        Assert.False(res.Succeeded);
+        Assert.Contains("cannot share a note with yourself", res.Errors.First(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ShareNoteAsync_DuplicateShare_Fails()
+    {
+        var created = (await _sut.CreateAsync(new CreateNoteRequest("Dup Note", NoteLevel.Note))).Note!;
+        var first = await _sut.ShareNoteAsync(created.Id, new ShareNoteRequest(UserId: _otherUserId));
+        Assert.True(first.Succeeded);
+
+        var second = await _sut.ShareNoteAsync(created.Id, new ShareNoteRequest(UserId: _otherUserId));
+        Assert.False(second.Succeeded);
+        Assert.Contains("already shared", second.Errors.First(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RemoveShareAsync_ByOwner_RemovesAccess()
+    {
+        var created = (await _sut.CreateAsync(new CreateNoteRequest("Shared Note", NoteLevel.Note))).Note!;
+        await _sut.ShareNoteAsync(created.Id, new ShareNoteRequest(UserId: _otherUserId));
+
+        var otherSut = new NoteService(_db, new TestCurrentUser(_otherUserId), new MarkdownService(), new TypeValidationService());
+        Assert.NotNull(await otherSut.GetByIdAsync(created.Id));
+
+        // Owner removes share
+        var removeResult = await _sut.RemoveShareAsync(created.Id, _otherUserId);
+        Assert.True(removeResult.Succeeded);
+
+        // Other user can no longer access note
+        Assert.Null(await otherSut.GetByIdAsync(created.Id));
+        var otherList = await otherSut.ListAsync(new NoteFilterParams());
+        Assert.DoesNotContain(otherList.Items, n => n.Id == created.Id);
+    }
+
+    [Fact]
+    public async Task RemoveShareAsync_ByCollaborator_AllowsLeavingNote()
+    {
+        var created = (await _sut.CreateAsync(new CreateNoteRequest("Shared Note To Leave", NoteLevel.Note))).Note!;
+        await _sut.ShareNoteAsync(created.Id, new ShareNoteRequest(UserId: _otherUserId));
+
+        var otherSut = new NoteService(_db, new TestCurrentUser(_otherUserId), new MarkdownService(), new TypeValidationService());
+
+        // Other user removes their own share
+        var leaveResult = await otherSut.RemoveShareAsync(created.Id, _otherUserId);
+        Assert.True(leaveResult.Succeeded);
+
+        Assert.Null(await otherSut.GetByIdAsync(created.Id));
+    }
+
+    [Fact]
+    public async Task HackySharedTag_NoLongerBypassesAccessControl()
+    {
+        // Create note with tag "shared"
+        var created = (await _sut.CreateAsync(new CreateNoteRequest("Hacky Note", NoteLevel.Note, Tags: [new TagDto(TagType.FreeForm, null, "shared")]))).Note!;
+
+        // Other user should NOT be able to view it because it was not explicitly shared via NoteShare
+        var otherSut = new NoteService(_db, new TestCurrentUser(_otherUserId), new MarkdownService(), new TypeValidationService());
+        var fetched = await otherSut.GetByIdAsync(created.Id);
+        Assert.Null(fetched);
+
+        var otherList = await otherSut.ListAsync(new NoteFilterParams());
+        Assert.DoesNotContain(otherList.Items, n => n.Id == created.Id);
     }
 
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser

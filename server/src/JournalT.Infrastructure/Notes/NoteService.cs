@@ -8,15 +8,16 @@ using JournalT.Application.Notes.DTOs;
 using JournalT.Application.Types;
 using JournalT.Domain.Entities;
 using JournalT.Domain.Enums;
+using JournalT.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 public sealed class NoteService(
-    IJournalTDbContext db,
+    JournalTDbContext db,
     ICurrentUser currentUser,
     IMarkdownService markdownService,
     ITypeValidationService typeValidationService) : INoteService
 {
-    private readonly IJournalTDbContext _db = db;
+    private readonly JournalTDbContext _db = db;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IMarkdownService _markdownService = markdownService;
     private readonly ITypeValidationService _typeValidationService = typeValidationService;
@@ -133,11 +134,12 @@ public sealed class NoteService(
             .AsNoTracking()
             .Include(n => n.Tags)
             .Include(n => n.Sources)
+            .Include(n => n.Shares)
             .Include(n => n.OutboundRelations.Where(r => !r.TargetNote.IsTrashed))
                 .ThenInclude(r => r.TargetNote)
             .Include(n => n.InboundRelations.Where(r => !r.SourceNote.IsTrashed))
                 .ThenInclude(r => r.SourceNote)
-            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Tags.Any(t => t.Value != null && t.Value.ToLower() == "shared")), ct);
+            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Shares.Any(s => s.UserId == userId)), ct);
 
         if (note is null) return null;
 
@@ -182,15 +184,44 @@ public sealed class NoteService(
             }
         }
 
-        return MapToResponse(note, wikiLinks, wikiWarnings, freshHtml, typeWarnings);
+        var isOwner = note.UserId == userId;
+        var isShared = note.Shares.Any();
+        string? ownerUserName = null;
+        if (!isOwner)
+        {
+            ownerUserName = await _db.Users
+                .Where(u => u.Id == note.UserId)
+                .Select(u => u.UserName)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        List<NoteShareUserDto>? sharesList = null;
+        if (note.Shares.Any())
+        {
+            var shareUserIds = note.Shares.Select(s => s.UserId).ToList();
+            var usersMap = await _db.Users
+                .Where(u => shareUserIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.UserName ?? string.Empty, ct);
+
+            sharesList = note.Shares
+                .Select(s => new NoteShareUserDto(
+                    s.UserId,
+                    usersMap.TryGetValue(s.UserId, out var name) ? name : string.Empty,
+                    s.CreatedAtUtc))
+                .OrderBy(s => s.UserName)
+                .ToList();
+        }
+
+        return MapToResponse(note, wikiLinks, wikiWarnings, freshHtml, typeWarnings, isOwner, isShared, ownerUserName, sharesList);
     }
 
 
     public async Task<PagedResult<NoteSummaryResponse>> ListAsync(NoteFilterParams filter, CancellationToken ct = default)
     {
+        var currentUserId = _currentUser.UserId;
         var query = _db.Notes
             .AsNoTracking()
-            .Where(n => n.UserId == _currentUser.UserId || n.Tags.Any(t => t.Value != null && t.Value.ToLower() == "shared"));
+            .Where(n => n.UserId == currentUserId || n.Shares.Any(s => s.UserId == currentUserId));
 
         if (filter.IsTrashed.HasValue)
             query = query.Where(n => n.IsTrashed == filter.IsTrashed.Value);
@@ -253,9 +284,27 @@ public sealed class NoteService(
                 n.UpdatedAtUtc,
                 n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(),
                 n.TypedMetadataJson,
-                n.Format
+                n.Format,
+                n.UserId,
+                n.UserId == currentUserId,
+                n.Shares.Any(),
+                null
             ))
             .ToListAsync(ct);
+
+        var sharedOwnerIds = items.Where(i => !i.IsOwner).Select(i => i.UserId).Distinct().ToList();
+        if (sharedOwnerIds.Count > 0)
+        {
+            var ownerNames = await _db.Users
+                .AsNoTracking()
+                .Where(u => sharedOwnerIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.UserName ?? string.Empty, ct);
+
+            items = items.Select(i => i.IsOwner ? i : i with
+            {
+                OwnerUserName = ownerNames.TryGetValue(i.UserId, out var uname) ? uname : null
+            }).ToList();
+        }
 
         return new PagedResult<NoteSummaryResponse>(items, totalCount, page, pageSize);
     }
@@ -273,7 +322,7 @@ public sealed class NoteService(
 
         return await _db.Notes
             .AsNoTracking()
-            .Where(n => n.UserId == userId
+            .Where(n => (n.UserId == userId || n.Shares.Any(s => s.UserId == userId))
                      && !n.IsTrashed
                      && (n.Level == NoteLevel.Journal
                          || n.LibraryId != null
@@ -296,9 +345,10 @@ public sealed class NoteService(
         var note = await _db.Notes
             .Include(n => n.Tags)
             .Include(n => n.Sources)
+            .Include(n => n.Shares)
             .Include(n => n.OutboundRelations)
                 .ThenInclude(r => r.TargetNote)
-            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Tags.Any(t => t.Value != null && t.Value.ToLower() == "shared")), ct);
+            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Shares.Any(s => s.UserId == userId)), ct);
 
         if (note is null)
             return NoteResult.NotFound();
@@ -366,15 +416,10 @@ public sealed class NoteService(
 
         if (request.Tags != null)
         {
-            var isSharedNote = note.Tags.Any(t => string.Equals(t.Value, "shared", StringComparison.OrdinalIgnoreCase));
             var existingTags = await _db.NoteTags.Where(t => t.NoteId == note.Id).ToListAsync(ct);
             _db.NoteTags.RemoveRange(existingTags);
 
-            var tagsToApply = (normalizedTags ?? []).ToList();
-            if (isSharedNote && !tagsToApply.Any(t => string.Equals(t.Value, "shared", StringComparison.OrdinalIgnoreCase)))
-            {
-                tagsToApply.Add(new TagDto(TagType.FreeForm, null, "shared"));
-            }
+            var tagsToApply = normalizedTags ?? [];
 
             foreach (var tag in tagsToApply)
             {
@@ -390,7 +435,18 @@ public sealed class NoteService(
 
         await _db.SaveChangesAsync(ct);
 
-        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings, renderedHtml));
+        var isOwner = note.UserId == userId;
+        var isShared = note.Shares.Any();
+        string? ownerUserName = null;
+        if (!isOwner)
+        {
+            ownerUserName = await _db.Users
+                .Where(u => u.Id == note.UserId)
+                .Select(u => u.UserName)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings, renderedHtml, null, isOwner, isShared, ownerUserName));
     }
 
 
@@ -738,9 +794,10 @@ public sealed class NoteService(
         var note = await _db.Notes
             .Include(n => n.Tags)
             .Include(n => n.Sources)
+            .Include(n => n.Shares)
             .Include(n => n.OutboundRelations)
                 .ThenInclude(r => r.TargetNote)
-            .FirstOrDefaultAsync(n => n.Id == id && n.UserId == _currentUser.UserId && !n.IsTrashed, ct);
+            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == _currentUser.UserId || n.Shares.Any(s => s.UserId == _currentUser.UserId)) && !n.IsTrashed, ct);
 
         if (note is null) return null;
 
@@ -757,7 +814,19 @@ public sealed class NoteService(
 
         await _db.SaveChangesAsync(ct);
         var (freshTodoHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(_currentUser.UserId, note.BodyMarkdown, ct);
-        return MapToResponse(note, wikiLinks, wikiWarnings, freshTodoHtml);
+
+        var isOwner = note.UserId == _currentUser.UserId;
+        var isShared = note.Shares.Any();
+        string? ownerUserName = null;
+        if (!isOwner)
+        {
+            ownerUserName = await _db.Users
+                .Where(u => u.Id == note.UserId)
+                .Select(u => u.UserName)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        return MapToResponse(note, wikiLinks, wikiWarnings, freshTodoHtml, null, isOwner, isShared, ownerUserName);
     }
 
 
@@ -767,11 +836,11 @@ public sealed class NoteService(
 
         var pendingQuery = _db.Notes
             .AsNoTracking()
-            .Where(n => n.UserId == userId && !n.IsTrashed && n.IsTodo && (n.Level == NoteLevel.Note || n.Level == NoteLevel.Journal));
+            .Where(n => (n.UserId == userId || n.Shares.Any(s => s.UserId == userId)) && !n.IsTrashed && n.IsTodo && (n.Level == NoteLevel.Note || n.Level == NoteLevel.Journal));
 
         var completedQuery = _db.Notes
             .AsNoTracking()
-            .Where(n => n.UserId == userId && !n.IsTrashed && !n.IsTodo && n.TodoCompletedAtUtc != null && (n.Level == NoteLevel.Note || n.Level == NoteLevel.Journal));
+            .Where(n => (n.UserId == userId || n.Shares.Any(s => s.UserId == userId)) && !n.IsTrashed && !n.IsTodo && n.TodoCompletedAtUtc != null && (n.Level == NoteLevel.Note || n.Level == NoteLevel.Journal));
 
         var pendingCount = await pendingQuery.CountAsync(ct);
         var completedCount = await completedQuery.CountAsync(ct);
@@ -781,7 +850,7 @@ public sealed class NoteService(
             .Take(50)
             .Select(n => new NoteSummaryResponse(
                 n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
-                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format))
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format, n.UserId, n.UserId == userId, n.Shares.Any(), null))
             .ToListAsync(ct);
 
         var completedNotes = await completedQuery
@@ -789,7 +858,7 @@ public sealed class NoteService(
             .Take(20)
             .Select(n => new NoteSummaryResponse(
                 n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
-                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format))
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format, n.UserId, n.UserId == userId, n.Shares.Any(), null))
             .ToListAsync(ct);
 
         return new TodoSummaryResponse(pendingCount, completedCount, pendingNotes, completedNotes);
@@ -945,7 +1014,11 @@ public sealed class NoteService(
         IReadOnlyList<string> wikiLinks,
         IReadOnlyList<WikiLinkWarning>? warnings = null,
         string? renderedHtml = null,
-        IReadOnlyList<string>? typeValidationWarnings = null) =>
+        IReadOnlyList<string>? typeValidationWarnings = null,
+        bool isOwner = true,
+        bool isShared = false,
+        string? ownerUserName = null,
+        IReadOnlyList<NoteShareUserDto>? shares = null) =>
         new(
             note.Id,
             note.UserId,
@@ -974,7 +1047,11 @@ public sealed class NoteService(
             Backlinks: note.InboundRelations.Select(r => new NoteBacklinkResponse(
                 r.Id, r.SourceNoteId, r.SourceNote?.Title ?? string.Empty, r.Role, r.Context)).ToList(),
             UnresolvedWikiLinks: warnings ?? [],
-            TypeValidationWarnings: typeValidationWarnings
+            TypeValidationWarnings: typeValidationWarnings,
+            IsOwner: isOwner,
+            IsShared: isShared,
+            OwnerUserName: ownerUserName,
+            Shares: shares
         );
 
     public async Task<IReadOnlyList<string>> GetDistinctTagsAsync(CancellationToken ct = default)
@@ -986,5 +1063,115 @@ public sealed class NoteService(
             .Distinct()
             .OrderBy(t => t)
             .ToListAsync(ct);
+    }
+
+    // Note Sharing
+    public async Task<NoteSharesResponse?> GetSharesAsync(Guid noteId, CancellationToken ct = default)
+    {
+        var currentUserId = _currentUser.UserId;
+        var note = await _db.Notes
+            .AsNoTracking()
+            .Include(n => n.Shares)
+            .FirstOrDefaultAsync(n => n.Id == noteId && (n.UserId == currentUserId || n.Shares.Any(s => s.UserId == currentUserId)), ct);
+
+        if (note is null)
+            return null;
+
+        var owner = await _db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == note.UserId, ct);
+
+        var ownerName = owner?.UserName ?? "Unknown";
+        var isOwner = note.UserId == currentUserId;
+
+        var shareUserIds = note.Shares.Select(s => s.UserId).ToList();
+        var sharedUsers = await _db.Users
+            .AsNoTracking()
+            .Where(u => shareUserIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.UserName ?? "Unknown", ct);
+
+        var sharesList = note.Shares
+            .Select(s => new NoteShareUserDto(
+                s.UserId,
+                sharedUsers.TryGetValue(s.UserId, out var name) ? name : "Unknown",
+                s.CreatedAtUtc))
+            .OrderBy(s => s.UserName)
+            .ToList();
+
+        return new NoteSharesResponse(note.Id, note.UserId, ownerName, isOwner, sharesList);
+    }
+
+    public async Task<ShareNoteResult> ShareNoteAsync(Guid noteId, ShareNoteRequest request, CancellationToken ct = default)
+    {
+        var currentUserId = _currentUser.UserId;
+
+        var note = await _db.Notes
+            .Include(n => n.Shares)
+            .FirstOrDefaultAsync(n => n.Id == noteId, ct);
+
+        if (note is null)
+            return ShareNoteResult.NotFound("Note not found.");
+
+        if (note.UserId != currentUserId)
+            return ShareNoteResult.Forbidden("Only the note owner can share this note.");
+
+        if (note.IsTrashed)
+            return ShareNoteResult.Failure("Cannot share a trashed note.");
+
+        if (!request.UserId.HasValue && string.IsNullOrWhiteSpace(request.UserName))
+            return ShareNoteResult.Failure("User is required.");
+
+        var targetUserQuery = _db.Users.AsNoTracking().Where(u => u.IsActive);
+        var targetUser = request.UserId.HasValue
+            ? await targetUserQuery.FirstOrDefaultAsync(u => u.Id == request.UserId.Value, ct)
+            : await targetUserQuery.FirstOrDefaultAsync(u => u.NormalizedUserName == request.UserName!.Trim().ToUpperInvariant(), ct);
+
+        if (targetUser is null)
+            return ShareNoteResult.Failure("User not found.");
+
+        if (targetUser.Id == currentUserId)
+            return ShareNoteResult.Failure("You cannot share a note with yourself.");
+
+        if (note.Shares.Any(s => s.UserId == targetUser.Id))
+            return ShareNoteResult.Failure("Note is already shared with this user.");
+
+        var share = new NoteShare
+        {
+            NoteId = noteId,
+            UserId = targetUser.Id,
+        };
+
+        _db.NoteShares.Add(share);
+        await _db.SaveChangesAsync(ct);
+
+        var sharesResponse = await GetSharesAsync(noteId, ct);
+        return ShareNoteResult.Success(sharesResponse!);
+    }
+
+    public async Task<ShareNoteResult> RemoveShareAsync(Guid noteId, Guid targetUserId, CancellationToken ct = default)
+    {
+        var currentUserId = _currentUser.UserId;
+
+        var note = await _db.Notes
+            .Include(n => n.Shares)
+            .FirstOrDefaultAsync(n => n.Id == noteId, ct);
+
+        if (note is null)
+            return ShareNoteResult.NotFound("Note not found.");
+
+        var isOwner = note.UserId == currentUserId;
+        var isSelf = targetUserId == currentUserId;
+
+        if (!isOwner && !isSelf)
+            return ShareNoteResult.Forbidden("You do not have permission to modify sharing for this note.");
+
+        var share = note.Shares.FirstOrDefault(s => s.UserId == targetUserId);
+        if (share is null)
+            return ShareNoteResult.Failure("Share not found.");
+
+        _db.NoteShares.Remove(share);
+        await _db.SaveChangesAsync(ct);
+
+        return ShareNoteResult.Success();
     }
 }

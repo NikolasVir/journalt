@@ -37,4 +37,9 @@ public interface INoteService
 
     // Tags
     Task<IReadOnlyList<string>> GetDistinctTagsAsync(CancellationToken ct = default);
+
+    // Note Sharing
+    Task<NoteSharesResponse?> GetSharesAsync(Guid noteId, CancellationToken ct = default);
+    Task<ShareNoteResult> ShareNoteAsync(Guid noteId, ShareNoteRequest request, CancellationToken ct = default);
+    Task<ShareNoteResult> RemoveShareAsync(Guid noteId, Guid targetUserId, CancellationToken ct = default);
 }

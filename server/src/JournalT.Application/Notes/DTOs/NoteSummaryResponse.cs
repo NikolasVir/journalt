@@ -18,5 +18,9 @@ public sealed record NoteSummaryResponse(
     DateTime UpdatedAtUtc,
     IReadOnlyList<TagDto>? Tags = null,
     string? TypedMetadataJson = null,
-    NoteFormat Format = NoteFormat.Markdown
+    NoteFormat Format = NoteFormat.Markdown,
+    Guid UserId = default,
+    bool IsOwner = true,
+    bool IsShared = false,
+    string? OwnerUserName = null
 );

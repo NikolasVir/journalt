@@ -171,6 +171,36 @@ public class NotesController(INoteService noteService) : ControllerBase
         var renderedHtml = await _noteService.RenderPreviewAsync(request.Markdown ?? string.Empty, ct);
         return Ok(new RenderMarkdownResponse(renderedHtml));
     }
+
+    // Note Sharing
+    [HttpGet("{id:guid}/shares")]
+    public async Task<IActionResult> GetShares(Guid id, CancellationToken ct)
+    {
+        var shares = await _noteService.GetSharesAsync(id, ct);
+        return shares is not null ? Ok(shares) : NotFound();
+    }
+
+    [HttpPost("{id:guid}/shares")]
+    public async Task<IActionResult> Share(Guid id, [FromBody] ShareNoteRequest request, CancellationToken ct)
+    {
+        var result = await _noteService.ShareNoteAsync(id, request, ct);
+
+        if (!result.Succeeded)
+            return Problem(detail: string.Join("; ", result.Errors), statusCode: result.StatusCode);
+
+        return Ok(result.Shares);
+    }
+
+    [HttpDelete("{id:guid}/shares/{userId:guid}")]
+    public async Task<IActionResult> RemoveShare(Guid id, Guid userId, CancellationToken ct)
+    {
+        var result = await _noteService.RemoveShareAsync(id, userId, ct);
+
+        if (!result.Succeeded)
+            return Problem(detail: string.Join("; ", result.Errors), statusCode: result.StatusCode);
+
+        return NoContent();
+    }
 }
 
 public record RenderMarkdownRequest(string? Markdown);

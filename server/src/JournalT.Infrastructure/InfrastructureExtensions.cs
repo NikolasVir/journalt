@@ -50,7 +50,8 @@ public static class InfrastructureExtensions
         {
             var interceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
             options.UseSqlite(connectionString)
-                   .AddInterceptors(interceptor);
+                   .AddInterceptors(interceptor)
+                   .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         });
 
         services.AddScoped<IJournalTDbContext>(sp => sp.GetRequiredService<JournalTDbContext>());
