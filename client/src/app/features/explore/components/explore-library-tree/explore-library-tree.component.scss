@@ -32,7 +32,7 @@
   &__title-icon { color: var(--color-primary); }
 
   &__title {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-xl);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-primary);
     margin: 0;
@@ -246,8 +246,8 @@
     letter-spacing: 0.04em;
     color: var(--color-text-muted);
     background-color: var(--color-bg-surface-hover);
-    border-radius: var(--radius-xs);
-    padding: 2px 3px;
+    border-radius: var(--radius-sm);
+    padding: 2px 4px;
 
     &--journal {
       color: var(--color-level-journal);
