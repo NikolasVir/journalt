@@ -64,6 +64,10 @@ describe('QuickCaptureComponent', () => {
       title: 'My Note Title',
       bodyMarkdown: 'Some markdown body',
       level: 'Note',
+      format: 'Markdown',
+      libraryId: undefined,
+      typeId: undefined,
+      typedMetadataJson: undefined,
       isTodo: false,
       tags: undefined
     });
@@ -87,6 +91,9 @@ describe('QuickCaptureComponent', () => {
       title: 'Work Note',
       bodyMarkdown: 'Work content',
       level: 'Note',
+      format: 'Markdown',
+      typeId: undefined,
+      typedMetadataJson: undefined,
       isTodo: false,
       libraryId: 'lib-work-123',
       tags: undefined,

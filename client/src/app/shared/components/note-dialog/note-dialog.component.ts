@@ -21,6 +21,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Router, RouterLink } from '@angular/router';
 import { LibraryResponse } from '@core/models/library.model';
 import {
@@ -38,6 +39,7 @@ import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector
 import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
 import { ChecklistEditorComponent } from '@shared/components/checklist-editor/checklist-editor.component';
+import { ShareDialogComponent } from '@shared/components/share-dialog/share-dialog.component';
 
 export interface NoteDialogSavePayload {
   id: string;
@@ -60,6 +62,7 @@ export interface NoteDialogSavePayload {
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+    MatDialogModule,
     TypedTagSelectorComponent,
     NoteEditButtonComponent,
     NoteMetadataViewComponent,
@@ -76,6 +79,7 @@ export class NoteDialogComponent {
   private readonly markdownEnhancer = inject(MarkdownEnhancerService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialog = inject(MatDialog);
 
   public readonly note = input<NoteResponse | null>(null);
 
@@ -257,6 +261,25 @@ export class NoteDialogComponent {
       });
     }
     this.close.emit();
+  }
+
+  public onOpenShare(): void {
+    const current = this.note();
+    if (!current) return;
+
+    const ref = this.dialog.open(ShareDialogComponent, {
+      width: '440px',
+      data: {
+        noteId: current.id,
+        noteTitle: this.editTitle() || current.title || 'Untitled Note',
+      },
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res?.leftNote) {
+        this.close.emit();
+      }
+    });
   }
 
   public removeLegacyTags(): void {

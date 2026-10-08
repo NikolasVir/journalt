@@ -102,6 +102,37 @@
     }
   }
 
+  &__shared-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    padding: var(--spacing-2xs) var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    line-height: var(--line-height-tight);
+    max-width: 130px;
+
+    &--collab {
+      color: #6366f1;
+      background-color: rgba(99, 102, 241, 0.12);
+    }
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      line-height: 14px;
+    }
+  }
+
+  &__shared-text {
+    @include truncate-text;
+    max-width: 80px;
+  }
+
   &__level-badge {
     flex-shrink: 0;
     white-space: nowrap;

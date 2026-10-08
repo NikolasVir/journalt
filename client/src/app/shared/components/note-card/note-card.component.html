@@ -12,6 +12,19 @@
       {{ note().title || 'Untitled Note' }}
     </mat-card-title>
     <div class="note-card__header-actions">
+      @if (note().isShared) {
+        <span
+          class="note-card__shared-badge"
+          [class.note-card__shared-badge--collab]="!note().isOwner"
+          [matTooltip]="!note().isOwner ? ('Shared by ' + (note().ownerUserName || 'owner')) : 'Shared note'"
+        >
+          <mat-icon class="note-card__shared-icon">people</mat-icon>
+          @if (!note().isOwner && note().ownerUserName) {
+            <span class="note-card__shared-text">{{ note().ownerUserName }}</span>
+          }
+        </span>
+      }
+
       <span
         class="note-card__level-badge"
         [class]="'note-card__level-badge--' + note().level.toLowerCase()"
@@ -75,6 +88,11 @@
   <button mat-menu-item (click)="onEdit($event)" aria-label="Edit note">
     <mat-icon>edit</mat-icon>
     <span>Edit note</span>
+  </button>
+
+  <button mat-menu-item (click)="onShare($event)" aria-label="Share note">
+    <mat-icon>share</mat-icon>
+    <span>Share note</span>
   </button>
 
   <button

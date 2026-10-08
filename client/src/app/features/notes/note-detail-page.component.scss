@@ -272,6 +272,18 @@
     }
   }
 
+  &__left-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+  }
+
+  &__share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   &__buttons {
     @include flex-center;
     gap: var(--spacing-sm);

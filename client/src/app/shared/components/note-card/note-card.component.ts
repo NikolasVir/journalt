@@ -1,22 +1,33 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
 import { markdownToChecklist, ChecklistItem } from '@shared/components/checklist-editor/checklist-editor.component';
+import { ShareDialogComponent } from '@shared/components/share-dialog/share-dialog.component';
 
 @Component({
   selector: 'app-note-card',
   standalone: true,
-  imports: [MatCardModule, MatChipsModule, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
+  imports: [
+    MatCardModule,
+    MatChipsModule,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MatDialogModule,
+  ],
   templateUrl: './note-card.component.html',
   styleUrl: './note-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NoteCardComponent {
+  private readonly dialog = inject(MatDialog);
   public readonly note = input.required<NoteResponse>();
 
   protected readonly listPreview = computed<{ items: ChecklistItem[]; remainingCount: number } | null>(() => {
@@ -44,6 +55,7 @@ export class NoteCardComponent {
   public readonly trashNote = output<NoteResponse>();
   public readonly promoteNote = output<{ note: NoteResponse; targetLevel: NoteLevel }>();
   public readonly editRequested = output<NoteResponse>();
+  public readonly shareChanged = output<{ note: NoteResponse; leftNote?: boolean }>();
 
   protected readonly formatTag = formatTag;
 
@@ -84,5 +96,22 @@ export class NoteCardComponent {
     if (nextLevel) {
       this.promoteNote.emit({ note: this.note(), targetLevel: nextLevel });
     }
+  }
+
+  public onShare(event: Event): void {
+    event.stopPropagation();
+    const ref = this.dialog.open(ShareDialogComponent, {
+      width: '440px',
+      data: {
+        noteId: this.note().id,
+        noteTitle: this.note().title,
+      },
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res?.updated || res?.leftNote) {
+        this.shareChanged.emit({ note: this.note(), leftNote: res.leftNote });
+      }
+    });
   }
 }

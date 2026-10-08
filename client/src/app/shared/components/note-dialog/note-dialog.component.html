@@ -45,6 +45,17 @@
             }
           </mat-menu>
 
+          <button
+            type="button"
+            class="dialog-panel__share-btn"
+            mat-icon-button
+            (click)="onOpenShare()"
+            aria-label="Share note"
+            matTooltip="Share note"
+          >
+            <mat-icon>share</mat-icon>
+          </button>
+
           <app-note-edit-button
             tooltip="Open full editor"
             ariaLabel="Open full editor"

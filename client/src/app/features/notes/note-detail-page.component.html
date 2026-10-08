@@ -172,10 +172,16 @@
 
       <mat-card-actions class="note-form__actions">
         @if (noteId()) {
-          <button mat-button color="warn" type="button" (click)="onDelete()" class="note-form__delete-btn">
-            <mat-icon>delete_outline</mat-icon>
-            <span class="note-form__delete-label">Move to Trash</span>
-          </button>
+          <div class="note-form__left-actions">
+            <button mat-button color="warn" type="button" (click)="onDelete()" class="note-form__delete-btn">
+              <mat-icon>delete_outline</mat-icon>
+              <span class="note-form__delete-label">Move to Trash</span>
+            </button>
+            <button mat-stroked-button type="button" (click)="onShare()" class="note-form__share-btn">
+              <mat-icon>share</mat-icon>
+              <span>Share</span>
+            </button>
+          </div>
         }
 
         <div class="note-form__buttons">

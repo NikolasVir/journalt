@@ -95,6 +95,23 @@ a {
 }
 
 /* ── Dialog Overlays ──────────────────────────────────────────────────── */
+.cdk-overlay-container {
+  z-index: 1000 !important;
+}
+
+// Remove default rectangular Material dialog surface container styles
+// when rendering custom-styled dialogs like share-dialog
+.mat-mdc-dialog-panel:has(.share-dialog) {
+  .mat-mdc-dialog-surface {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border-radius: var(--radius-lg, 16px) !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}
+
 .shell__container:has(.dialog-backdrop) {
   z-index: 200;
 

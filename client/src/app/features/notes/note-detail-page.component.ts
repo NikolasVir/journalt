@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LibraryResponse } from '@core/models/library.model';
 import { formatTag, NoteFormat, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
@@ -24,6 +25,7 @@ import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector
 import { NoteContentEditorComponent } from '@shared/components/note-content-editor/note-content-editor.component';
 import { ChecklistEditorComponent } from '@shared/components/checklist-editor/checklist-editor.component';
 import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
+import { ShareDialogComponent } from '@shared/components/share-dialog/share-dialog.component';
 
 interface NoteForm {
   title: FormControl<string>;
@@ -77,6 +79,7 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     NoteContentEditorComponent,
     ChecklistEditorComponent,
     NoteMetadataViewComponent,
+    MatDialogModule,
   ],
   templateUrl: './note-detail-page.component.html',
   styleUrl: './note-detail-page.component.scss',
@@ -90,6 +93,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
   private readonly libraryService = inject(LibraryService);
   private readonly notification = inject(NotificationService);
   private readonly authService = inject(AuthService);
+  private readonly dialog = inject(MatDialog);
 
   private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
   private readonly contentEditor = viewChild(NoteContentEditorComponent);
@@ -462,6 +466,27 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
       error: () => {
         this.notification.showError('Failed to move note to trash.');
       },
+    });
+  }
+
+  public onShare(): void {
+    const id = this.noteId();
+    if (!id) return;
+
+    const ref = this.dialog.open(ShareDialogComponent, {
+      width: '440px',
+      data: {
+        noteId: id,
+        noteTitle: this.form.controls.title.value || 'Untitled Note',
+      },
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res?.leftNote) {
+        this.goBack();
+      } else if (res?.updated) {
+        this.loadNote(id);
+      }
     });
   }
 }
