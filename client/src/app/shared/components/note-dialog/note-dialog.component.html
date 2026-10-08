@@ -68,6 +68,17 @@
           >
             {{ n.level }}
           </span>
+
+          <button
+            mat-icon-button
+            type="button"
+            (click)="onClose()"
+            aria-label="Close dialog"
+            matTooltip="Close"
+            class="dialog-panel__close-icon-btn"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
       </div>
 
