@@ -27,6 +27,9 @@ public sealed class NoteService(
         if (string.IsNullOrWhiteSpace(request.Title))
             return NoteResult.Failure("Title is required.");
 
+        if (request.Title.Length > 500)
+            return NoteResult.Failure("Title cannot exceed 500 characters.");
+
         var userId = _currentUser.UserId;
 
         // Format-level compatibility: only Notes can be lists (not Inbox or Journal)
@@ -358,6 +361,9 @@ public sealed class NoteService(
 
         if (string.IsNullOrWhiteSpace(request.Title))
             return NoteResult.Failure("Title is required.");
+
+        if (request.Title.Length > 500)
+            return NoteResult.Failure("Title cannot exceed 500 characters.");
 
         if (request.LibraryId.HasValue && request.LibraryId != note.LibraryId)
         {

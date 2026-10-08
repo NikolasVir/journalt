@@ -46,7 +46,22 @@ public class UsersController(JournalTDbContext db, ICurrentUser currentUser) : C
         if (user is null || !user.IsActive)
             return Unauthorized();
 
-        user.AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl) ? null : request.AvatarUrl.Trim();
+        if (!string.IsNullOrWhiteSpace(request.AvatarUrl))
+        {
+            var url = request.AvatarUrl.Trim();
+            var isDataUri = url.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase);
+            var isHttpUri = Uri.TryCreate(url, UriKind.Absolute, out var parsed) &&
+                            (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps);
+            if (!isDataUri && !isHttpUri)
+                return BadRequest(new { message = "Invalid avatar URL. Must be an http/https URL or data:image URI." });
+
+            user.AvatarUrl = url;
+        }
+        else
+        {
+            user.AvatarUrl = null;
+        }
+
         user.UpdatedAtUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
