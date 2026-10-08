@@ -74,9 +74,15 @@ export const routes: Routes = [
     ]
   },
 
-  // Fallback
+  // 404 Not Found fallback
+  {
+    path: '404',
+    loadComponent: () =>
+      import('@features/not-found/not-found-page.component').then((m) => m.NotFoundPageComponent)
+  },
   {
     path: '**',
-    redirectTo: 'dashboard'
+    loadComponent: () =>
+      import('@features/not-found/not-found-page.component').then((m) => m.NotFoundPageComponent)
   }
 ];
