@@ -275,6 +275,7 @@ export class NotesPageComponent implements OnInit {
     this.noteService
       .create({
         level: payload.level,
+        format: payload.format,
         title: payload.title,
         bodyMarkdown: payload.bodyMarkdown,
         isTodo: payload.isTodo,

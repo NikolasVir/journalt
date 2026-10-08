@@ -40,18 +40,23 @@
     flex-wrap: wrap;
   }
 
-  &__pill {
-    border-radius: var(--radius-pill);
-    font-size: var(--font-size-xs);
-    height: 32px;
-    line-height: 32px;
-    padding: 0 var(--spacing-sm);
+  &__action-btn {
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    color: var(--color-text-secondary);
+    border-radius: 50%;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
 
     mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      margin-right: var(--spacing-2xs);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      color: var(--color-text-primary);
+      background-color: rgba(255, 255, 255, 0.08);
     }
   }
 }
@@ -65,7 +70,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-md);
-    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-lg);
     border-bottom: 1px solid var(--color-border-subtle);
   }
 
@@ -124,13 +129,54 @@
     }
   }
 
+  &__format-toggle,
   &__level-toggle {
     height: 32px;
+    display: inline-flex;
+    align-items: stretch;
 
+    ::ng-deep {
+      .mat-button-toggle {
+        height: 100%;
+        display: inline-flex;
+        align-items: center;
+
+        .mat-button-toggle-button {
+          height: 100%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 10px;
+        }
+
+        .mat-button-toggle-checkbox-wrapper {
+          display: none;
+        }
+
+        .mat-button-toggle-label-content {
+          line-height: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+
+          mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            margin: 0;
+          }
+        }
+      }
+    }
+  }
+
+  &__level-toggle {
     ::ng-deep .mat-button-toggle-label-content {
-      line-height: 30px;
-      padding: 0 var(--spacing-sm);
       font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      padding: 0 4px;
     }
   }
 

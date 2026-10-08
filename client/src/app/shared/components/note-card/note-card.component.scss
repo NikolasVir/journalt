@@ -137,6 +137,48 @@
     flex-direction: column;
   }
 
+  &__checklist-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 2px 0 4px;
+  }
+
+  &__checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-sm);
+    line-height: 18px;
+    color: var(--color-text-secondary);
+
+    &--completed {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+  }
+
+  &__checklist-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  &__checklist-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__checklist-more {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    padding-left: 22px;
+    margin-top: 2px;
+  }
+
   &__body {
     font-size: var(--font-size-sm);
     line-height: var(--line-height-normal);

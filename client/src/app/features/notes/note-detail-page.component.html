@@ -57,6 +57,16 @@
             <mat-radio-button value="Journal">Journal</mat-radio-button>
           </mat-radio-group>
         </div>
+
+        @if (form.controls.level.value === 'Note') {
+          <div class="note-form__level-section">
+            <label class="note-form__label">Format</label>
+            <mat-radio-group formControlName="format" class="note-form__radio-group">
+              <mat-radio-button value="Markdown">Markdown</mat-radio-button>
+              <mat-radio-button value="List">List</mat-radio-button>
+            </mat-radio-group>
+          </div>
+        }
       }
 
       @if (currentNote(); as cn) {
@@ -66,14 +76,25 @@
         />
       }
 
-      <app-note-content-editor
-        formControlName="bodyMarkdown"
-        [collabNoteId]="noteId()"
-        [collabUser]="collabUser()"
-        placeholder="Write in Markdown..."
-        ariaLabel="Note content (Markdown)"
-        minHeight="55vh"
-      />
+      @if (form.controls.format.value === 'List') {
+        <app-checklist-editor
+          formControlName="bodyMarkdown"
+          [collabNoteId]="noteId()"
+          [collabUser]="collabUser()"
+          placeholder="List item..."
+          ariaLabel="Checklist content"
+          minHeight="55vh"
+        />
+      } @else {
+        <app-note-content-editor
+          formControlName="bodyMarkdown"
+          [collabNoteId]="noteId()"
+          [collabUser]="collabUser()"
+          placeholder="Write in Markdown..."
+          ariaLabel="Note content (Markdown)"
+          minHeight="55vh"
+        />
+      }
 
       <div class="note-form__meta-grid">
         @if (form.controls.level.value === 'Journal') {

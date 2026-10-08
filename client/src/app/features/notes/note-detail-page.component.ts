@@ -13,7 +13,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LibraryResponse } from '@core/models/library.model';
-import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
+import { formatTag, NoteFormat, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
 import { SectionDefinition, TypeDefinitionResponse } from '@core/models/type-definition.model';
 import { AuthService } from '@core/services/auth.service';
 import { LibraryService } from '@core/services/library.service';
@@ -22,12 +22,14 @@ import { NotificationService } from '@core/services/notification.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 import { NoteContentEditorComponent } from '@shared/components/note-content-editor/note-content-editor.component';
+import { ChecklistEditorComponent } from '@shared/components/checklist-editor/checklist-editor.component';
 import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
 
 interface NoteForm {
   title: FormControl<string>;
   bodyMarkdown: FormControl<string>;
   level: FormControl<NoteLevel>;
+  format: FormControl<NoteFormat>;
   typeId: FormControl<string | null>;
   libraryId: FormControl<string | null>;
   isTodo: FormControl<boolean>;
@@ -73,6 +75,7 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     MatAutocompleteModule,
     TypedTagSelectorComponent,
     NoteContentEditorComponent,
+    ChecklistEditorComponent,
     NoteMetadataViewComponent,
   ],
   templateUrl: './note-detail-page.component.html',
@@ -132,6 +135,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
     title: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     bodyMarkdown: new FormControl('', { nonNullable: true }),
     level: new FormControl<NoteLevel>('Note', { nonNullable: true }),
+    format: new FormControl<NoteFormat>('Markdown', { nonNullable: true }),
     typeId: new FormControl<string | null>(null),
     libraryId: new FormControl<string | null>(null),
     isTodo: new FormControl(false, { nonNullable: true }),
@@ -177,6 +181,9 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
     });
 
     this.form.controls.level.valueChanges.subscribe((lvl) => {
+      if (lvl !== 'Note' && this.form.controls.format.value === 'List') {
+        this.form.controls.format.setValue('Markdown');
+      }
       if (lvl === 'Journal') {
         if (this.freeFormTags().length > 0) {
           this.freeFormTags.set([]);
@@ -216,6 +223,10 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
         this.form.controls.level.setValue(promoteTo);
       }
     } else {
+      const requestedFormat = this.route.snapshot.queryParamMap.get('format') as NoteFormat | null;
+      if (requestedFormat) {
+        this.form.controls.format.setValue(requestedFormat);
+      }
       if (requestedLevel) {
         this.form.controls.level.setValue(requestedLevel);
       }
@@ -256,6 +267,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
           title: note.title,
           bodyMarkdown: note.bodyMarkdown,
           level: note.level,
+          format: note.format ?? 'Markdown',
           typeId: note.typeId ?? null,
           libraryId: note.libraryId ?? null,
           isTodo: note.isTodo,
@@ -388,6 +400,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
       this.noteService
         .create({
           level: val.level,
+          format: val.format,
           title: val.title,
           bodyMarkdown: val.bodyMarkdown,
           typeId,

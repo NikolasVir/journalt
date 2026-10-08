@@ -3,28 +3,13 @@
     <span class="capture-card__placeholder">Take a note...</span>
     <div class="capture-card__actions" (click)="$event.stopPropagation()">
       <button
-        mat-button
-        class="capture-card__pill capture-card__pill--inbox"
-        (click)="expand('Inbox')"
+        mat-icon-button
+        class="capture-card__action-btn"
+        (click)="expandList()"
+        matTooltip="New list"
+        aria-label="New list"
       >
-        <mat-icon>inbox</mat-icon>
-        <span>Inbox</span>
-      </button>
-      <button
-        mat-button
-        class="capture-card__pill capture-card__pill--note"
-        (click)="expand('Note')"
-      >
-        <mat-icon>edit_note</mat-icon>
-        <span>Note</span>
-      </button>
-      <button
-        mat-button
-        class="capture-card__pill capture-card__pill--journal"
-        (click)="expand('Journal')"
-      >
-        <mat-icon>menu_book</mat-icon>
-        <span>Journal</span>
+        <mat-icon>checklist</mat-icon>
       </button>
     </div>
   </div>
@@ -84,7 +69,25 @@
             </mat-menu>
           }
 
+          @if (selectedLevel() === 'Note') {
+            <mat-button-toggle-group
+              hideSingleSelectionIndicator
+              [value]="selectedFormat()"
+              (change)="setFormat($event.value)"
+              aria-label="Note Format"
+              class="capture-dialog__format-toggle"
+            >
+              <mat-button-toggle value="Markdown" matTooltip="Standard Note" aria-label="Standard Note">
+                <mat-icon>edit_note</mat-icon>
+              </mat-button-toggle>
+              <mat-button-toggle value="List" matTooltip="Checklist Note" aria-label="Checklist Note">
+                <mat-icon>checklist</mat-icon>
+              </mat-button-toggle>
+            </mat-button-toggle-group>
+          }
+
           <mat-button-toggle-group
+            hideSingleSelectionIndicator
             [value]="selectedLevel()"
             (change)="selectLevel($event.value)"
             aria-label="Note Level"
@@ -98,13 +101,23 @@
       </div>
 
       <div class="capture-dialog__body">
-        <app-note-content-editor
-          [value]="bodyMarkdown()"
-          (valueChange)="bodyMarkdown.set($event)"
-          placeholder="Note content (Markdown supported)..."
-          ariaLabel="Note content"
-          minHeight="140px"
-        />
+        @if (selectedFormat() === 'List') {
+          <app-checklist-editor
+            [value]="bodyMarkdown()"
+            (valueChange)="bodyMarkdown.set($event)"
+            placeholder="List item..."
+            ariaLabel="Checklist content"
+            minHeight="140px"
+          />
+        } @else {
+          <app-note-content-editor
+            [value]="bodyMarkdown()"
+            (valueChange)="bodyMarkdown.set($event)"
+            placeholder="Note content (Markdown supported)..."
+            ariaLabel="Note content"
+            minHeight="140px"
+          />
+        }
 
         @if (selectedLevel() === 'Journal') {
           @if (typeDefinitions().length > 0) {

@@ -83,7 +83,14 @@
       </aside>
 
       <div class="dialog-panel__body">
-        @if (renderedHtml()) {
+        @if (n.format === 'List') {
+          <app-checklist-editor
+            [value]="editBody()"
+            (valueChange)="editBody.set($event)"
+            [collabNoteId]="n.id"
+            minHeight="220px"
+          />
+        } @else if (renderedHtml()) {
           <div
             #renderedContainer
             class="dialog-panel__rendered-content markdown-body"

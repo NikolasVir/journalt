@@ -37,6 +37,7 @@ import { NotificationService } from '@core/services/notification.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
+import { ChecklistEditorComponent } from '@shared/components/checklist-editor/checklist-editor.component';
 
 export interface NoteDialogSavePayload {
   id: string;
@@ -62,6 +63,7 @@ export interface NoteDialogSavePayload {
     TypedTagSelectorComponent,
     NoteEditButtonComponent,
     NoteMetadataViewComponent,
+    ChecklistEditorComponent,
   ],
   templateUrl: './note-dialog.component.html',
   styleUrl: './note-dialog.component.scss',
@@ -225,9 +227,10 @@ export class NoteDialogComponent {
   }
 
   public get nextPromoteLevel(): NoteLevel | null {
-    const level = this.note()?.level;
-    if (level === 'Inbox') return 'Note';
-    if (level === 'Note') return 'Journal';
+    const current = this.note();
+    if (!current) return null;
+    if (current.level === 'Inbox') return 'Note';
+    if (current.level === 'Note' && current.format !== 'List') return 'Journal';
     return null;
   }
 

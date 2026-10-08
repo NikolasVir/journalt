@@ -22,17 +22,19 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { LibraryResponse } from '@core/models/library.model';
-import { NoteLevel, TagDto } from '@core/models/note.model';
+import { NoteFormat, NoteLevel, TagDto } from '@core/models/note.model';
 import { SectionDefinition, TypeDefinitionResponse } from '@core/models/type-definition.model';
 import { LibraryService } from '@core/services/library.service';
 import { TypeDefinitionService } from '@core/services/type-definition.service';
 import { TypedTagSelectorComponent } from '@shared/components/typed-tag-selector/typed-tag-selector.component';
 import { NoteContentEditorComponent } from '@shared/components/note-content-editor/note-content-editor.component';
+import { ChecklistEditorComponent } from '@shared/components/checklist-editor/checklist-editor.component';
 
 export interface QuickCapturePayload {
   title: string;
   bodyMarkdown: string;
   level: NoteLevel;
+  format?: NoteFormat;
   isTodo: boolean;
   libraryId?: string | null;
   typeId?: string;
@@ -79,6 +81,7 @@ function buildDefaultMetadata(schemaJson?: string | null): string {
     MatTooltipModule,
     TypedTagSelectorComponent,
     NoteContentEditorComponent,
+    ChecklistEditorComponent,
   ],
   templateUrl: './quick-capture.component.html',
   styleUrl: './quick-capture.component.scss',
@@ -93,6 +96,7 @@ export class QuickCaptureComponent implements OnInit {
 
   protected readonly isExpanded = signal<boolean>(false);
   protected readonly selectedLevel = signal<NoteLevel>('Note');
+  protected readonly selectedFormat = signal<NoteFormat>('Markdown');
   protected readonly title = signal<string>('');
   protected readonly bodyMarkdown = signal<string>('');
   protected readonly isTodo = signal<boolean>(false);
@@ -138,12 +142,19 @@ export class QuickCaptureComponent implements OnInit {
   }
 
   public expand(level?: NoteLevel): void {
+    this.selectedFormat.set('Markdown');
     if (level) {
       this.selectedLevel.set(level);
       if (level === 'Journal') {
         this.ensureDefaultTypeSelected();
       }
     }
+    this.isExpanded.set(true);
+  }
+
+  public expandList(): void {
+    this.selectedFormat.set('List');
+    this.selectedLevel.set('Note');
     this.isExpanded.set(true);
   }
 
@@ -169,8 +180,18 @@ export class QuickCaptureComponent implements OnInit {
     }
   }
 
+  public setFormat(format: NoteFormat): void {
+    this.selectedFormat.set(format);
+    if (format === 'List' && this.selectedLevel() !== 'Note') {
+      this.selectedLevel.set('Note');
+    }
+  }
+
   public selectLevel(level: NoteLevel): void {
     this.selectedLevel.set(level);
+    if (level !== 'Note') {
+      this.selectedFormat.set('Markdown');
+    }
     if (level === 'Journal') {
       this.tagsInput.set('');
       this.ensureDefaultTypeSelected();
@@ -208,6 +229,7 @@ export class QuickCaptureComponent implements OnInit {
       title: title || body.slice(0, 30) + '...',
       bodyMarkdown: body,
       level: this.selectedLevel(),
+      format: this.selectedFormat(),
       isTodo: this.isTodo(),
       libraryId: this.selectedLibraryId() ?? undefined,
       typeId,
@@ -249,6 +271,7 @@ export class QuickCaptureComponent implements OnInit {
     this.typedTags.set([]);
     this.selectedLibraryId.set(null);
     this.selectedLevel.set(this.defaultLevel());
+    this.selectedFormat.set('Markdown');
     if (this.defaultLevel() === 'Journal') {
       this.ensureDefaultTypeSelected();
     }

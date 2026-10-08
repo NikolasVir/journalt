@@ -33,7 +33,23 @@
   </mat-card-header>
 
   <mat-card-content class="note-card__content">
-    @if (note().renderedHtml) {
+    @if (listPreview(); as preview) {
+      <div class="note-card__checklist-preview">
+        @for (item of preview.items; track item.id) {
+          <div class="note-card__checklist-item" [class.note-card__checklist-item--completed]="item.completed">
+            <mat-icon class="note-card__checklist-icon">
+              {{ item.completed ? 'check_box' : 'check_box_outline_blank' }}
+            </mat-icon>
+            <span class="note-card__checklist-text">{{ item.text }}</span>
+          </div>
+        }
+        @if (preview.remainingCount > 0) {
+          <div class="note-card__checklist-more">
+            + {{ preview.remainingCount }} more {{ preview.remainingCount === 1 ? 'item' : 'items' }}
+          </div>
+        }
+      </div>
+    } @else if (note().renderedHtml) {
       <div class="note-card__body" [innerHTML]="note().renderedHtml"></div>
     } @else if (note().bodyMarkdown) {
       <p class="note-card__body-text">{{ note().bodyMarkdown }}</p>

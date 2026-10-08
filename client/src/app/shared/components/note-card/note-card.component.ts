@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
+import { markdownToChecklist, ChecklistItem } from '@shared/components/checklist-editor/checklist-editor.component';
 
 @Component({
   selector: 'app-note-card',
@@ -17,6 +18,16 @@ import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.mo
 })
 export class NoteCardComponent {
   public readonly note = input.required<NoteResponse>();
+
+  protected readonly listPreview = computed<{ items: ChecklistItem[]; remainingCount: number } | null>(() => {
+    const n = this.note();
+    if (n.format !== 'List') return null;
+    const items = markdownToChecklist(n.bodyMarkdown || '');
+    return {
+      items: items.slice(0, 5),
+      remainingCount: Math.max(0, items.length - 5)
+    };
+  });
 
   protected readonly tooltipText = computed<string>(() => {
     const n = this.note();
@@ -42,9 +53,9 @@ export class NoteCardComponent {
   }
 
   protected readonly nextPromoteLevel = computed<NoteLevel | null>(() => {
-    const level = this.note().level;
-    if (level === 'Inbox') return 'Note';
-    if (level === 'Note') return 'Journal';
+    const n = this.note();
+    if (n.level === 'Inbox') return 'Note';
+    if (n.level === 'Note' && n.format !== 'List') return 'Journal';
     return null;
   });
 
