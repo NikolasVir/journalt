@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   effect,
+  HostListener,
   inject,
   input,
   OnInit,
@@ -161,6 +162,14 @@ export class QuickCaptureComponent implements OnInit {
   public collapse(): void {
     this.isExpanded.set(false);
     this.resetFields();
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  public onEscapeKey(event: Event): void {
+    if (this.isExpanded()) {
+      event.preventDefault();
+      this.collapse();
+    }
   }
 
   public onBackdropPointerDown(event: PointerEvent): void {

@@ -5,6 +5,7 @@ import {
   DestroyRef,
   effect,
   ElementRef,
+  HostListener,
   inject,
   input,
   linkedSignal,
@@ -261,6 +262,14 @@ export class NoteDialogComponent {
       });
     }
     this.close.emit();
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  public onEscapeKey(event: Event): void {
+    if (this.note()) {
+      event.preventDefault();
+      this.onClose();
+    }
   }
 
   public onOpenShare(): void {
