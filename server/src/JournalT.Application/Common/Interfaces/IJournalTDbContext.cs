@@ -12,6 +12,7 @@ public interface IJournalTDbContext
     DbSet<TagDefinition> TagDefinitions { get; }
     DbSet<NoteRelation> NoteRelations { get; }
     DbSet<NoteSource> NoteSources { get; }
+    DbSet<NoteShare> NoteShares { get; }
     DbSet<ApiKey> ApiKeys { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

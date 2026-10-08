@@ -27,4 +27,5 @@ public class Note : BaseEntity
     public ICollection<NoteRelation> OutboundRelations { get; set; } = [];
     public ICollection<NoteRelation> InboundRelations { get; set; } = [];
     public ICollection<NoteSource> Sources { get; set; } = [];
+    public ICollection<NoteShare> Shares { get; set; } = [];
 }

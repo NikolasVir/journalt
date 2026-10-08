@@ -227,6 +227,34 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                     b.ToTable("NoteRelations", (string)null);
                 });
 
+            modelBuilder.Entity("JournalT.Domain.Entities.NoteShare", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("NoteId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("NoteId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("NoteShares", (string)null);
+                });
+
             modelBuilder.Entity("JournalT.Domain.Entities.NoteSource", b =>
                 {
                     b.Property<Guid>("Id")
@@ -624,6 +652,23 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                     b.Navigation("TargetNote");
                 });
 
+            modelBuilder.Entity("JournalT.Domain.Entities.NoteShare", b =>
+                {
+                    b.HasOne("JournalT.Domain.Entities.Note", "Note")
+                        .WithMany("Shares")
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("JournalT.Infrastructure.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Note");
+                });
+
             modelBuilder.Entity("JournalT.Domain.Entities.NoteSource", b =>
                 {
                     b.HasOne("JournalT.Domain.Entities.Note", "Note")
@@ -709,6 +754,8 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                     b.Navigation("InboundRelations");
 
                     b.Navigation("OutboundRelations");
+
+                    b.Navigation("Shares");
 
                     b.Navigation("Sources");
 
