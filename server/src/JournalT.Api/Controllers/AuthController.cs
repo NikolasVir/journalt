@@ -83,6 +83,26 @@ public class AuthController(
         return Ok(user);
     }
 
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+            return BadRequest(new { message = "Current password and new password are required." });
+
+        var result = await _authService.ChangePasswordAsync(_currentUser.UserId, request, ct);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+                ModelState.AddModelError(string.Empty, error);
+
+            return ValidationProblem();
+        }
+
+        AppendCsrfCookie();
+        return Ok(new { message = "Password changed successfully." });
+    }
+
     private string AppendCsrfCookie()
     {
         var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
