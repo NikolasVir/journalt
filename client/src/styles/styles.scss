@@ -94,6 +94,27 @@ a {
   }
 }
 
+/* ── Semantic Action Buttons (Destructive / Warning) ──────────────────── */
+.mat-mdc-button.mat-warn,
+.mat-mdc-outlined-button.mat-warn,
+button[color="warn"]:not(.mat-mdc-flat-button):not(.mat-mdc-raised-button) {
+  --mat-button-text-color: var(--color-danger);
+  --mat-outlined-button-text-color: var(--color-danger);
+  color: var(--color-danger) !important;
+
+  .mat-icon {
+    color: var(--color-danger) !important;
+  }
+}
+
+.mat-mdc-flat-button.mat-warn,
+.mat-mdc-raised-button.mat-warn,
+button[mat-flat-button][color="warn"] {
+  --mat-flat-button-container-color: var(--color-danger);
+  background-color: var(--color-danger) !important;
+  color: var(--color-text-inverse) !important;
+}
+
 /* ── Dialog Overlays ──────────────────────────────────────────────────── */
 .cdk-overlay-container {
   z-index: 1000 !important;
@@ -183,10 +204,10 @@ a {
 
 .field-item__name { font-weight: 500; }
 .field-item__type { font-size: 11px; padding: 1px 6px; border-radius: var(--radius-pill); }
-.field-item__type--string { background: #e0f2fe; color: #0369a1; }
-.field-item__type--number { background: #f3e8ff; color: #7e22ce; }
-.field-item__type--boolean { background: #fef3c7; color: #b45309; }
-.field-item__type--array { background: #d1fae5; color: #047857; }
+.field-item__type--string { background: var(--color-level-note-bg); color: var(--color-level-note); }
+.field-item__type--number { background: var(--color-level-inbox-bg); color: var(--color-level-inbox); }
+.field-item__type--boolean { background: var(--color-warning-bg); color: var(--color-warning); }
+.field-item__type--array { background: var(--color-level-journal-bg); color: var(--color-level-journal); }
 
 .field-item__badge, .section-chip__tag {
   font-size: 10px;
@@ -195,9 +216,9 @@ a {
   padding: 1px 6px;
   border-radius: var(--radius-pill);
 }
-.field-item__badge--required, .section-chip__tag--required { color: var(--color-primary); background: #e0f2fe; }
-.field-item__badge--optional, .section-chip__tag--optional { color: var(--color-text-muted); background: var(--color-border-card); }
-.section-chip__tag--repeatable { background: #ecfdf5; color: #059669; }
+.field-item__badge--required, .section-chip__tag--required { color: var(--color-primary); background: var(--color-primary-light); }
+.field-item__badge--optional, .section-chip__tag--optional { color: var(--color-text-muted); background: var(--color-bg-surface-hover); }
+.section-chip__tag--repeatable { background: var(--color-success-bg); color: var(--color-success); }
 
 .section-chip__num { font-size: 11px; color: var(--color-text-muted); }
 .section-chip__level { font-size: 10px; font-weight: 600; background: var(--color-border-card); border-radius: var(--radius-xs); padding: 1px 4px; }
