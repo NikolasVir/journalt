@@ -1,5 +1,10 @@
 <div class="note-editor">
-  <h1 class="sr-only">{{ noteId() ? 'Edit Note' : 'New Note' }}</h1>
+  <header class="note-editor__header">
+    <div class="note-editor__header-text">
+      <h1 class="note-editor__title">{{ noteId() ? 'Edit Note' : 'New Note' }}</h1>
+      <p class="note-editor__subtitle">{{ noteId() ? 'Update note content and metadata' : 'Capture your thoughts, checklist, or knowledge' }}</p>
+    </div>
+  </header>
 
   @if (errorMessage(); as error) {
     <div class="note-editor__alert" role="alert">
