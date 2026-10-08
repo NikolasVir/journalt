@@ -1,11 +1,9 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, inject, Output } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '@core/services/auth.service';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { LayoutService } from '@layout/layout.service';
 
 interface NavItem {
@@ -23,7 +21,6 @@ interface NavItem {
     RouterLinkActive,
     MatListModule,
     MatIconModule,
-    MatButtonModule,
     MatDividerModule,
     MatTooltipModule
   ],
@@ -33,19 +30,8 @@ interface NavItem {
 })
 export class SidebarComponent {
   protected readonly layoutService = inject(LayoutService);
-  protected readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
 
   @Output() public readonly itemClicked = new EventEmitter<void>();
-
-  public onLogout(): void {
-    this.itemClicked.emit();
-    this.authService.logout().subscribe({
-      next: () => {
-        void this.router.navigate(['/auth/login']);
-      }
-    });
-  }
 
   protected readonly mainNavItems: NavItem[] = [
     { label: 'Home', route: '/dashboard', icon: 'lightbulb', exact: true },

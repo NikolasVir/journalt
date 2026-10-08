@@ -91,17 +91,25 @@
     padding-right: var(--spacing-xs);
   }
 
-  &__username {
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-text-secondary);
-    padding: var(--spacing-2xs) var(--spacing-sm);
-    border-radius: var(--radius-pill);
-    background-color: rgba(255, 255, 255, 0.05);
-    margin-right: var(--spacing-xs);
+  &__avatar-btn {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-left: var(--spacing-2xs);
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 
-    @include respond-to('mobile') {
-      display: none;
+    &:hover {
+      box-shadow: 0 0 0 2px var(--color-primary);
+    }
+
+    &:focus-visible {
+      box-shadow: 0 0 0 3px var(--color-primary);
+      outline: none;
     }
   }
 }

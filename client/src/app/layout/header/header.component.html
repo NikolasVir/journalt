@@ -79,9 +79,6 @@
         </button>
       }
 
-      @if (authService.currentUser(); as user) {
-        <span class="header-toolbar__username">{{ user.userName }}</span>
-      }
       <button
         mat-icon-button
         type="button"
@@ -91,23 +88,38 @@
       >
         <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
       </button>
-      <a
-        mat-icon-button
-        routerLink="/settings"
-        matTooltip="Settings"
-        aria-label="Settings"
-      >
-        <mat-icon>settings</mat-icon>
-      </a>
-      @if (!layoutService.isHandset()) {
+
+      @if (authService.currentUser(); as user) {
         <button
           mat-icon-button
-          (click)="onLogout()"
-          matTooltip="Sign out"
-          aria-label="Sign out"
+          class="header-toolbar__avatar-btn"
+          [matMenuTriggerFor]="accountMenu"
+          [matTooltip]="user.userName"
+          [attr.aria-label]="'Account: ' + user.userName"
         >
-          <mat-icon>logout</mat-icon>
+          <app-avatar [name]="user.userName" [avatarUrl]="user.avatarUrl" [size]="32" />
         </button>
+
+        <mat-menu #accountMenu="matMenu" xPosition="before" class="account-menu">
+          <div class="account-menu__header" (click)="$event.stopPropagation()">
+            <app-avatar [name]="user.userName" [avatarUrl]="user.avatarUrl" [size]="56" />
+            <div class="account-menu__user-info">
+              <span class="account-menu__username">{{ user.userName }}</span>
+              <span class="account-menu__label">JournalT Account</span>
+            </div>
+          </div>
+          <mat-divider />
+          <div class="account-menu__actions">
+            <a mat-menu-item routerLink="/settings">
+              <mat-icon>settings</mat-icon>
+              <span>Settings</span>
+            </a>
+            <button mat-menu-item (click)="onLogout()">
+              <mat-icon>logout</mat-icon>
+              <span>Sign out</span>
+            </button>
+          </div>
+        </mat-menu>
       }
     </div>
   }

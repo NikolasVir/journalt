@@ -223,3 +223,74 @@ button[mat-flat-button][color="warn"] {
 .section-chip__num { font-size: 11px; color: var(--color-text-muted); }
 .section-chip__level { font-size: 10px; font-weight: 600; background: var(--color-border-card); border-radius: var(--radius-xs); padding: 1px 4px; }
 .section-chip__heading { font-weight: 500; font-size: 13px; flex: 1; }
+
+/* ── Account Menu Dropdown (Gmail / Keep Style) ────────────────────────── */
+.account-menu {
+  &.mat-mdc-menu-panel {
+    width: 200px;
+    min-width: 180px;
+    max-width: 210px;
+    border-radius: var(--radius-lg, 16px) !important;
+    padding: 0 !important;
+    overflow: hidden;
+    background-color: var(--color-bg-surface);
+    border: 1px solid var(--color-border-card);
+    box-shadow: var(--shadow-modal, 0 8px 24px rgba(0, 0, 0, 0.2)) !important;
+  }
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-md, 16px) var(--spacing-sm, 12px) var(--spacing-sm, 12px);
+    background-color: var(--color-bg-surface);
+    text-align: center;
+    user-select: none;
+  }
+
+  &__user-info {
+    margin-top: var(--spacing-xs, 8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  &__username {
+    font-size: var(--font-size-base, 15px);
+    font-weight: var(--font-weight-medium, 600);
+    color: var(--color-text-primary);
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__label {
+    font-size: var(--font-size-xs, 12px);
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+
+  &__actions {
+    padding: var(--spacing-2xs, 2px) 0;
+
+    .mat-mdc-menu-item {
+      min-height: 40px;
+      font-size: var(--font-size-sm, 14px);
+
+      .mat-icon {
+        margin-right: var(--spacing-sm, 10px);
+        color: var(--color-text-secondary);
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover .mat-icon {
+        color: var(--color-primary);
+      }
+    }
+  }
+}
+
