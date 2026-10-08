@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { UserSummaryResponse } from '../models/auth.model';
+import { UserResponse, UserSummaryResponse } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root',
@@ -16,5 +16,9 @@ export class UserService {
       params = params.set('search', query);
     }
     return this.http.get<UserSummaryResponse[]>(this.baseUrl, { params });
+  }
+
+  public updateAvatar(avatarUrl: string | null): Observable<UserResponse> {
+    return this.http.put<UserResponse>(`${this.baseUrl}/me/avatar`, { avatarUrl });
   }
 }

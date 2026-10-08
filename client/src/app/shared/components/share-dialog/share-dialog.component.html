@@ -64,9 +64,7 @@
                 @for (user of userSuggestions(); track user.id) {
                   <mat-option [value]="user">
                     <div class="share-dialog__user-option">
-                      <div class="share-dialog__avatar-badge">
-                        <mat-icon>person</mat-icon>
-                      </div>
+                      <app-avatar [name]="user.userName" [avatarUrl]="user.avatarUrl" [size]="28" />
                       <span class="share-dialog__option-name">{{ user.userName }}</span>
                     </div>
                   </mat-option>
@@ -106,9 +104,7 @@
           <!-- Owner Item -->
           <div class="share-dialog__user-row" role="listitem">
             <div class="share-dialog__user-main">
-              <div class="share-dialog__user-avatar share-dialog__user-avatar--owner">
-                <mat-icon>account_circle</mat-icon>
-              </div>
+              <app-avatar [name]="shares.ownerUserName" [size]="32" />
               <div class="share-dialog__user-meta">
                 <div class="share-dialog__name-wrapper">
                   <span class="share-dialog__username">{{ shares.ownerUserName }}</span>
@@ -127,9 +123,7 @@
           @for (collaborator of shares.shares; track collaborator.userId) {
             <div class="share-dialog__user-row" role="listitem">
               <div class="share-dialog__user-main">
-                <div class="share-dialog__user-avatar">
-                  <mat-icon>person</mat-icon>
-                </div>
+                <app-avatar [name]="collaborator.userName" [size]="32" />
                 <div class="share-dialog__user-meta">
                   <div class="share-dialog__name-wrapper">
                     <span class="share-dialog__username">{{ collaborator.userName }}</span>

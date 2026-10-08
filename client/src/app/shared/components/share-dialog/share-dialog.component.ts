@@ -15,6 +15,7 @@ import { NotificationService } from '@core/services/notification.service';
 import { NoteSharesResponse, NoteShareUserDto } from '@core/models/note.model';
 import { UserSummaryResponse } from '@core/models/auth.model';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 
 export interface ShareDialogData {
   noteId: string;
@@ -39,6 +40,7 @@ export interface ShareDialogResult {
     MatInputModule,
     MatAutocompleteModule,
     MatTooltipModule,
+    AvatarComponent,
   ],
   templateUrl: './share-dialog.component.html',
   styleUrl: './share-dialog.component.scss',

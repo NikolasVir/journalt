@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal, Signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { LoginRequest, RegisterRequest, UserResponse } from '../models/auth.model';
+import { ChangePasswordRequest, LoginRequest, RegisterRequest, UserResponse } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root'
@@ -67,5 +67,13 @@ export class AuthService {
     return this.http.post<void>(`${this.baseUrl}/logout`, {}).pipe(
       tap(() => this.userState.set(null))
     );
+  }
+
+  public changePassword(request: ChangePasswordRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/change-password`, request);
+  }
+
+  public updateCurrentUser(user: UserResponse): void {
+    this.userState.set(user);
   }
 }
