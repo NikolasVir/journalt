@@ -1,0 +1,196 @@
+<div class="share-dialog">
+  <!-- Dialog Header -->
+  <div class="share-dialog__header">
+    <div class="share-dialog__header-left">
+      <div class="share-dialog__icon-wrapper">
+        <mat-icon>group_add</mat-icon>
+      </div>
+      <div class="share-dialog__title-block">
+        <h2 mat-dialog-title class="share-dialog__title">Share Note</h2>
+        <span class="share-dialog__note-name" [title]="noteTitle()">{{ noteTitle() }}</span>
+      </div>
+    </div>
+    <button
+      mat-icon-button
+      type="button"
+      (click)="onClose()"
+      aria-label="Close dialog"
+      class="share-dialog__close-btn"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content class="share-dialog__content">
+    @if (isLoading()) {
+      <div class="share-dialog__loading">
+        <mat-icon class="share-dialog__spinner-icon">sync</mat-icon>
+        <span>Loading sharing info...</span>
+      </div>
+    } @else if (sharesData(); as shares) {
+      @if (error(); as err) {
+        <div class="share-dialog__error-banner" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ err }}</span>
+        </div>
+      }
+
+      <!-- Add collaborator section (Owner only) -->
+      @if (shares.isOwner) {
+        <div class="share-dialog__section">
+          <label class="share-dialog__section-title" for="shareUserSearchInput">
+            Add people
+          </label>
+          <div class="share-dialog__input-row">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="share-dialog__search-field">
+              <mat-icon matPrefix class="share-dialog__search-prefix-icon">person_search</mat-icon>
+              <input
+                id="shareUserSearchInput"
+                matInput
+                [formControl]="userSearchControl"
+                [matAutocomplete]="userAuto"
+                placeholder="Find user by username..."
+                autocomplete="off"
+                (keydown.enter)="shareWithUser()"
+              />
+              @if (isSearchingUsers()) {
+                <mat-icon matSuffix class="share-dialog__search-spinner">sync</mat-icon>
+              }
+              <mat-autocomplete
+                #userAuto="matAutocomplete"
+                [displayWith]="displayUserFn"
+                (optionSelected)="onUserSelected($event)"
+              >
+                @for (user of userSuggestions(); track user.id) {
+                  <mat-option [value]="user">
+                    <div class="share-dialog__user-option">
+                      <div class="share-dialog__avatar-badge">
+                        <mat-icon>person</mat-icon>
+                      </div>
+                      <span class="share-dialog__option-name">{{ user.userName }}</span>
+                    </div>
+                  </mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              class="share-dialog__share-btn"
+              [disabled]="!userSearchControl.value || isSubmitting()"
+              (click)="shareWithUser()"
+            >
+              @if (isSubmitting()) {
+                <span>Sharing...</span>
+              } @else {
+                <ng-container>
+                  <mat-icon>add</mat-icon>
+                  <span>Share</span>
+                </ng-container>
+              }
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- People with access -->
+      <div class="share-dialog__section">
+        <div class="share-dialog__section-header">
+          <span class="share-dialog__section-title">People with access</span>
+          <span class="share-dialog__count-badge">{{ 1 + shares.shares.length }}</span>
+        </div>
+        
+        <div class="share-dialog__user-list" role="list">
+          <!-- Owner Item -->
+          <div class="share-dialog__user-row" role="listitem">
+            <div class="share-dialog__user-main">
+              <div class="share-dialog__user-avatar share-dialog__user-avatar--owner">
+                <mat-icon>account_circle</mat-icon>
+              </div>
+              <div class="share-dialog__user-meta">
+                <div class="share-dialog__name-wrapper">
+                  <span class="share-dialog__username">{{ shares.ownerUserName }}</span>
+                  @if (shares.isOwner) {
+                    <span class="share-dialog__badge share-dialog__badge--you">You</span>
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="share-dialog__user-action">
+              <span class="share-dialog__badge share-dialog__badge--owner">Owner</span>
+            </div>
+          </div>
+
+          <!-- Collaborators List -->
+          @for (collaborator of shares.shares; track collaborator.userId) {
+            <div class="share-dialog__user-row" role="listitem">
+              <div class="share-dialog__user-main">
+                <div class="share-dialog__user-avatar">
+                  <mat-icon>person</mat-icon>
+                </div>
+                <div class="share-dialog__user-meta">
+                  <div class="share-dialog__name-wrapper">
+                    <span class="share-dialog__username">{{ collaborator.userName }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="share-dialog__user-action">
+                <span class="share-dialog__badge share-dialog__badge--collaborator">Can edit</span>
+                @if (shares.isOwner) {
+                  <button
+                    mat-icon-button
+                    type="button"
+                    class="share-dialog__remove-btn"
+                    [disabled]="isSubmitting()"
+                    (click)="removeShare(collaborator)"
+                    matTooltip="Remove access"
+                    [attr.aria-label]="'Remove access for ' + collaborator.userName"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (shares.shares.length === 0) {
+          <p class="share-dialog__empty-shares">
+            No collaborators yet. Only you can view and edit this note.
+          </p>
+        }
+      </div>
+
+      <!-- Collaborator banner if not owner -->
+      @if (!shares.isOwner) {
+        <div class="share-dialog__collab-footer">
+          <div class="share-dialog__collab-info">
+            <mat-icon class="share-dialog__collab-info-icon">info</mat-icon>
+            <span class="share-dialog__collab-notice">
+              Shared with you by <strong>{{ shares.ownerUserName }}</strong>
+            </span>
+          </div>
+          <button
+            mat-stroked-button
+            color="warn"
+            type="button"
+            class="share-dialog__leave-btn"
+            [disabled]="isSubmitting()"
+            (click)="leaveNote()"
+          >
+            <mat-icon>exit_to_app</mat-icon>
+            <span>Leave note</span>
+          </button>
+        </div>
+      }
+    }
+  </mat-dialog-content>
+
+  <div class="share-dialog__actions">
+    <button mat-flat-button color="primary" type="button" class="share-dialog__done-btn" (click)="onClose()">
+      Done
+    </button>
+  </div>
+</div>

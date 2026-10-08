@@ -9,9 +9,11 @@ import {
   NoteFilterParams,
   NoteRelationResponse,
   NoteResponse,
+  NoteSharesResponse,
   NoteSourceResponse,
   NoteWikiIndexItem,
   PromoteNoteRequest,
+  ShareNoteRequest,
   TagDto,
   TodoSummaryResponse,
   UpdateNoteRequest,
@@ -165,5 +167,17 @@ export class NoteService {
 
   public getTags(): Observable<string[]> {
     return this.http.get<string[]>(`${this.baseUrl}/tags`);
+  }
+
+  public getShares(noteId: string): Observable<NoteSharesResponse> {
+    return this.http.get<NoteSharesResponse>(`${this.baseUrl}/${noteId}/shares`);
+  }
+
+  public share(noteId: string, request: ShareNoteRequest): Observable<NoteSharesResponse> {
+    return this.http.post<NoteSharesResponse>(`${this.baseUrl}/${noteId}/shares`, request);
+  }
+
+  public removeShare(noteId: string, userId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${noteId}/shares/${userId}`);
   }
 }

@@ -84,6 +84,10 @@ export interface NoteResponse {
   backlinks?: NoteBacklinkResponse[] | null;
   unresolvedWikiLinks?: WikiLinkWarning[] | null;
   typeValidationWarnings?: string[] | null;
+  isOwner?: boolean;
+  isShared?: boolean;
+  ownerUserName?: string | null;
+  shares?: NoteShareUserDto[] | null;
 }
 
 export interface NoteSummaryResponse {
@@ -103,6 +107,29 @@ export interface NoteSummaryResponse {
   updatedAtUtc: string;
   tags?: TagDto[] | null;
   typedMetadataJson?: string | null;
+  userId?: string;
+  isOwner?: boolean;
+  isShared?: boolean;
+  ownerUserName?: string | null;
+}
+
+export interface NoteShareUserDto {
+  userId: string;
+  userName: string;
+  sharedAtUtc: string;
+}
+
+export interface NoteSharesResponse {
+  noteId: string;
+  ownerId: string;
+  ownerUserName: string;
+  isOwner: boolean;
+  shares: NoteShareUserDto[];
+}
+
+export interface ShareNoteRequest {
+  userName?: string;
+  userId?: string;
 }
 
 export interface CreateNoteRequest {
