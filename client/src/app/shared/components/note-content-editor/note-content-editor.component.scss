@@ -25,4 +25,8 @@
       font-size: 15px;
     }
   }
+
+  ::ng-deep .cm-placeholder {
+    color: #abb2bf !important;
+  }
 }

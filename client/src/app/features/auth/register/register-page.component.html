@@ -78,7 +78,7 @@
         color="primary"
         type="submit"
         class="auth-form__submit-btn"
-        [disabled]="isSubmitting()"
+        [disabled]="form.invalid || isSubmitting()"
       >
         @if (isSubmitting()) {
           <span>Creating account...</span>

@@ -294,3 +294,14 @@ button[mat-flat-button][color="warn"] {
   }
 }
 
+/* ── CodeMirror Accessibility Overrides ── */
+.cm-editor .cm-placeholder,
+.cm-placeholder {
+  color: #abb2bf !important;
+}
+
+html.dark-theme .cm-editor .cm-placeholder,
+html.dark-theme .cm-placeholder {
+  color: #abb2bf !important;
+}
+
