@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,7 +12,9 @@ import { Router } from '@angular/router';
 import { ApiKeyCreatedResponse, ApiKeyResponse } from '@core/models/api-key.model';
 import { ApiKeyService } from '@core/services/api-key.service';
 import { AuthService } from '@core/services/auth.service';
+import { UserService } from '@core/services/user.service';
 import { NotificationService } from '@core/services/notification.service';
+import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 
 @Component({
   selector: 'app-settings-page',
@@ -26,14 +28,15 @@ import { NotificationService } from '@core/services/notification.service';
     MatInputModule,
     MatFormFieldModule,
     MatDividerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    AvatarComponent
   ],
   template: `
     <div class="settings-page">
       <header class="settings-page__header">
         <h1 class="settings-page__title">Settings</h1>
         <p class="settings-page__subtitle">
-          Manage your account profile, credentials, and API access keys.
+          Manage your account profile, avatar, credentials, and API access keys.
         </p>
       </header>
 
@@ -43,29 +46,161 @@ import { NotificationService } from '@core/services/notification.service';
           <mat-card-header>
             <mat-icon mat-card-avatar class="settings-card__avatar-icon">account_circle</mat-icon>
             <mat-card-title class="settings-card__title">Account Profile</mat-card-title>
-            <mat-card-subtitle class="settings-card__subtitle">Your user identity in JournalT</mat-card-subtitle>
+            <mat-card-subtitle class="settings-card__subtitle">Your user identity and profile avatar</mat-card-subtitle>
           </mat-card-header>
 
           <mat-card-content class="settings-card__content">
             @if (authService.currentUser(); as user) {
-              <div class="profile-grid">
-                <div class="profile-field">
-                  <span class="profile-field__label">Username</span>
-                  <span class="profile-field__value">{{ user.userName }}</span>
+              <div class="profile-layout">
+                <div class="profile-avatar-container">
+                  <app-avatar [name]="user.userName" [avatarUrl]="user.avatarUrl" [size]="72" />
+                  <div class="profile-avatar-details">
+                    <span class="profile-avatar-name">{{ user.userName }}</span>
+                    <div class="profile-avatar-actions">
+                      <input
+                        type="file"
+                        #avatarFileInput
+                        (change)="onAvatarFileSelected($event)"
+                        accept="image/*"
+                        style="display: none"
+                      />
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        (click)="avatarFileInput.click()"
+                        [disabled]="isUpdatingAvatar()"
+                      >
+                        <mat-icon>upload</mat-icon>
+                        <span>Upload Photo</span>
+                      </button>
+
+                      @if (user.avatarUrl) {
+                        <button
+                          mat-button
+                          color="warn"
+                          type="button"
+                          (click)="removeAvatar()"
+                          [disabled]="isUpdatingAvatar()"
+                        >
+                          <mat-icon>delete</mat-icon>
+                          <span>Remove</span>
+                        </button>
+                      }
+                    </div>
+                  </div>
                 </div>
 
-                <div class="profile-field">
-                  <span class="profile-field__label">User ID</span>
-                  <span class="profile-field__value profile-field__value--mono">{{ user.id }}</span>
+                <div class="profile-grid">
+                  <div class="profile-field">
+                    <span class="profile-field__label">Username</span>
+                    <span class="profile-field__value">{{ user.userName }}</span>
+                  </div>
+
+                  <div class="profile-field">
+                    <span class="profile-field__label">User ID</span>
+                    <span class="profile-field__value profile-field__value--mono">{{ user.id }}</span>
+                  </div>
                 </div>
               </div>
             }
           </mat-card-content>
+        </mat-card>
+      </section>
+
+      <!-- Password & Security Section -->
+      <section class="settings-page__section">
+        <mat-card appearance="outlined" class="settings-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar class="settings-card__avatar-icon">lock</mat-icon>
+            <mat-card-title class="settings-card__title">Password & Security</mat-card-title>
+            <mat-card-subtitle class="settings-card__subtitle">Change your account password</mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content class="settings-card__content">
+            <div class="password-form">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Current Password</mat-label>
+                <input
+                  matInput
+                  [type]="showCurrentPassword() ? 'text' : 'password'"
+                  [ngModel]="currentPassword()"
+                  (ngModelChange)="currentPassword.set($event)"
+                  autocomplete="current-password"
+                />
+                <button
+                  mat-icon-button
+                  matSuffix
+                  type="button"
+                  (click)="showCurrentPassword.set(!showCurrentPassword())"
+                  [attr.aria-label]="showCurrentPassword() ? 'Hide password' : 'Show password'"
+                >
+                  <mat-icon>{{ showCurrentPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>New Password</mat-label>
+                <input
+                  matInput
+                  [type]="showNewPassword() ? 'text' : 'password'"
+                  [ngModel]="newPassword()"
+                  (ngModelChange)="newPassword.set($event)"
+                  autocomplete="new-password"
+                />
+                <button
+                  mat-icon-button
+                  matSuffix
+                  type="button"
+                  (click)="showNewPassword.set(!showNewPassword())"
+                  [attr.aria-label]="showNewPassword() ? 'Hide password' : 'Show password'"
+                >
+                  <mat-icon>{{ showNewPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Confirm New Password</mat-label>
+                <input
+                  matInput
+                  [type]="showConfirmPassword() ? 'text' : 'password'"
+                  [ngModel]="confirmPassword()"
+                  (ngModelChange)="confirmPassword.set($event)"
+                  autocomplete="new-password"
+                />
+                <button
+                  mat-icon-button
+                  matSuffix
+                  type="button"
+                  (click)="showConfirmPassword.set(!showConfirmPassword())"
+                  [attr.aria-label]="showConfirmPassword() ? 'Hide password' : 'Show password'"
+                >
+                  <mat-icon>{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                @if (newPassword() && confirmPassword() && newPassword() !== confirmPassword()) {
+                  <mat-error>Passwords do not match</mat-error>
+                }
+              </mat-form-field>
+
+              @if (passwordError(); as pErr) {
+                <div class="password-error-banner" role="alert">
+                  <mat-icon>error_outline</mat-icon>
+                  <span>{{ pErr }}</span>
+                </div>
+              }
+            </div>
+          </mat-card-content>
 
           <mat-card-actions class="settings-card__actions">
-            <button mat-stroked-button color="warn" (click)="onLogout()">
-              <mat-icon>logout</mat-icon>
-              <span>Sign Out</span>
+            <button
+              mat-flat-button
+              color="primary"
+              [disabled]="!canChangePassword() || isChangingPassword()"
+              (click)="changePassword()"
+            >
+              <mat-icon [class.spinning]="isChangingPassword()">
+                {{ isChangingPassword() ? 'sync' : 'lock_reset' }}
+              </mat-icon>
+              <span>{{ isChangingPassword() ? 'Updating...' : 'Update Password' }}</span>
             </button>
           </mat-card-actions>
         </mat-card>
@@ -293,6 +428,41 @@ import { NotificationService } from '@core/services/notification.service';
       }
     }
 
+    .profile-layout {
+      @include flex-column;
+      gap: var(--spacing-lg);
+    }
+
+    .profile-avatar-container {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-lg);
+      flex-wrap: wrap;
+      padding-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--color-border-card);
+    }
+
+    .profile-avatar-details {
+      @include flex-column;
+      gap: var(--spacing-xs);
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .profile-avatar-name {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+    }
+
+    .profile-avatar-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      flex-wrap: wrap;
+    }
+
+
     .profile-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -320,6 +490,24 @@ import { NotificationService } from '@core/services/notification.service';
           font-size: var(--font-size-xs);
         }
       }
+    }
+
+    .password-form {
+      @include flex-column;
+      gap: var(--spacing-md);
+      max-width: 480px;
+    }
+
+    .password-error-banner {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      color: var(--color-danger);
+      background-color: rgba(234, 67, 53, 0.1);
+      border: 1px solid var(--color-danger);
+      border-radius: var(--radius-sm);
+      padding: var(--spacing-xs) var(--spacing-sm);
+      font-size: var(--font-size-sm);
     }
 
     .key-banner {
@@ -456,10 +644,32 @@ import { NotificationService } from '@core/services/notification.service';
 })
 export class SettingsPageComponent implements OnInit {
   protected readonly authService = inject(AuthService);
+  protected readonly userService = inject(UserService);
   private readonly apiKeyService = inject(ApiKeyService);
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
 
+  // Avatar Management State
+  protected readonly isUpdatingAvatar = signal<boolean>(false);
+
+  // Password Management State
+  protected readonly currentPassword = signal<string>('');
+  protected readonly newPassword = signal<string>('');
+  protected readonly confirmPassword = signal<string>('');
+  protected readonly showCurrentPassword = signal<boolean>(false);
+  protected readonly showNewPassword = signal<boolean>(false);
+  protected readonly showConfirmPassword = signal<boolean>(false);
+  protected readonly isChangingPassword = signal<boolean>(false);
+  protected readonly passwordError = signal<string | null>(null);
+
+  protected readonly canChangePassword = computed(() => {
+    const current = this.currentPassword().trim();
+    const next = this.newPassword().trim();
+    const confirm = this.confirmPassword().trim();
+    return current.length > 0 && next.length >= 9 && next === confirm;
+  });
+
+  // API Keys State
   protected readonly apiKeys = signal<ApiKeyResponse[]>([]);
   protected readonly isLoadingKeys = signal<boolean>(false);
   protected readonly isCreatingKey = signal<boolean>(false);
@@ -483,6 +693,127 @@ export class SettingsPageComponent implements OnInit {
         this.isLoadingKeys.set(false);
         this.notification.showError('Failed to load API keys.');
       }
+    });
+  }
+
+  public onAvatarFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    input.value = '';
+
+    if (!file.type.startsWith('image/')) {
+      this.notification.showError('Please select a valid image file.');
+      return;
+    }
+
+    this.isUpdatingAvatar.set(true);
+    this.resizeImage(file, 256)
+      .then((dataUrl) => {
+        this.userService.updateAvatar(dataUrl).subscribe({
+          next: (user) => {
+            this.authService.updateCurrentUser(user);
+            this.isUpdatingAvatar.set(false);
+            this.notification.showSuccess('Avatar updated successfully.');
+          },
+          error: () => {
+            this.isUpdatingAvatar.set(false);
+            this.notification.showError('Failed to upload avatar.');
+          }
+        });
+      })
+      .catch(() => {
+        this.isUpdatingAvatar.set(false);
+        this.notification.showError('Failed to process image.');
+      });
+  }
+
+
+
+  public removeAvatar(): void {
+    if (this.isUpdatingAvatar()) return;
+
+    this.isUpdatingAvatar.set(true);
+    this.userService.updateAvatar(null).subscribe({
+      next: (user) => {
+        this.authService.updateCurrentUser(user);
+        this.isUpdatingAvatar.set(false);
+        this.notification.showSuccess('Avatar removed.');
+      },
+      error: () => {
+        this.isUpdatingAvatar.set(false);
+        this.notification.showError('Failed to remove avatar.');
+      }
+    });
+  }
+
+  public changePassword(): void {
+    if (!this.canChangePassword() || this.isChangingPassword()) return;
+
+    this.isChangingPassword.set(true);
+    this.passwordError.set(null);
+
+    this.authService.changePassword({
+      currentPassword: this.currentPassword(),
+      newPassword: this.newPassword()
+    }).subscribe({
+      next: () => {
+        this.isChangingPassword.set(false);
+        this.currentPassword.set('');
+        this.newPassword.set('');
+        this.confirmPassword.set('');
+        this.notification.showSuccess('Password updated successfully.');
+      },
+      error: (err) => {
+        this.isChangingPassword.set(false);
+        const errObj = err?.error;
+        let detail = 'Failed to update password. Check your current password.';
+        if (errObj?.errors) {
+          const msgs = Object.values(errObj.errors).flat() as string[];
+          if (msgs.length > 0) detail = msgs.join(' ');
+        } else if (errObj?.detail || errObj?.message || errObj?.title) {
+          detail = errObj.detail || errObj.message || errObj.title;
+        }
+        this.passwordError.set(detail);
+        this.notification.showError(detail);
+      }
+    });
+  }
+
+  private resizeImage(file: File, maxDim = 256): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
   }
 

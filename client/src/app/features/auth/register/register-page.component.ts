@@ -49,7 +49,7 @@ export class RegisterPageComponent {
   protected readonly form = new FormGroup<RegisterForm>(
     {
       username: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
-      password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] }),
+      password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(9)] }),
       confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] })
     },
     { validators: [passwordMatchValidator] }
@@ -71,9 +71,16 @@ export class RegisterPageComponent {
         this.isSubmitting.set(false);
         void this.router.navigate(['/dashboard']);
       },
-      error: (err: { error?: { errors?: string[]; detail?: string } }) => {
+      error: (err: any) => {
         this.isSubmitting.set(false);
-        const detail = err.error?.detail ?? (err.error?.errors ? err.error.errors.join(', ') : 'Registration failed.');
+        const errObj = err?.error;
+        let detail = 'Registration failed.';
+        if (errObj?.errors) {
+          const msgs = Array.isArray(errObj.errors) ? errObj.errors : Object.values(errObj.errors).flat() as string[];
+          if (msgs.length > 0) detail = msgs.join(' ');
+        } else if (errObj?.detail || errObj?.message || errObj?.title) {
+          detail = errObj.detail || errObj.message || errObj.title;
+        }
         this.errorMessage.set(detail);
       }
     });
