@@ -18,9 +18,13 @@
   &__left {
     display: flex;
     align-items: center;
-    min-width: 0;
     gap: var(--spacing-xs);
     padding-left: var(--spacing-xs);
+    flex-shrink: 0;
+
+    @include respond-to('tablet') {
+      min-width: 180px;
+    }
 
     @include respond-to('desktop') {
       min-width: 232px;
@@ -33,6 +37,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
+    flex-shrink: 0;
   }
 
   &__title {
@@ -40,10 +45,12 @@
     font-weight: var(--font-weight-regular);
     letter-spacing: -0.01em;
     color: var(--color-text-primary);
+    white-space: nowrap;
   }
 
   &__search {
-    flex: 1 1 var(--search-max-width);
+    flex: 1 1 auto;
+    min-width: 0;
     max-width: var(--search-max-width);
     margin-right: auto;
 
