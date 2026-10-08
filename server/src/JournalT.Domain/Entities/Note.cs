@@ -8,6 +8,7 @@ public class Note : BaseEntity
     public Guid UserId { get; set; }
     public Guid? LibraryId { get; set; }
     public NoteLevel Level { get; set; }
+    public NoteFormat Format { get; set; } = NoteFormat.Markdown;
     public Guid? TypeId { get; set; }
     public int? TypeVersion { get; set; }
     public string Title { get; set; } = string.Empty;

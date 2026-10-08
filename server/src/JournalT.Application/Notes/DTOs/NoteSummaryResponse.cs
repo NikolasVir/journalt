@@ -17,5 +17,6 @@ public sealed record NoteSummaryResponse(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
     IReadOnlyList<TagDto>? Tags = null,
-    string? TypedMetadataJson = null
+    string? TypedMetadataJson = null,
+    NoteFormat Format = NoteFormat.Markdown
 );

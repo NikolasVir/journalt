@@ -460,6 +460,64 @@ public class NoteServiceTests : IDisposable
         Assert.Contains(fetched.TypeValidationWarnings, w => w.Contains("Summary"));
     }
 
+    [Fact]
+    public async Task CreateAsync_WithListFormat_PersistsListFormat()
+    {
+        var res = await _sut.CreateAsync(new CreateNoteRequest(
+            "Shopping List",
+            NoteLevel.Note,
+            BodyMarkdown: "- [ ] Milk\n- [ ] Eggs\n",
+            Format: NoteFormat.List
+        ));
+
+        Assert.True(res.Succeeded);
+        Assert.Equal(NoteFormat.List, res.Note!.Format);
+
+        var fetched = await _sut.GetByIdAsync(res.Note.Id);
+        Assert.NotNull(fetched);
+        Assert.Equal(NoteFormat.List, fetched.Format);
+    }
+
+    [Fact]
+    public async Task CreateAsync_DefaultFormat_IsMarkdown()
+    {
+        var res = await _sut.CreateAsync(new CreateNoteRequest("Regular Note", NoteLevel.Note));
+        Assert.True(res.Succeeded);
+        Assert.Equal(NoteFormat.Markdown, res.Note!.Format);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PreservesOriginalFormat_FormatIsImmutable()
+    {
+        var created = (await _sut.CreateAsync(new CreateNoteRequest("List Note", NoteLevel.Note, Format: NoteFormat.List))).Note!;
+        Assert.Equal(NoteFormat.List, created.Format);
+
+        var updateResult = await _sut.UpdateAsync(created.Id, new UpdateNoteRequest("Updated List Title", BodyMarkdown: "- [x] Done\n"));
+        Assert.True(updateResult.Succeeded);
+        Assert.Equal(NoteFormat.List, updateResult.Note!.Format);
+
+        var fetched = await _sut.GetByIdAsync(created.Id);
+        Assert.NotNull(fetched);
+        Assert.Equal(NoteFormat.List, fetched.Format);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ListFormat_OnInbox_Fails()
+    {
+        var res = await _sut.CreateAsync(new CreateNoteRequest("Inbox List", NoteLevel.Inbox, Format: NoteFormat.List));
+        Assert.False(res.Succeeded);
+        Assert.Contains("Only notes can have List format", res.Errors.First());
+    }
+
+    [Fact]
+    public async Task PromoteAsync_ListFormat_ToJournal_Fails()
+    {
+        var created = (await _sut.CreateAsync(new CreateNoteRequest("List Note", NoteLevel.Note, Format: NoteFormat.List))).Note!;
+        var promoteRes = await _sut.PromoteAsync(created.Id, new PromoteNoteRequest(NoteLevel.Journal, Guid.NewGuid()));
+        Assert.False(promoteRes.Succeeded);
+        Assert.Contains("List notes cannot be promoted to Journal", promoteRes.Errors.First());
+    }
+
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser
     {
         public Guid UserId { get; } = userId;

@@ -28,6 +28,10 @@ public sealed class NoteService(
 
         var userId = _currentUser.UserId;
 
+        // Format-level compatibility: only Notes can be lists (not Inbox or Journal)
+        if (request.Format == NoteFormat.List && request.Level != NoteLevel.Note)
+            return NoteResult.Failure("Only notes can have List format. Inbox and Journal items cannot be lists.");
+
         // Level-specific validation
         TypeDefinition? typeDef = null;
         if (request.Level == NoteLevel.Inbox)
@@ -98,6 +102,7 @@ public sealed class NoteService(
             IsTodo = request.IsTodo,
             TodoCompletedAtUtc = null,
             IsTrashed = false,
+            Format = request.Format,
         };
 
         if (normalizedTags != null && normalizedTags.Count > 0)
@@ -247,7 +252,8 @@ public sealed class NoteService(
                 n.CreatedAtUtc,
                 n.UpdatedAtUtc,
                 n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(),
-                n.TypedMetadataJson
+                n.TypedMetadataJson,
+                n.Format
             ))
             .ToListAsync(ct);
 
@@ -446,6 +452,10 @@ public sealed class NoteService(
         // Unidirectional progression only
         if (request.TargetLevel <= note.Level)
             return NoteResult.Failure($"Cannot demote or promote to current level (current: {note.Level}, requested: {request.TargetLevel}).");
+
+        // Format-level compatibility: only Notes can be lists (not Journal)
+        if (note.Format == NoteFormat.List && request.TargetLevel == NoteLevel.Journal)
+            return NoteResult.Failure("List notes cannot be promoted to Journal. Only Notes can be lists.");
 
         TypeDefinition? typeDef = null;
         if (request.TargetLevel == NoteLevel.Journal)
@@ -663,6 +673,7 @@ public sealed class NoteService(
             sourceNote.UpdatedAtUtc,
             [],
             [],
+            sourceNote.Format,
             OutboundRelations: [response]
         ));
     }
@@ -770,7 +781,7 @@ public sealed class NoteService(
             .Take(50)
             .Select(n => new NoteSummaryResponse(
                 n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
-                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson))
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format))
             .ToListAsync(ct);
 
         var completedNotes = await completedQuery
@@ -778,7 +789,7 @@ public sealed class NoteService(
             .Take(20)
             .Select(n => new NoteSummaryResponse(
                 n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
-                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson))
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format))
             .ToListAsync(ct);
 
         return new TodoSummaryResponse(pendingCount, completedCount, pendingNotes, completedNotes);
@@ -955,6 +966,7 @@ public sealed class NoteService(
             note.UpdatedAtUtc,
             note.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(),
             wikiLinks,
+            note.Format,
             Sources: note.Sources.Select(s => new NoteSourceResponse(
                 s.Id, s.NoteId, s.Title, s.Description, s.Url, s.CreatedAtUtc, s.UpdatedAtUtc)).ToList(),
             OutboundRelations: note.OutboundRelations.Select(r => new NoteRelationResponse(

@@ -11,5 +11,6 @@ public sealed record CreateNoteRequest(
     Guid? TypeId = null,
     string? TypedMetadataJson = null,
     bool IsTodo = false,
-    List<TagDto>? Tags = null
+    List<TagDto>? Tags = null,
+    NoteFormat Format = NoteFormat.Markdown
 );

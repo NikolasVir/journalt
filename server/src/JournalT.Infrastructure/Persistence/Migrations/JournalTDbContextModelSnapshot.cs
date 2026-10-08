@@ -118,6 +118,13 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("Markdown");
+
                     b.Property<bool>("IsTodo")
                         .HasColumnType("INTEGER");
 

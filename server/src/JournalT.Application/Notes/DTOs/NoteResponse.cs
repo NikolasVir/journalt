@@ -27,6 +27,7 @@ public sealed record NoteResponse(
     DateTime UpdatedAtUtc,
     IReadOnlyList<TagDto> Tags,
     IReadOnlyList<string> WikiLinks,
+    NoteFormat Format = NoteFormat.Markdown,
     IReadOnlyList<NoteSourceResponse>? Sources = null,
     IReadOnlyList<NoteRelationResponse>? OutboundRelations = null,
     /// <summary>Relations from other non-trashed notes that target this note.</summary>

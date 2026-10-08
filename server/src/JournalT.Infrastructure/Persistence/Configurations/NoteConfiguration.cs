@@ -38,6 +38,14 @@ public class NoteConfiguration : IEntityTypeConfiguration<Note>
                 v => v == "Quick" ? NoteLevel.Note : Enum.Parse<NoteLevel>(v, true))
             .HasMaxLength(20);
 
+        builder.Property(n => n.Format)
+            .IsRequired()
+            .HasConversion(
+                v => v.ToString(),
+                v => Enum.Parse<NoteFormat>(v, true))
+            .HasMaxLength(20)
+            .HasDefaultValue(NoteFormat.Markdown);
+
         builder.HasOne(n => n.Library)
             .WithMany(l => l.Notes)
             .HasForeignKey(n => n.LibraryId)
