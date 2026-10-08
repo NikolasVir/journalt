@@ -1,0 +1,117 @@
+<div class="checklist-editor" [style.min-height]="minHeight()">
+  <!-- Active (Incomplete) List Items -->
+  <div cdkDropList class="checklist-list" (cdkDropListDropped)="onDropActive($event)">
+    @for (item of activeItems; track item.id) {
+      <div cdkDrag class="checklist-item">
+        <span cdkDragHandle class="checklist-item__handle" title="Drag to reorder">
+          <mat-icon>drag_indicator</mat-icon>
+        </span>
+
+        <button
+          type="button"
+          class="checklist-item__checkbox"
+          (click)="toggleItem(item)"
+          aria-label="Mark item complete"
+        >
+          <mat-icon>check_box_outline_blank</mat-icon>
+        </button>
+
+        <input
+          #itemInput
+          type="text"
+          class="checklist-item__input"
+          [value]="item.text"
+          [attr.data-item-id]="item.id"
+          (input)="updateItemText(item, $any($event.target).value)"
+          (keydown.enter)="onEnter(item, $event)"
+          (keydown.backspace)="onBackspace(item, $event)"
+          (keydown.arrowup)="onArrowUp(item, $event)"
+          (keydown.arrowdown)="onArrowDown(item, $event)"
+          (paste)="onPaste(item, $event)"
+          [placeholder]="placeholder()"
+          autocomplete="off"
+        />
+
+        <button
+          type="button"
+          class="checklist-item__delete"
+          (click)="deleteItem(item)"
+          aria-label="Delete item"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- "+ List item" Prompt row -->
+  <div class="checklist-add-row" (click)="addNewItemFromPrompt()" role="button" tabindex="0">
+    <mat-icon class="checklist-add-row__icon">add</mat-icon>
+    <span class="checklist-add-row__text">List item</span>
+  </div>
+
+  <!-- Collapsible Completed Items Section -->
+  @if (completedItems.length > 0) {
+    <div class="checklist-completed">
+      <button
+        type="button"
+        class="checklist-completed__toggle"
+        (click)="toggleCompletedSection()"
+        [attr.aria-expanded]="isCompletedExpanded()"
+      >
+        <mat-icon class="checklist-completed__chevron">
+          {{ isCompletedExpanded() ? 'expand_more' : 'chevron_right' }}
+        </mat-icon>
+        <span class="checklist-completed__label">
+          {{ completedItems.length }} Completed {{ completedItems.length === 1 ? 'item' : 'items' }}
+        </span>
+      </button>
+
+      @if (isCompletedExpanded()) {
+        <div cdkDropList class="checklist-list checklist-list--completed" (cdkDropListDropped)="onDropCompleted($event)">
+          @for (item of completedItems; track item.id) {
+            <div cdkDrag class="checklist-item checklist-item--completed">
+              <span cdkDragHandle class="checklist-item__handle" title="Drag to reorder">
+                <mat-icon>drag_indicator</mat-icon>
+              </span>
+
+              <button
+                type="button"
+                class="checklist-item__checkbox"
+                (click)="toggleItem(item)"
+                aria-label="Mark item incomplete"
+              >
+                <mat-icon>check_box</mat-icon>
+              </button>
+
+              <input
+                #itemInput
+                type="text"
+                class="checklist-item__input"
+                [value]="item.text"
+                [attr.data-item-id]="item.id"
+                (input)="updateItemText(item, $any($event.target).value)"
+                (keydown.enter)="onEnter(item, $event)"
+                (keydown.backspace)="onBackspace(item, $event)"
+                (keydown.arrowup)="onArrowUp(item, $event)"
+                (keydown.arrowdown)="onArrowDown(item, $event)"
+                (paste)="onPaste(item, $event)"
+                [placeholder]="placeholder()"
+                autocomplete="off"
+              />
+
+              <button
+                type="button"
+                class="checklist-item__delete"
+                (click)="deleteItem(item)"
+                aria-label="Delete item"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

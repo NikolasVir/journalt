@@ -1,4 +1,5 @@
 export type NoteLevel = 'Inbox' | 'Note' | 'Journal';
+export type NoteFormat = 'Markdown' | 'List';
 
 export interface WikiLinkWarning {
   title: string;
@@ -61,6 +62,7 @@ export interface NoteResponse {
   id: string;
   userId: string;
   level: NoteLevel;
+  format?: NoteFormat;
   title: string;
   summary?: string | null;
   bodyMarkdown: string;
@@ -87,6 +89,7 @@ export interface NoteResponse {
 export interface NoteSummaryResponse {
   id: string;
   level: NoteLevel;
+  format?: NoteFormat;
   title: string;
   summary?: string | null;
   bodyMarkdown?: string | null;
@@ -104,6 +107,7 @@ export interface NoteSummaryResponse {
 
 export interface CreateNoteRequest {
   level: NoteLevel;
+  format?: NoteFormat;
   title: string;
   summary?: string | null;
   bodyMarkdown?: string;

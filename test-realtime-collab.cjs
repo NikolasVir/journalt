@@ -70,7 +70,7 @@ async function run() {
         headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': token },
         body: JSON.stringify({
           title: 'Realtime Collaboration Test',
-          level: 'Quick',
+          level: 'Note',
           bodyMarkdown: '# Shared Test Note\nLine 1\n'
         })
       });

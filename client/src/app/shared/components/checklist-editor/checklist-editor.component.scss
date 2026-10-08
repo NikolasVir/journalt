@@ -1,0 +1,226 @@
+.checklist-editor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 4px 0;
+  box-sizing: border-box;
+}
+
+.checklist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    .checklist-item__handle {
+      opacity: 0.6;
+    }
+    .checklist-item__delete {
+      opacity: 0.7;
+    }
+  }
+
+  &__handle {
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mat-sys-on-surface-variant, #9aa0a6);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    user-select: none;
+    padding: 2px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:active {
+      cursor: grabbing;
+      opacity: 1 !important;
+    }
+  }
+
+  &__checkbox {
+    background: none;
+    border: none;
+    padding: 2px;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mat-sys-on-surface-variant, #9aa0a6);
+    border-radius: 4px;
+    transition: color 0.15s ease;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      color: var(--mat-sys-primary, #a8c7fa);
+    }
+  }
+
+  &__input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--mat-sys-on-surface, #e3e3e3);
+    padding: 4px 0;
+
+    &::placeholder {
+      color: var(--mat-sys-on-surface-variant, #80868b);
+      opacity: 0.6;
+    }
+
+    &:focus + .checklist-item__delete {
+      opacity: 0.7;
+    }
+  }
+
+  &__delete {
+    background: none;
+    border: none;
+    padding: 2px;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mat-sys-on-surface-variant, #9aa0a6);
+    opacity: 0;
+    border-radius: 4px;
+    transition: opacity 0.15s ease, color 0.15s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      color: var(--mat-sys-error, #f28b82);
+      opacity: 1 !important;
+    }
+  }
+
+  &--completed {
+    .checklist-item__input {
+      text-decoration: line-through;
+      color: var(--mat-sys-on-surface-variant, #80868b);
+      opacity: 0.7;
+    }
+
+    .checklist-item__checkbox {
+      color: var(--mat-sys-primary, #a8c7fa);
+    }
+  }
+}
+
+.checklist-add-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px 6px 26px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--mat-sys-on-surface-variant, #9aa0a6);
+  user-select: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  margin-top: 4px;
+
+  &__icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &__text {
+    font-size: 14px;
+  }
+
+  &:hover {
+    color: var(--mat-sys-on-surface, #e3e3e3);
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+}
+
+.checklist-completed {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--mat-sys-outline-variant, rgba(255, 255, 255, 0.12));
+
+  &__toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 4px 2px;
+    margin: 0 0 6px 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--mat-sys-on-surface-variant, #9aa0a6);
+    border-radius: 4px;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--mat-sys-on-surface, #e3e3e3);
+    }
+  }
+
+  &__chevron {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &__label {
+    letter-spacing: 0.2px;
+  }
+}
+
+/* CDK Drag & Drop styles */
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+  background-color: var(--mat-sys-surface-container, #282a2d);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.2;
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.checklist-list.cdk-drop-list-dragging .checklist-item:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
