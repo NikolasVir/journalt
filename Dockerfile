@@ -38,10 +38,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 # Non-root user for security
 RUN addgroup --system journalt && adduser --system --ingroup journalt journalt
 
-# Persistent data directory for the SQLite database (mount a volume here)
-RUN mkdir -p /data && chown journalt:journalt /data
+# Persistent data directory for the SQLite database and backups (mount a volume here)
+RUN mkdir -p /data/backups && chown -R journalt:journalt /data
 
-COPY --from=build /app/publish .
+COPY --from=build --chown=journalt:journalt /app/publish .
 
 USER journalt
 

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 [ApiController]
 [Route("api/auth")]
@@ -28,6 +29,7 @@ public class AuthController(
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting("AuthRateLimit")]
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request, CancellationToken ct)
     {
@@ -49,6 +51,7 @@ public class AuthController(
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting("AuthRateLimit")]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken ct)
     {

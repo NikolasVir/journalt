@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using JournalT.Api.Antiforgery;
 using JournalT.Api.Extensions;
 using JournalT.Application.Common.Interfaces;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,6 +34,23 @@ builder.Services.AddControllers(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
+// Rate limiting for public and sensitive endpoints
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("AuthRateLimit", httpContext =>
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0
+        });
+    });
+});
+
 // Antiforgery / CSRF protection for cookie-authenticated clients (e.g. Angular)
 builder.Services.AddAntiforgery(options =>
 {
@@ -39,7 +58,9 @@ builder.Services.AddAntiforgery(options =>
     options.Cookie.Name = ".JournalT.Antiforgery";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = builder.Environment.IsProduction()
+        ? CookieSecurePolicy.Always
+        : CookieSecurePolicy.SameAsRequest;
 });
 
 // Add Infrastructure (SQLite DbContext, Identity, etc.)
@@ -96,7 +117,6 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<JournalTDbContext>();
     db.Database.Migrate();
-    db.Database.ExecuteSqlRaw("UPDATE Notes SET Level = 'Note' WHERE Level = 'Quick';");
 }
 
 app.UseHttpsRedirection();
@@ -115,6 +135,7 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -123,14 +144,29 @@ app.MapHub<JournalT.Api.Hubs.CollaborationHub>("/hubs/collaboration");
 app.MapControllers();
 
 // Database snapshot / backup endpoint
-app.MapPost("/api/maintenance/backup", async (JournalTDbContext db, ICurrentUser currentUser) =>
+app.MapPost("/api/maintenance/backup", async (JournalTDbContext db, IConfiguration config, ICurrentUser currentUser) =>
 {
-    var backupDir = Path.Combine(AppContext.BaseDirectory, "backups");
+    var customPath = config["Backup:StoragePath"];
+    string backupDir;
+    if (!string.IsNullOrWhiteSpace(customPath))
+    {
+        backupDir = customPath;
+    }
+    else
+    {
+        var dbPath = db.Database.GetDbConnection().DataSource;
+        var dbDir = Path.GetDirectoryName(dbPath);
+        backupDir = Path.Combine(string.IsNullOrEmpty(dbDir) ? AppContext.BaseDirectory : dbDir, "backups");
+    }
+
     Directory.CreateDirectory(backupDir);
     var backupFileName = $"journalt-backup-{DateTime.UtcNow:yyyyMMddHHmmss}.db";
     var backupPath = Path.Combine(backupDir, backupFileName);
 
+#pragma warning disable EF1002 // backupPath is constructed server-side from configured directory and UTC timestamp
     await db.Database.ExecuteSqlRawAsync($"VACUUM INTO '{backupPath}';");
+#pragma warning restore EF1002
+
     return Results.Ok(new { message = "Backup created successfully.", fileName = backupFileName, timestampUtc = DateTime.UtcNow });
 });
 

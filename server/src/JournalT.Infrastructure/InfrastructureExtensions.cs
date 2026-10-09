@@ -28,7 +28,7 @@ public static class InfrastructureExtensions
     {
         services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
         services.AddPersistence(configuration);
-        services.AddIdentityServices();
+        services.AddIdentityServices(configuration);
         services.AddApiKeyServices();
         services.AddSingleton<IMarkdownService, MarkdownService>();
         services.AddSingleton<ITypeValidationService, TypeValidationService>();
@@ -59,8 +59,10 @@ public static class InfrastructureExtensions
         return services;
     }
 
-    public static IServiceCollection AddIdentityServices(this IServiceCollection services)
+    public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration? configuration = null)
     {
+        var isProduction = configuration is not null && string.Equals(configuration["ASPNETCORE_ENVIRONMENT"], "Production", StringComparison.OrdinalIgnoreCase);
+
         services.AddIdentity<AppUser, IdentityRole<Guid>>(options =>
         {
             options.Password.RequireDigit = true;
@@ -68,6 +70,10 @@ public static class InfrastructureExtensions
             options.Password.RequireNonAlphanumeric = true;
             options.Password.RequireUppercase = true;
             options.Password.RequiredLength = 9;
+
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.AllowedForNewUsers = true;
         })
         .AddEntityFrameworkStores<JournalTDbContext>();
 
@@ -75,7 +81,7 @@ public static class InfrastructureExtensions
         {
             options.Cookie.HttpOnly = true;
             options.Cookie.SameSite = SameSiteMode.Strict;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.Cookie.SecurePolicy = isProduction ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
             options.ExpireTimeSpan = TimeSpan.FromDays(14);
             options.SlidingExpiration = true;
 
