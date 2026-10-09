@@ -7,8 +7,8 @@ export interface AppVersionInfo {
 }
 
 export const APP_VERSION_INFO: AppVersionInfo = {
-  "version": "0.1.0-preview.0.153",
-  "commit": "a52fcb7",
+  "version": "1.0.0",
+  "commit": "cc7d14c",
   "buildDate": "2026-10-09",
-  "displayVersion": "v0.1.0-preview.0.153"
+  "displayVersion": "v1.0.0"
 } as const;
