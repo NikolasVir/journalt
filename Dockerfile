@@ -20,9 +20,9 @@ ARG APP_VERSION=0.1.0-dev
 WORKDIR /src
 
 # Restore first (layer-cache friendly)
-COPY server/JournalT.slnx server/Directory.Build.props* ./server/
+COPY server/Directory.Build.props* ./server/
 COPY server/src/ ./server/src/
-RUN dotnet restore server/JournalT.slnx
+RUN dotnet restore server/src/JournalT.Api/JournalT.Api.csproj
 
 # Publish backend
 RUN dotnet publish server/src/JournalT.Api/JournalT.Api.csproj \
