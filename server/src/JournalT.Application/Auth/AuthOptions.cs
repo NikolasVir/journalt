@@ -6,7 +6,7 @@ public sealed class AuthOptions
 
     /// <summary>
     /// When false, POST /api/auth/register returns 403.
-    /// Override via environment variable: Auth__RegistrationEnabled=false
+    /// Override via environment variable: Auth__RegistrationEnabled=true
     /// </summary>
-    public bool RegistrationEnabled { get; init; } = true;
+    public bool RegistrationEnabled { get; init; } = false;
 }

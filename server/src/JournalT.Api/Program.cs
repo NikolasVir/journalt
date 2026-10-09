@@ -90,7 +90,9 @@ app.UseStatusCodePages();
 // Configure forwarded headers for reverse proxies (Nginx, Traefik, Caddy, Cloudflare)
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    KnownIPNetworks = { },
+    KnownProxies = { }
 });
 
 // Security headers
@@ -99,6 +101,16 @@ app.Use(async (context, next) =>
     context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
     context.Response.Headers.Append("X-Frame-Options", "SAMEORIGIN");
     context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Append("Content-Security-Policy",
+        "default-src 'self'; " +
+        "script-src 'self'; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "font-src 'self' https://fonts.gstatic.com data:; " +
+        "img-src 'self' data: https:; " +
+        "connect-src 'self' ws: wss:; " +
+        "object-src 'none'; " +
+        "base-uri 'self'; " +
+        "frame-ancestors 'self';");
     await next();
 });
 
@@ -143,32 +155,6 @@ app.MapHealthChecks("/health").AllowAnonymous();
 app.MapHub<JournalT.Api.Hubs.CollaborationHub>("/hubs/collaboration");
 app.MapControllers();
 
-// Database snapshot / backup endpoint
-app.MapPost("/api/maintenance/backup", async (JournalTDbContext db, IConfiguration config, ICurrentUser currentUser) =>
-{
-    var customPath = config["Backup:StoragePath"];
-    string backupDir;
-    if (!string.IsNullOrWhiteSpace(customPath))
-    {
-        backupDir = customPath;
-    }
-    else
-    {
-        var dbPath = db.Database.GetDbConnection().DataSource;
-        var dbDir = Path.GetDirectoryName(dbPath);
-        backupDir = Path.Combine(string.IsNullOrEmpty(dbDir) ? AppContext.BaseDirectory : dbDir, "backups");
-    }
-
-    Directory.CreateDirectory(backupDir);
-    var backupFileName = $"journalt-backup-{DateTime.UtcNow:yyyyMMddHHmmss}.db";
-    var backupPath = Path.Combine(backupDir, backupFileName);
-
-#pragma warning disable EF1002 // backupPath is constructed server-side from configured directory and UTC timestamp
-    await db.Database.ExecuteSqlRawAsync($"VACUUM INTO '{backupPath}';");
-#pragma warning restore EF1002
-
-    return Results.Ok(new { message = "Backup created successfully.", fileName = backupFileName, timestampUtc = DateTime.UtcNow });
-});
 
 // SPA fallback: non-API routes return index.html; unmapped /api routes return 404 ProblemDetails
 app.MapFallback(async context =>
