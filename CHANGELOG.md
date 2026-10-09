@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/NikolasVir/journalt/compare/v1.0.0...v1.0.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* **docker:** use groupadd and useradd in runtime ([4e66ebf](https://github.com/NikolasVir/journalt/commit/4e66ebf7f87bcbcb0237fda46385d8e01c23d23e))
+
 ## 1.0.0 (2026-10-09)
 
 
