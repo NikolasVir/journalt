@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using JournalT.Api.Antiforgery;
@@ -174,6 +175,17 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health").AllowAnonymous();
+app.MapGet("/api/version", () =>
+{
+    var assembly = typeof(Program).Assembly;
+    var infoVersion = assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+    var fileVersion = assembly.GetCustomAttribute<System.Reflection.AssemblyFileVersionAttribute>()?.Version;
+    return Results.Ok(new
+    {
+        version = fileVersion,
+        informationalVersion = infoVersion
+    });
+}).AllowAnonymous();
 app.MapHub<JournalT.Api.Hubs.CollaborationHub>("/hubs/collaboration");
 app.MapControllers();
 
