@@ -2,7 +2,7 @@
 
 ## Git & Commit Conventions
 - Commit messages must follow Conventional Commits format (`type(scope): subject` or `type: subject`).
-- Commit message headers must never exceed 50 characters (`header-max-length: 50`).
+- Commit messages must never exceed 50 chars per message (`header-max-length: 50`).
 - The subject must be entirely lower-case.
 - Never run `git commit` automatically without explicit user approval.
 
