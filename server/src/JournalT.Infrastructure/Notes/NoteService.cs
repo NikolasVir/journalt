@@ -83,7 +83,7 @@ public sealed class NoteService(
         if (request.LibraryId.HasValue)
         {
             var libraryExists = await _db.Libraries
-                .AnyAsync(l => l.Id == request.LibraryId.Value, ct);
+                .AnyAsync(l => l.Id == request.LibraryId.Value && l.UserId == userId, ct);
             if (!libraryExists)
                 return NoteResult.Failure("Library not found.");
         }
@@ -368,7 +368,7 @@ public sealed class NoteService(
         if (request.LibraryId.HasValue && request.LibraryId != note.LibraryId)
         {
             var libraryExists = await _db.Libraries
-                .AnyAsync(l => l.Id == request.LibraryId.Value, ct);
+                .AnyAsync(l => l.Id == request.LibraryId.Value && l.UserId == note.UserId, ct);
             if (!libraryExists)
                 return NoteResult.Failure("Library not found.");
         }
@@ -1062,9 +1062,12 @@ public sealed class NoteService(
 
     public async Task<IReadOnlyList<string>> GetDistinctTagsAsync(CancellationToken ct = default)
     {
+        var currentUserId = _currentUser.UserId;
         return await _db.NoteTags
             .AsNoTracking()
-            .Where(t => !string.IsNullOrWhiteSpace(t.Value))
+            .Where(t => (t.Note.UserId == currentUserId || t.Note.Shares.Any(s => s.UserId == currentUserId))
+                        && !t.Note.IsTrashed
+                        && !string.IsNullOrWhiteSpace(t.Value))
             .Select(t => t.Value!)
             .Distinct()
             .OrderBy(t => t)
