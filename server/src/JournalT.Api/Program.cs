@@ -4,6 +4,7 @@ using JournalT.Api.Antiforgery;
 using JournalT.Api.Extensions;
 using JournalT.Application.Common.Interfaces;
 using JournalT.Infrastructure;
+using JournalT.Infrastructure.Identity;
 using JournalT.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -125,11 +126,31 @@ else
     app.UseHsts();
 }
 
-// Auto-apply SQLite migrations on startup
+// Auto-apply SQLite migrations on startup and seed default admin user
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<JournalTDbContext>();
     db.Database.Migrate();
+
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    var adminUser = await userManager.FindByNameAsync("admin");
+    if (adminUser is null)
+    {
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<AppUser>>();
+        adminUser = new AppUser
+        {
+            UserName = "admin",
+            IsActive = true,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow
+        };
+        adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "changeme");
+        var result = await userManager.CreateAsync(adminUser);
+        if (result.Succeeded)
+        {
+            app.Logger.LogInformation("Default administrator account created (Username: admin).");
+        }
+    }
 }
 
 app.UseHttpsRedirection();
