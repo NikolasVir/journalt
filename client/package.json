@@ -3,11 +3,14 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "version:gen": "node scripts/set-version.mjs",
+    "prestart": "npm run version:gen",
     "start": "ng serve",
+    "prebuild": "npm run version:gen",
     "build": "ng build",
     "build:kestrel": "ng build && node -e \"fs.rmSync('../server/src/JournalT.Api/wwwroot', {recursive: true, force: true}); fs.cpSync('dist/client/browser', '../server/src/JournalT.Api/wwwroot', {recursive: true})\"",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "npm run version:gen && ng test"
   },
   "private": true,
   "packageManager": "npm@11.18.0",

@@ -5,6 +5,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { LayoutService } from '@layout/layout.service';
+import { APP_VERSION_INFO } from '@env/version';
 
 interface NavItem {
   label: string;
@@ -30,6 +31,8 @@ interface NavItem {
 })
 export class SidebarComponent {
   protected readonly layoutService = inject(LayoutService);
+  protected readonly appVersion = APP_VERSION_INFO;
+  protected readonly versionTooltip = `JournalT ${APP_VERSION_INFO.displayVersion} (${APP_VERSION_INFO.commit}) • Built ${APP_VERSION_INFO.buildDate}`;
 
   @Output() public readonly itemClicked = new EventEmitter<void>();
 

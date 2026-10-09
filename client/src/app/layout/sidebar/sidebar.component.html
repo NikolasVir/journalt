@@ -63,4 +63,21 @@
       </a>
     }
   </mat-nav-list>
+
+  <div class="sidebar__footer">
+    <mat-divider class="sidebar__divider" />
+    <div
+      class="sidebar__version"
+      [matTooltip]="versionTooltip"
+      matTooltipPosition="right"
+      aria-label="Application version"
+    >
+      @if (!layoutService.isSidebarCollapsed() || layoutService.isHandset()) {
+        <mat-icon class="sidebar__version-icon" aria-hidden="true">info</mat-icon>
+        <span class="sidebar__version-text">JournalT {{ appVersion.displayVersion }}</span>
+      } @else {
+        <mat-icon class="sidebar__version-icon" aria-hidden="true">info</mat-icon>
+      }
+    </div>
+  </div>
 </aside>

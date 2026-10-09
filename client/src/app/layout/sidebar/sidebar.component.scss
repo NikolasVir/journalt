@@ -34,6 +34,20 @@
     .sidebar__divider {
       margin: var(--spacing-xs) var(--spacing-md-sm);
     }
+
+    .sidebar__version {
+      width: 48px;
+      height: var(--spacing-2xl);
+      margin: var(--spacing-xs) auto;
+      padding: 0;
+      justify-content: center;
+
+      &-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
   }
 
   &__nav {
@@ -72,5 +86,46 @@
 
   &__divider {
     margin: var(--spacing-xs) var(--spacing-md-sm);
+  }
+
+  &__footer {
+    margin-top: auto;
+    padding-bottom: var(--spacing-sm);
+  }
+
+  &__version {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-md);
+    margin: var(--spacing-xs) var(--spacing-md-sm);
+    border-radius: var(--radius-pill);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    user-select: none;
+    cursor: default;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+
+    &:hover {
+      background-color: var(--color-bg-surface-hover);
+      color: var(--color-text-secondary);
+    }
+
+    &-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      color: inherit;
+    }
+
+    &-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.01em;
+      font-size: var(--font-size-xs);
+      font-weight: 500;
+    }
   }
 }
