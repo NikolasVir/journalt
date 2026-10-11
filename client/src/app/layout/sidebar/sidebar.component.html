@@ -25,26 +25,6 @@
 
     <mat-divider class="sidebar__divider" />
 
-    @for (item of secondaryNavItems; track item.route) {
-      <a
-        mat-list-item
-        [routerLink]="item.route"
-        routerLinkActive
-        #rlaSec="routerLinkActive"
-        [activated]="rlaSec.isActive"
-        [matTooltip]="(layoutService.isSidebarCollapsed() && !layoutService.isHandset()) ? item.label : ''"
-        matTooltipPosition="right"
-        (click)="itemClicked.emit()"
-      >
-        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-        @if (!layoutService.isSidebarCollapsed() || layoutService.isHandset()) {
-          <span matListItemTitle>{{ item.label }}</span>
-        }
-      </a>
-    }
-
-    <mat-divider class="sidebar__divider" />
-
     @for (item of systemNavItems; track item.route) {
       <a
         mat-list-item

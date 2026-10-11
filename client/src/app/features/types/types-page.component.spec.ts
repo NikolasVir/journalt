@@ -223,17 +223,17 @@ describe('TypesPageComponent', () => {
   describe('Navigation', () => {
     it('openCreate navigates to /types/new', () => {
       component.openCreate();
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types/new']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings/types/new']);
     });
 
-    it('openEdit navigates to /types/:id', () => {
+    it('openEdit navigates to /settings/types/:id', () => {
       component.openEdit(sampleTypes[0]);
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types', 'type-1']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings/types', 'type-1']);
     });
 
-    it('openNewVersion navigates to /types/:id', () => {
+    it('openNewVersion navigates to /settings/types/:id', () => {
       component.openNewVersion(sampleTypes[0]);
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types', 'type-1']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings/types', 'type-1']);
     });
   });
 

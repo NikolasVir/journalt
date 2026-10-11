@@ -43,8 +43,8 @@ export const routes: Routes = [
       },
       {
         path: 'libraries',
-        loadChildren: () =>
-          import('@features/libraries/libraries.routes').then((m) => m.LIBRARIES_ROUTES)
+        redirectTo: 'settings/libraries',
+        pathMatch: 'full'
       },
       {
         path: 'types',
@@ -53,8 +53,8 @@ export const routes: Routes = [
       },
       {
         path: 'tags',
-        loadChildren: () =>
-          import('@features/tags/tags.routes').then((m) => m.TAGS_ROUTES)
+        redirectTo: 'settings/tags',
+        pathMatch: 'full'
       },
       {
         path: 'trash',

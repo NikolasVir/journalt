@@ -139,11 +139,11 @@ export class TypesPageComponent implements OnInit {
   }
 
   public openCreate(): void {
-    void this.router.navigate(['/types/new']);
+    void this.router.navigate(['/settings/types/new']);
   }
 
   public openEdit(type: TypeDefinitionResponse): void {
-    void this.router.navigate(['/types', type.id]);
+    void this.router.navigate(['/settings/types', type.id]);
   }
 
   public openNewVersion(type: TypeDefinitionResponse): void {

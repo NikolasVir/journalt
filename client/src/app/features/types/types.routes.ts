@@ -3,17 +3,16 @@ import { Routes } from '@angular/router';
 export const TYPES_ROUTES: Routes = [
   {
     path: '',
-    loadComponent: () =>
-      import('./types-page.component').then((m) => m.TypesPageComponent),
+    redirectTo: '/settings/types',
+    pathMatch: 'full'
   },
   {
     path: 'new',
-    loadComponent: () =>
-      import('./type-detail-page.component').then((m) => m.TypeDetailPageComponent),
+    redirectTo: '/settings/types/new',
+    pathMatch: 'full'
   },
   {
     path: ':id',
-    loadComponent: () =>
-      import('./type-detail-page.component').then((m) => m.TypeDetailPageComponent),
-  },
+    redirectTo: (route) => `/settings/types/${route.params['id']}`
+  }
 ];

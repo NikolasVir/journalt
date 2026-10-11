@@ -104,9 +104,9 @@ describe('TypeDetailPageComponent', () => {
       expect(mockTypeService.getById).not.toHaveBeenCalled();
     });
 
-    it('navigates back to /types on goBack()', () => {
+    it('navigates back to /settings/types on goBack()', () => {
       component.goBack();
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings/types']);
     });
 
     it('applies presets correctly', () => {
@@ -202,7 +202,7 @@ describe('TypeDetailPageComponent', () => {
       expect(mockNotification.showSuccess).toHaveBeenCalledWith(
         expect.stringContaining('created successfully'),
       );
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings/types']);
     });
 
     it('rejects duplicate field names in visual mode', () => {
@@ -257,15 +257,15 @@ describe('TypeDetailPageComponent', () => {
       expect(mockNotification.showSuccess).toHaveBeenCalledWith(
         expect.stringContaining('updated successfully'),
       );
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings/types']);
     });
 
-    it('handles load error by notifying and redirecting to /types', () => {
+    it('handles load error by notifying and redirecting to /settings/types', () => {
       mockTypeService.getById.mockReturnValue(throwError(() => new Error('Not found')));
       component.ngOnInit();
 
       expect(mockNotification.showError).toHaveBeenCalledWith('Type definition not found.');
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/types']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings/types']);
     });
   });
 });

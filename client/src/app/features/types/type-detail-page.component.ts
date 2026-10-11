@@ -90,7 +90,7 @@ export class TypeDetailPageComponent implements OnInit {
       error: () => {
         this.isLoading.set(false);
         this.notification.showError('Type definition not found.');
-        void this.router.navigate(['/types']);
+        void this.router.navigate(['/settings/types']);
       },
     });
   }
@@ -221,7 +221,7 @@ export class TypeDetailPageComponent implements OnInit {
   }
 
   public goBack(): void {
-    void this.router.navigate(['/types']);
+    void this.router.navigate(['/settings/types']);
   }
 
   public saveType(): void {

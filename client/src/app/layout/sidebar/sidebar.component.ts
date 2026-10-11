@@ -45,12 +45,6 @@ export class SidebarComponent {
     { label: 'Journals', route: '/notes/journal', icon: 'menu_book' }
   ];
 
-  protected readonly secondaryNavItems: NavItem[] = [
-    { label: 'Libraries', route: '/libraries', icon: 'folder' },
-    { label: 'Types', route: '/types', icon: 'schema' },
-    { label: 'Tags', route: '/tags', icon: 'label' }
-  ];
-
   protected readonly systemNavItems: NavItem[] = [
     { label: 'Trash', route: '/trash', icon: 'delete' },
     { label: 'Settings', route: '/settings', icon: 'settings' }
