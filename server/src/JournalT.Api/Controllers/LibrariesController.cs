@@ -55,4 +55,15 @@ public class LibrariesController(ILibraryService libraryService) : ControllerBas
 
         return Ok(result.Library);
     }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        var result = await _libraryService.DeleteAsync(id, ct);
+
+        if (!result.Succeeded)
+            return Problem(detail: string.Join("; ", result.Errors), statusCode: result.StatusCode);
+
+        return NoContent();
+    }
 }

@@ -9,4 +9,5 @@ public interface ILibraryService
     Task<IReadOnlyList<LibraryResponse>> ListFlatAsync(CancellationToken ct = default);
     Task<LibraryResult> RenameAsync(Guid id, RenameLibraryRequest request, CancellationToken ct = default);
     Task<LibraryResult> MoveAsync(Guid id, MoveLibraryRequest request, CancellationToken ct = default);
+    Task<LibraryResult> DeleteAsync(Guid id, CancellationToken ct = default);
 }

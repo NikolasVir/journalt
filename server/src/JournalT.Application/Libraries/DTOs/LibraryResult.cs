@@ -9,11 +9,14 @@ public sealed class LibraryResult
     public string[] Errors { get; private init; } = [];
     public int StatusCode { get; private init; } = 200;
 
-    public static LibraryResult Success(LibraryResponse library, int statusCode = 200) =>
+    public static LibraryResult Success(LibraryResponse? library = null, int statusCode = 200) =>
         new() { Succeeded = true, Library = library, StatusCode = statusCode };
 
     public static LibraryResult NotFound(string error = "Library not found.") =>
         new() { Succeeded = false, Errors = [error], StatusCode = 404 };
+
+    public static LibraryResult Conflict(string error) =>
+        new() { Succeeded = false, Errors = [error], StatusCode = 409 };
 
     public static LibraryResult Failure(string error, int statusCode = 400) =>
         new() { Succeeded = false, Errors = [error], StatusCode = statusCode };

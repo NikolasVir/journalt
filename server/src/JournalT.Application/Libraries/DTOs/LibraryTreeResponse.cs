@@ -6,5 +6,6 @@ public sealed record LibraryTreeResponse(
     string Name,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc,
-    IReadOnlyList<LibraryTreeResponse> Children
+    IReadOnlyList<LibraryTreeResponse> Children,
+    int NotesCount = 0
 );

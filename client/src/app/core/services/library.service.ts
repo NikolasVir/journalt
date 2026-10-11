@@ -35,4 +35,8 @@ export class LibraryService {
   public move(id: string, request: MoveLibraryRequest): Observable<LibraryResponse> {
     return this.http.put<LibraryResponse>(`${this.baseUrl}/${id}/move`, request);
   }
+
+  public delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 }

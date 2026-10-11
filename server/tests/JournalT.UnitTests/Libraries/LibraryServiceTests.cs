@@ -109,6 +109,80 @@ public class LibraryServiceTests : IDisposable
         var moveResult = await _sut.MoveAsync(otherUserLib.Id, new MoveLibraryRequest(null));
         Assert.False(moveResult.Succeeded);
         Assert.Equal(404, moveResult.StatusCode);
+
+        var deleteResult = await _sut.DeleteAsync(otherUserLib.Id);
+        Assert.False(deleteResult.Succeeded);
+        Assert.Equal(404, deleteResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenEmpty_DeletesSuccessfully()
+    {
+        var lib = (await _sut.CreateAsync(new CreateLibraryRequest("To Delete"))).Library!;
+
+        var result = await _sut.DeleteAsync(lib.Id);
+
+        Assert.True(result.Succeeded);
+        Assert.False(await _db.Libraries.AnyAsync(l => l.Id == lib.Id));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenContainsNotes_FailsWithConflict()
+    {
+        var lib = (await _sut.CreateAsync(new CreateLibraryRequest("With Notes"))).Library!;
+        _db.Notes.Add(new Note
+        {
+            UserId = _userId,
+            LibraryId = lib.Id,
+            Title = "Note inside lib",
+            BodyMarkdown = "content",
+            RenderedHtml = "<p>content</p>"
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _sut.DeleteAsync(lib.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(409, result.StatusCode);
+        Assert.Contains("contain notes", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenHasSubLibraries_FailsWithConflict()
+    {
+        var parent = (await _sut.CreateAsync(new CreateLibraryRequest("Parent"))).Library!;
+        await _sut.CreateAsync(new CreateLibraryRequest("Child", parent.Id));
+
+        var result = await _sut.DeleteAsync(parent.Id);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(409, result.StatusCode);
+        Assert.Contains("subfolders", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NonExistent_ReturnsNotFound()
+    {
+        var notFoundResult = await _sut.DeleteAsync(Guid.NewGuid());
+        Assert.False(notFoundResult.Succeeded);
+        Assert.Equal(404, notFoundResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetTreeAsync_CalculatesNotesCountExcludingTrashed()
+    {
+        var lib = (await _sut.CreateAsync(new CreateLibraryRequest("Notes Count Lib"))).Library!;
+        _db.Notes.AddRange(
+            new Note { UserId = _userId, LibraryId = lib.Id, Title = "N1", BodyMarkdown = "c1", RenderedHtml = "<p>c1</p>", IsTrashed = false },
+            new Note { UserId = _userId, LibraryId = lib.Id, Title = "N2", BodyMarkdown = "c2", RenderedHtml = "<p>c2</p>", IsTrashed = false },
+            new Note { UserId = _userId, LibraryId = lib.Id, Title = "N3", BodyMarkdown = "c3", RenderedHtml = "<p>c3</p>", IsTrashed = true }
+        );
+        await _db.SaveChangesAsync();
+
+        var tree = await _sut.GetTreeAsync();
+        var item = tree.First(t => t.Id == lib.Id);
+
+        Assert.Equal(2, item.NotesCount);
     }
 
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser

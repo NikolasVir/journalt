@@ -13,6 +13,7 @@ export interface LibraryTreeResponse {
   createdAtUtc: string;
   updatedAtUtc: string;
   children: LibraryTreeResponse[];
+  notesCount?: number;
 }
 
 export interface CreateLibraryRequest {

@@ -81,6 +81,15 @@ public sealed class LibraryService(
             .AsNoTracking()
             .Where(l => l.UserId == userId)
             .OrderBy(l => l.Name)
+            .Select(l => new
+            {
+                l.Id,
+                l.ParentLibraryId,
+                l.Name,
+                l.CreatedAtUtc,
+                l.UpdatedAtUtc,
+                NotesCount = l.Notes.Count(n => !n.IsTrashed)
+            })
             .ToListAsync(ct);
 
         var lookup = allLibraries.ToLookup(l => l.ParentLibraryId);
@@ -94,7 +103,8 @@ public sealed class LibraryService(
                     l.Name,
                     l.CreatedAtUtc,
                     l.UpdatedAtUtc,
-                    BuildChildren(l.Id)
+                    BuildChildren(l.Id),
+                    l.NotesCount
                 ))
                 .ToList();
         }
@@ -198,5 +208,32 @@ public sealed class LibraryService(
             library.CreatedAtUtc,
             library.UpdatedAtUtc
         ));
+    }
+
+    public async Task<LibraryResult> DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId;
+        var library = await _db.Libraries
+            .FirstOrDefaultAsync(l => l.Id == id && l.UserId == userId, ct);
+
+        if (library is null)
+            return LibraryResult.NotFound();
+
+        var hasNotes = await _db.Notes
+            .AnyAsync(n => n.LibraryId == id && n.UserId == userId && !n.IsTrashed, ct);
+
+        if (hasNotes)
+            return LibraryResult.Conflict("Libraries that contain notes cannot be deleted.");
+
+        var hasSubLibraries = await _db.Libraries
+            .AnyAsync(l => l.ParentLibraryId == id && l.UserId == userId, ct);
+
+        if (hasSubLibraries)
+            return LibraryResult.Conflict("Libraries that have subfolders cannot be deleted.");
+
+        _db.Libraries.Remove(library);
+        await _db.SaveChangesAsync(ct);
+
+        return LibraryResult.Success();
     }
 }
