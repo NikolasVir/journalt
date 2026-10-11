@@ -1,6 +1,8 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { LayoutService } from '@layout/layout.service';
+import { LibraryService } from '@core/services/library.service';
 import { APP_VERSION_INFO } from '@env/version';
 import { SidebarComponent } from './sidebar.component';
 
@@ -12,7 +14,16 @@ describe('SidebarComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SidebarComponent],
-      providers: [provideRouter([])]
+      providers: [
+        provideRouter([]),
+        {
+          provide: LibraryService,
+          useValue: {
+            navLibraries: signal([]),
+            loadLibraries: vi.fn()
+          }
+        }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(SidebarComponent);
@@ -47,4 +58,121 @@ describe('SidebarComponent', () => {
     expect(iconEl).toBeTruthy();
     expect(iconEl?.textContent).toContain('info');
   });
+
+  it('should render library items in the navigation list when libraries exist', () => {
+    const mockNavLibs = [
+      { id: 'lib-1', name: 'Work', depth: 0 },
+      { id: 'lib-2', name: 'Personal', depth: 0 },
+      { id: 'lib-3', name: 'Project Alpha', depth: 1 }
+    ];
+    (component as unknown as { libraries: { set: (v: unknown) => void } }).libraries.set(mockNavLibs);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const sectionHeader = compiled.querySelector('.sidebar__section-title');
+    expect(sectionHeader).toBeTruthy();
+    expect(sectionHeader?.textContent).toBe('LIBRARIES');
+
+    const libraryItems = compiled.querySelectorAll('.sidebar__library-item');
+    expect(libraryItems.length).toBe(3);
+
+    const titles = Array.from(compiled.querySelectorAll('.sidebar__library-title')).map(
+      (el) => el.textContent?.trim()
+    );
+    expect(titles).toEqual(['Work', 'Personal', 'Project Alpha']);
+
+    const nestedItem = compiled.querySelector('.sidebar__library-item--nested');
+    expect(nestedItem).toBeTruthy();
+  });
+
+  it('should collapse and expand a parent library when clicking its twist toggle', () => {
+    const mockNavLibs = [
+      { id: 'lib-1', name: 'Work', depth: 0, hasChildren: false },
+      { id: 'lib-2', name: 'Personal', depth: 0, hasChildren: true },
+      { id: 'lib-3', name: 'Project Alpha', depth: 1, hasChildren: false }
+    ];
+    (component as unknown as { libraries: { set: (v: unknown) => void } }).libraries.set(mockNavLibs);
+    fixture.detectChanges();
+
+    // Personal has children, so its twist should exist
+    expect(component.isLibraryExpanded('lib-2')).toBe(true);
+
+    // Toggle collapse on Personal
+    const mockEvent = new MouseEvent('click');
+    component.toggleLibraryCollapse('lib-2', mockEvent);
+    fixture.detectChanges();
+
+    expect(component.isLibraryExpanded('lib-2')).toBe(false);
+
+    // Project Alpha should now be hidden
+    let libraryItems = fixture.nativeElement.querySelectorAll('.sidebar__library-item');
+    expect(libraryItems.length).toBe(2);
+    const titles = Array.from(fixture.nativeElement.querySelectorAll('.sidebar__library-title')).map(
+      (el: any) => el.textContent?.trim()
+    );
+    expect(titles).toEqual(['Work', 'Personal']);
+
+    // Toggle expand again
+    component.toggleLibraryCollapse('lib-2', mockEvent);
+    fixture.detectChanges();
+
+    expect(component.isLibraryExpanded('lib-2')).toBe(true);
+    libraryItems = fixture.nativeElement.querySelectorAll('.sidebar__library-item');
+    expect(libraryItems.length).toBe(3);
+  });
+
+  it('should toggle collapse of the entire LIBRARIES section header', () => {
+    const mockNavLibs = [
+      { id: 'lib-1', name: 'Work', depth: 0, hasChildren: false }
+    ];
+    (component as unknown as { libraries: { set: (v: unknown) => void } }).libraries.set(mockNavLibs);
+    fixture.detectChanges();
+
+    expect(component['isLibrariesSectionCollapsed']()).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll('.sidebar__library-item').length).toBe(1);
+
+    // Collapse section
+    component.toggleLibrariesSection();
+    fixture.detectChanges();
+
+    expect(component['isLibrariesSectionCollapsed']()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('.sidebar__library-item').length).toBe(0);
+
+    // Expand section
+    component.toggleLibrariesSection();
+    fixture.detectChanges();
+
+    expect(component['isLibrariesSectionCollapsed']()).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll('.sidebar__library-item').length).toBe(1);
+  });
+
+  it('should collapse and expand a parent library when clicking the whole library item button', () => {
+    const mockNavLibs = [
+      { id: 'lib-1', name: 'Work', depth: 0, hasChildren: false },
+      { id: 'lib-2', name: 'Personal', depth: 0, hasChildren: true },
+      { id: 'lib-3', name: 'Project Alpha', depth: 1, hasChildren: false }
+    ];
+    (component as unknown as { libraries: { set: (v: unknown) => void } }).libraries.set(mockNavLibs);
+    fixture.detectChanges();
+
+    expect(component.isLibraryExpanded('lib-2')).toBe(true);
+
+    const mockEvent = new MouseEvent('click');
+    const personalItem = mockNavLibs[1];
+
+    // Clicking the item row toggles collapse
+    component.onLibraryItemClick(personalItem, mockEvent);
+    fixture.detectChanges();
+
+    expect(component.isLibraryExpanded('lib-2')).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll('.sidebar__library-item').length).toBe(2);
+
+    // Clicking it again expands it
+    component.onLibraryItemClick(personalItem, mockEvent);
+    fixture.detectChanges();
+
+    expect(component.isLibraryExpanded('lib-2')).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('.sidebar__library-item').length).toBe(3);
+  });
 });
+
