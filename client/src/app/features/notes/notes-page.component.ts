@@ -53,7 +53,7 @@ export class NotesPageComponent implements OnInit {
     const level = this.currentLevel();
     if (level === 'Inbox') return 'Inbox';
     if (level === 'Note') return 'Notes';
-    if (level === 'Journal') return 'Journal';
+    if (level === 'Journal') return 'Journals';
     return 'All Notes';
   });
 

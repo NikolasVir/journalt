@@ -42,7 +42,7 @@ export class SidebarComponent {
     { label: 'Explore', route: '/explore', icon: 'account_tree', exact: true },
     { label: 'Inbox', route: '/notes/inbox', icon: 'inbox' },
     { label: 'Notes', route: '/notes/notes', icon: 'edit_note' },
-    { label: 'Journal', route: '/notes/journal', icon: 'menu_book' }
+    { label: 'Journals', route: '/notes/journal', icon: 'menu_book' }
   ];
 
   protected readonly secondaryNavItems: NavItem[] = [
