@@ -130,6 +130,55 @@ describe('NotesPageComponent', () => {
     expect(compiled.querySelector('.library-subtabs-bar')).toBeNull();
   });
 
+  it('renders consolidated "Notes & Journals" title and excludes Inbox captures when no level or library is specified', () => {
+    fixture.detectChanges();
+
+    expect(component.pageTitle()).toBe('Notes & Journals');
+    expect(component.pageSubtitle()).toBe('All notes and journal entries in a unified timeline.');
+    expect(mockNoteService.list).toHaveBeenCalledWith(
+      expect.objectContaining({ level: undefined, libraryId: undefined })
+    );
+
+    // Only Note and Journal notes should be present; Inbox (n-1) is excluded
+    const notes = component['filteredNotes']();
+    expect(notes.length).toBe(2);
+    expect(notes.map((n) => n.level)).toEqual(['Note', 'Journal']);
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.notes-page__title')?.textContent).toContain('Notes & Journals');
+    expect(compiled.querySelector('.library-subtabs-bar')).toBeNull();
+  });
+
+  it('toggles levelFilter between all, note, and journal on the consolidated view', () => {
+    fixture.detectChanges();
+
+    // Default 'all'
+    expect(component.levelFilter()).toBe('all');
+    expect(component['filteredNotes']().length).toBe(2);
+
+    // Switch to note only
+    component.setLevelFilter('note');
+    fixture.detectChanges();
+    expect(component.levelFilter()).toBe('note');
+    let notes = component['filteredNotes']();
+    expect(notes.length).toBe(1);
+    expect(notes[0].level).toBe('Note');
+
+    // Switch to journal only
+    component.setLevelFilter('journal');
+    fixture.detectChanges();
+    expect(component.levelFilter()).toBe('journal');
+    notes = component['filteredNotes']();
+    expect(notes.length).toBe(1);
+    expect(notes[0].level).toBe('Journal');
+
+    // Switch back to all
+    component.setLevelFilter('all');
+    fixture.detectChanges();
+    expect(component.levelFilter()).toBe('all');
+    expect(component['filteredNotes']().length).toBe(2);
+  });
+
   it('renders library title and sub-tab pills when viewing a library', () => {
     fixture.componentRef.setInput('libraryId', 'lib-1');
     fixture.detectChanges();

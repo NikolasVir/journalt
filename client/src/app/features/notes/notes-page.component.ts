@@ -71,7 +71,7 @@ export class NotesPageComponent implements OnInit {
     if (level === 'Inbox') return 'Inbox';
     if (level === 'Note') return 'Notes';
     if (level === 'Journal') return 'Journals';
-    return 'All Notes';
+    return 'Notes & Journals';
   });
 
   public readonly pageSubtitle = computed(() => {
@@ -83,8 +83,10 @@ export class NotesPageComponent implements OnInit {
     if (level === 'Inbox') return 'Minimal captures awaiting triage or promotion to Notes.';
     if (level === 'Note') return 'Durable free-form notes with tags and relations.';
     if (level === 'Journal') return 'Structured notes validated against types.';
-    return 'Browse and manage your personal knowledge records.';
+    return 'All notes and journal entries in a unified timeline.';
   });
+
+  public readonly levelFilter = signal<'all' | 'note' | 'journal'>(this.getStoredLevelFilter());
 
   protected readonly filteredNotes = computed<NoteResponse[]>(() => {
     const query = this.layoutService.searchQuery().toLowerCase().trim();
@@ -92,10 +94,16 @@ export class NotesPageComponent implements OnInit {
     const libId = this.libraryId();
     const level = this.currentLevel();
     const subTab = this.activeSubTab();
+    const filter = this.levelFilter();
 
     return this.notes().filter((n) => {
       if (n.isTrashed) return false;
       if (level && n.level !== level) return false;
+      if (!libId && !level) {
+        if (n.level === 'Inbox') return false;
+        if (filter === 'note' && n.level !== 'Note') return false;
+        if (filter === 'journal' && n.level !== 'Journal') return false;
+      }
       if (libId && n.libraryId !== libId) return false;
       if (libId && subTab !== 'All' && n.level !== subTab) return false;
       if (tag && !n.tags?.some((t) => formatTag(t).toLowerCase() === tag)) return false;
@@ -211,6 +219,20 @@ export class NotesPageComponent implements OnInit {
     if (typeof localStorage === 'undefined') return 'desc';
     const stored = localStorage.getItem('journalt-timeline-direction');
     return stored === 'asc' ? 'asc' : 'desc';
+  }
+
+  public setLevelFilter(filter: 'all' | 'note' | 'journal'): void {
+    if (this.levelFilter() === filter) return;
+    this.levelFilter.set(filter);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('journalt-notes-level-filter', filter);
+    }
+  }
+
+  private getStoredLevelFilter(): 'all' | 'note' | 'journal' {
+    if (typeof localStorage === 'undefined') return 'all';
+    const stored = localStorage.getItem('journalt-notes-level-filter');
+    return stored === 'note' || stored === 'journal' ? stored : 'all';
   }
 
   constructor() {

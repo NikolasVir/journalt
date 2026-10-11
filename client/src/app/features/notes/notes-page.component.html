@@ -6,6 +6,43 @@
     </div>
 
     <div class="notes-page__header-actions">
+      <!-- Consolidated Notes & Journals Level Filter Toggle (All / Notes / Journals) -->
+      @if (!currentLevel() && !libraryId()) {
+        <div class="timeline-basis-compact" role="group" aria-label="Level filter">
+          <button
+            type="button"
+            class="timeline-pill-btn"
+            [class.timeline-pill-btn--active]="levelFilter() === 'all'"
+            (click)="setLevelFilter('all')"
+            matTooltip="Show both notes and journals"
+          >
+            <span>All</span>
+          </button>
+          <button
+            type="button"
+            class="timeline-pill-btn"
+            [class.timeline-pill-btn--active]="levelFilter() === 'note'"
+            (click)="setLevelFilter('note')"
+            matTooltip="Show only notes"
+          >
+            <mat-icon class="timeline-pill-btn__icon">edit_note</mat-icon>
+            <span>Notes</span>
+          </button>
+          <button
+            type="button"
+            class="timeline-pill-btn"
+            [class.timeline-pill-btn--active]="levelFilter() === 'journal'"
+            (click)="setLevelFilter('journal')"
+            matTooltip="Show only journals"
+          >
+            <mat-icon class="timeline-pill-btn__icon">menu_book</mat-icon>
+            <span>Journals</span>
+          </button>
+        </div>
+
+        <div class="header-actions-divider" aria-hidden="true"></div>
+      }
+
       <!-- Compact Timeline Basis Toggle -->
       <div class="timeline-basis-compact" role="group" aria-label="Timeline date basis">
         <button
@@ -71,7 +108,7 @@
 
   <!-- Quick Capture defaulted to current level and active library -->
   <app-quick-capture
-    [defaultLevel]="currentLevel() ?? (activeSubTab() === 'Inbox' ? 'Inbox' : activeSubTab() === 'Journal' ? 'Journal' : 'Note')"
+    [defaultLevel]="currentLevel() ?? (libraryId() ? (activeSubTab() === 'Inbox' ? 'Inbox' : activeSubTab() === 'Journal' ? 'Journal' : 'Note') : (levelFilter() === 'journal' ? 'Journal' : 'Note'))"
     [defaultLibraryId]="libraryId() ?? null"
     (createNote)="handleCreateNote($event)"
   />
@@ -206,10 +243,12 @@
       </div>
     } @else {
       <div class="notes-page__empty">
-        <mat-icon class="notes-page__empty-icon">{{ libraryId() ? 'folder_open' : 'menu_book' }}</mat-icon>
+        <mat-icon class="notes-page__empty-icon">{{ libraryId() ? 'folder_open' : (currentLevel() === 'Inbox' ? 'inbox' : 'auto_stories') }}</mat-icon>
         <p class="notes-page__empty-title">
           @if (libraryId() && activeSubTab() !== 'All') {
             No {{ activeSubTab() }}s in {{ pageTitle() }}
+          } @else if (!currentLevel() && !libraryId() && levelFilter() !== 'all') {
+            No {{ levelFilter() === 'journal' ? 'journals' : 'notes' }} in {{ pageTitle() }}
           } @else {
             No notes in {{ pageTitle() }}
           }
