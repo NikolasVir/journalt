@@ -264,9 +264,24 @@ public sealed class NoteService(
         var isAsc = string.Equals(filter.SortOrder, "asc", StringComparison.OrdinalIgnoreCase);
         var sortByCreated = string.Equals(filter.SortBy, "createdAt", StringComparison.OrdinalIgnoreCase);
 
-        var orderedQuery = sortByCreated
-            ? (isAsc ? query.OrderBy(n => n.CreatedAtUtc) : query.OrderByDescending(n => n.CreatedAtUtc))
-            : (isAsc ? query.OrderBy(n => n.UpdatedAtUtc) : query.OrderByDescending(n => n.UpdatedAtUtc));
+        IOrderedQueryable<Note> orderedQuery;
+
+        if (!string.IsNullOrWhiteSpace(filter.Search) && string.IsNullOrWhiteSpace(filter.SortBy))
+        {
+            var search = filter.Search.Trim();
+            orderedQuery = query
+                .OrderBy(n => n.Title == search ? 0 :
+                              EF.Functions.Like(n.Title, $"{search}%") ? 1 :
+                              EF.Functions.Like(n.Title, $"%{search}%") ? 2 :
+                              (n.Summary != null && EF.Functions.Like(n.Summary, $"%{search}%")) ? 3 : 4)
+                .ThenByDescending(n => n.UpdatedAtUtc);
+        }
+        else
+        {
+            orderedQuery = sortByCreated
+                ? (isAsc ? query.OrderBy(n => n.CreatedAtUtc) : query.OrderByDescending(n => n.CreatedAtUtc))
+                : (isAsc ? query.OrderBy(n => n.UpdatedAtUtc) : query.OrderByDescending(n => n.UpdatedAtUtc));
+        }
 
         var items = await orderedQuery
             .Skip((page - 1) * pageSize)

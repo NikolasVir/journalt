@@ -406,6 +406,23 @@ public class NoteServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Search_RanksExactTitleMatchBeforeBodyMatches()
+    {
+        // Create note with mention in body first
+        await _sut.CreateAsync(new CreateNoteRequest("Weekly Review", NoteLevel.Note, BodyMarkdown: "Mentions The Archive in content"));
+        // Exact title match created after
+        await _sut.CreateAsync(new CreateNoteRequest("The Archive", NoteLevel.Note, BodyMarkdown: "Main note"));
+        // Title prefix match
+        await _sut.CreateAsync(new CreateNoteRequest("The Archive Project", NoteLevel.Note, BodyMarkdown: "Extended"));
+
+        var searchResult = await _sut.ListAsync(new NoteFilterParams(Search: "The Archive"));
+        Assert.True(searchResult.Items.Count >= 3);
+        Assert.Equal("The Archive", searchResult.Items[0].Title);
+        Assert.Equal("The Archive Project", searchResult.Items[1].Title);
+        Assert.Equal("Weekly Review", searchResult.Items[2].Title);
+    }
+
+    [Fact]
     public async Task TodoHub_ToggleAndSummary_TracksPendingAndCompleted()
     {
         var note = (await _sut.CreateAsync(new CreateNoteRequest("Fix memory leak", NoteLevel.Note, IsTodo: true))).Note!;
