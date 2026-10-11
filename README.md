@@ -71,16 +71,14 @@ docker compose up -d
 
 Open `http://localhost:5050` in your browser.
 
-> [!WARNING] **Default Admin Credentials:** On initial startup, JournalT
-> automatically seeds a default administrator account:
+> [!WARNING]
+> **Default Admin Credentials:** On initial startup, JournalT automatically seeds a default administrator account:
 > - **Username:** `admin`
 > - **Password:** `changeme`
 >
 > **Change this password immediately** in **Settings** after logging in!
 >
-> Public registration is disabled by default (`Auth__RegistrationEnabled:
-> false`). If you want to allow others to register on your instance, enable
-> `Auth__RegistrationEnabled: "true"`.
+> Public registration is disabled by default (`Auth__RegistrationEnabled: false`). If you want to allow others to register on your instance, enable `Auth__RegistrationEnabled: "true"`.
 
 ---
 
