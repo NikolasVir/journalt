@@ -69,14 +69,71 @@
     </div>
   </header>
 
-  <!-- Quick Capture defaulted to current level -->
+  <!-- Quick Capture defaulted to current level and active library -->
   <app-quick-capture
-    [defaultLevel]="currentLevel() ?? 'Note'"
+    [defaultLevel]="currentLevel() ?? (activeSubTab() === 'Inbox' ? 'Inbox' : activeSubTab() === 'Journal' ? 'Journal' : 'Note')"
+    [defaultLibraryId]="libraryId() ?? null"
     (createNote)="handleCreateNote($event)"
   />
 
+  <!-- Library Level Filter Sub-tabs (Only displayed when viewing a Library) -->
+  @if (libraryId()) {
+    <div class="library-subtabs-bar" role="tablist" aria-label="Library note level filter">
+      <button
+        type="button"
+        role="tab"
+        class="library-subtab-pill"
+        [class.library-subtab-pill--active]="activeSubTab() === 'All'"
+        [attr.aria-selected]="activeSubTab() === 'All'"
+        (click)="activeSubTab.set('All')"
+      >
+        <span>All</span>
+        <span class="library-subtab-pill__count">{{ subTabCounts().all }}</span>
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="library-subtab-pill"
+        [class.library-subtab-pill--active]="activeSubTab() === 'Inbox'"
+        [attr.aria-selected]="activeSubTab() === 'Inbox'"
+        (click)="activeSubTab.set('Inbox')"
+      >
+        <mat-icon class="library-subtab-pill__icon">inbox</mat-icon>
+        <span>Inbox</span>
+        <span class="library-subtab-pill__count">{{ subTabCounts().inbox }}</span>
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="library-subtab-pill"
+        [class.library-subtab-pill--active]="activeSubTab() === 'Note'"
+        [attr.aria-selected]="activeSubTab() === 'Note'"
+        (click)="activeSubTab.set('Note')"
+      >
+        <mat-icon class="library-subtab-pill__icon">edit_note</mat-icon>
+        <span>Notes</span>
+        <span class="library-subtab-pill__count">{{ subTabCounts().note }}</span>
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        class="library-subtab-pill"
+        [class.library-subtab-pill--active]="activeSubTab() === 'Journal'"
+        [attr.aria-selected]="activeSubTab() === 'Journal'"
+        (click)="activeSubTab.set('Journal')"
+      >
+        <mat-icon class="library-subtab-pill__icon">menu_book</mat-icon>
+        <span>Journals</span>
+        <span class="library-subtab-pill__count">{{ subTabCounts().journal }}</span>
+      </button>
+    </div>
+  }
+
   <!-- Active Filter Bar -->
-  @if (activeTag() || activeLibraryId() || layoutService.searchQuery()) {
+  @if (activeTag() || layoutService.searchQuery()) {
     <div class="active-filters-bar">
       <span class="active-filters-bar__label">Active filters:</span>
       @if (layoutService.searchQuery()) {
@@ -93,15 +150,6 @@
           <mat-icon class="filter-chip__icon">label</mat-icon>
           #{{ tag }}
           <button type="button" class="filter-chip__clear" (click)="clearTagFilter()" aria-label="Clear tag filter">
-            <mat-icon>close</mat-icon>
-          </button>
-        </span>
-      }
-      @if (activeLibraryId(); as libId) {
-        <span class="filter-chip">
-          <mat-icon class="filter-chip__icon">folder</mat-icon>
-          Library Filter
-          <button type="button" class="filter-chip__clear" (click)="clearLibraryFilter()" aria-label="Clear library filter">
             <mat-icon>close</mat-icon>
           </button>
         </span>
@@ -158,8 +206,14 @@
       </div>
     } @else {
       <div class="notes-page__empty">
-        <mat-icon class="notes-page__empty-icon">menu_book</mat-icon>
-        <p class="notes-page__empty-title">No notes in {{ pageTitle() }}</p>
+        <mat-icon class="notes-page__empty-icon">{{ libraryId() ? 'folder_open' : 'menu_book' }}</mat-icon>
+        <p class="notes-page__empty-title">
+          @if (libraryId() && activeSubTab() !== 'All') {
+            No {{ activeSubTab() }}s in {{ pageTitle() }}
+          } @else {
+            No notes in {{ pageTitle() }}
+          }
+        </p>
         <p class="notes-page__empty-subtitle">Use the capture bar above to add notes to this section.</p>
       </div>
     }

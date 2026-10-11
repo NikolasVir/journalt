@@ -43,8 +43,8 @@ export const routes: Routes = [
       },
       {
         path: 'libraries',
-        redirectTo: 'settings/libraries',
-        pathMatch: 'full'
+        loadChildren: () =>
+          import('@features/libraries/libraries.routes').then((m) => m.LIBRARIES_ROUTES)
       },
       {
         path: 'types',

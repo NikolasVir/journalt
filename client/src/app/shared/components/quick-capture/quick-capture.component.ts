@@ -93,6 +93,7 @@ export class QuickCaptureComponent implements OnInit {
   private readonly libraryService = inject(LibraryService);
 
   public readonly defaultLevel = input<NoteLevel>('Note');
+  public readonly defaultLibraryId = input<string | null>(null);
   public readonly createNote = output<QuickCapturePayload>();
 
   protected readonly isExpanded = signal<boolean>(false);
@@ -123,6 +124,11 @@ export class QuickCaptureComponent implements OnInit {
       if (def === 'Journal') {
         this.ensureDefaultTypeSelected();
       }
+    });
+
+    effect(() => {
+      const defLibId = this.defaultLibraryId();
+      this.selectedLibraryId.set(defLibId ?? null);
     });
   }
 
@@ -278,7 +284,7 @@ export class QuickCaptureComponent implements OnInit {
     this.isTodo.set(false);
     this.tagsInput.set('');
     this.typedTags.set([]);
-    this.selectedLibraryId.set(null);
+    this.selectedLibraryId.set(this.defaultLibraryId() ?? null);
     this.selectedLevel.set(this.defaultLevel());
     this.selectedFormat.set('Markdown');
     if (this.defaultLevel() === 'Journal') {

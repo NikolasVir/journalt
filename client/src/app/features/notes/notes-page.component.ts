@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnInit, signal, untracked } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
+import { LibraryService } from '@core/services/library.service';
 import { LayoutService } from '@layout/layout.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -31,6 +32,7 @@ export class NotesPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly noteService = inject(NoteService);
+  protected readonly libraryService = inject(LibraryService);
   protected readonly layoutService = inject(LayoutService);
   private readonly notification = inject(NotificationService);
 
@@ -40,16 +42,31 @@ export class NotesPageComponent implements OnInit {
   public readonly tag = input<string>();
   public readonly libraryId = input<string>();
 
+  public readonly activeSubTab = signal<'All' | 'Inbox' | 'Note' | 'Journal'>('All');
+
   protected readonly notes = signal<NoteResponse[]>([]);
   protected readonly isLoading = signal<boolean>(false);
   protected readonly selectedNote = signal<NoteResponse | null>(null);
 
   protected readonly activeTag = signal<string | null>(null);
-  protected readonly activeLibraryId = signal<string | null>(null);
 
   public readonly currentLevel = computed<NoteLevel | undefined>(() => this.level());
 
+  protected readonly subTabCounts = computed(() => {
+    const nonTrashed = this.notes().filter((n) => !n.isTrashed);
+    return {
+      all: nonTrashed.length,
+      inbox: nonTrashed.filter((n) => n.level === 'Inbox').length,
+      note: nonTrashed.filter((n) => n.level === 'Note').length,
+      journal: nonTrashed.filter((n) => n.level === 'Journal').length,
+    };
+  });
+
   public readonly pageTitle = computed(() => {
+    const libId = this.libraryId();
+    if (libId) {
+      return this.libraryService.getLibraryName(libId) ?? 'Library';
+    }
     const level = this.currentLevel();
     if (level === 'Inbox') return 'Inbox';
     if (level === 'Note') return 'Notes';
@@ -58,6 +75,10 @@ export class NotesPageComponent implements OnInit {
   });
 
   public readonly pageSubtitle = computed(() => {
+    const libId = this.libraryId();
+    if (libId) {
+      return 'Browse and triage inbox captures, notes, and journals in this library.';
+    }
     const level = this.currentLevel();
     if (level === 'Inbox') return 'Minimal captures awaiting triage or promotion to Notes.';
     if (level === 'Note') return 'Durable free-form notes with tags and relations.';
@@ -68,13 +89,15 @@ export class NotesPageComponent implements OnInit {
   protected readonly filteredNotes = computed<NoteResponse[]>(() => {
     const query = this.layoutService.searchQuery().toLowerCase().trim();
     const tag = this.activeTag()?.toLowerCase().trim();
-    const libId = this.activeLibraryId();
+    const libId = this.libraryId();
     const level = this.currentLevel();
+    const subTab = this.activeSubTab();
 
     return this.notes().filter((n) => {
       if (n.isTrashed) return false;
       if (level && n.level !== level) return false;
       if (libId && n.libraryId !== libId) return false;
+      if (libId && subTab !== 'All' && n.level !== subTab) return false;
       if (tag && !n.tags?.some((t) => formatTag(t).toLowerCase() === tag)) return false;
       if (!query) return true;
 
@@ -166,7 +189,7 @@ export class NotesPageComponent implements OnInit {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('journalt-timeline-basis', basis);
     }
-    this.loadNotes(this.currentLevel());
+    this.loadNotes();
   }
 
   public toggleSortDirection(): void {
@@ -175,7 +198,7 @@ export class NotesPageComponent implements OnInit {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('journalt-timeline-direction', next);
     }
-    this.loadNotes(this.currentLevel());
+    this.loadNotes();
   }
 
   private getStoredTimelineBasis(): 'createdAt' | 'updatedAt' {
@@ -192,9 +215,21 @@ export class NotesPageComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      // Reload notes whenever level route changes
+      // Reload notes whenever level route or libraryId changes
       const lvl = this.currentLevel();
-      this.loadNotes(lvl);
+      const libId = this.libraryId();
+      untracked(() => {
+        this.activeSubTab.set('All');
+        this.loadNotes(lvl, libId);
+      });
+    });
+
+    effect(() => {
+      // Ensure library name is loaded if viewing library
+      const libId = this.libraryId();
+      if (libId) {
+        untracked(() => this.libraryService.loadLibraries());
+      }
     });
 
     effect(() => {
@@ -204,12 +239,11 @@ export class NotesPageComponent implements OnInit {
         this.layoutService.setSearchQuery(query);
       }
       this.activeTag.set(this.tag() || null);
-      this.activeLibraryId.set(this.libraryId() || null);
     });
   }
 
   public ngOnInit(): void {
-    // Initial fetch handled by effect() reacting to currentLevel()
+    // Initial fetch handled by effect() reacting to currentLevel() & libraryId()
   }
 
   public onTagClick(tag: string): void {
@@ -228,13 +262,6 @@ export class NotesPageComponent implements OnInit {
     });
   }
 
-  public clearLibraryFilter(): void {
-    void this.router.navigate([], {
-      queryParams: { libraryId: null },
-      queryParamsHandling: 'merge'
-    });
-  }
-
   public clearSearchFilter(): void {
     this.layoutService.setSearchQuery('');
     void this.router.navigate([], {
@@ -247,20 +274,25 @@ export class NotesPageComponent implements OnInit {
   public clearAllFilters(): void {
     this.layoutService.setSearchQuery('');
     void this.router.navigate([], {
-      queryParams: { q: null, tag: null, libraryId: null },
+      queryParams: { q: null, tag: null },
       queryParamsHandling: 'merge',
       replaceUrl: true
     });
   }
 
-  public loadNotes(level?: NoteLevel): void {
+  public loadNotes(level?: NoteLevel, libraryId?: string): void {
     this.isLoading.set(true);
+    const effectiveLevel = level !== undefined ? level : this.currentLevel();
+    const effectiveLibId = libraryId !== undefined ? libraryId : (this.libraryId() || undefined);
+
     this.noteService
       .list({
-        level,
+        level: effectiveLevel,
+        libraryId: effectiveLibId,
         isTrashed: false,
         sortBy: this.timelineBasis(),
-        sortOrder: this.sortDirection()
+        sortOrder: this.sortDirection(),
+        pageSize: 100
       })
       .subscribe({
         next: (result) => {
@@ -272,6 +304,7 @@ export class NotesPageComponent implements OnInit {
   }
 
   public handleCreateNote(payload: QuickCapturePayload): void {
+    const targetLibraryId = payload.libraryId ?? this.libraryId() ?? undefined;
     this.noteService
       .create({
         level: payload.level,
@@ -279,7 +312,7 @@ export class NotesPageComponent implements OnInit {
         title: payload.title,
         bodyMarkdown: payload.bodyMarkdown,
         isTodo: payload.isTodo,
-        libraryId: payload.libraryId,
+        libraryId: targetLibraryId,
         typeId: payload.typeId,
         typedMetadataJson: payload.typedMetadataJson,
         tags: payload.tags

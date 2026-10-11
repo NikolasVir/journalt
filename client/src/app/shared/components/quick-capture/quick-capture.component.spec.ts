@@ -99,4 +99,24 @@ describe('QuickCaptureComponent', () => {
       tags: undefined,
     });
   });
+
+  it('should pre-select defaultLibraryId when supplied as input', () => {
+    fixture.componentRef.setInput('defaultLibraryId', 'lib-default-456');
+    fixture.detectChanges();
+
+    expect((component as unknown as { selectedLibraryId: () => string }).selectedLibraryId()).toBe('lib-default-456');
+
+    component.expand('Note');
+    (component as unknown as { title: { set: (v: string) => void } }).title.set('Note in default lib');
+    (component as unknown as { bodyMarkdown: { set: (v: string) => void } }).bodyMarkdown.set('Body');
+
+    let emittedPayload: unknown = null;
+    component.createNote.subscribe((payload) => {
+      emittedPayload = payload;
+    });
+    component.submit();
+
+    expect((emittedPayload as { libraryId?: string })?.libraryId).toBe('lib-default-456');
+  });
 });
+

@@ -193,8 +193,7 @@ import { NotificationService } from '@core/services/notification.service';
             } @else {
               <a
                 mat-icon-button
-                [routerLink]="['/notes']"
-                [queryParams]="{ libraryId: node.id }"
+                [routerLink]="['/libraries', node.id]"
                 matTooltip="View notes in library"
                 aria-label="View notes in library"
               >
