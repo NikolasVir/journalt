@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.1.0](https://github.com/NikolasVir/journalt/compare/v1.0.1...v1.1.0) (2026-10-11)
+
+
+### Features
+
+* **client:** redesign todos page with search ([60ca304](https://github.com/NikolasVir/journalt/commit/60ca3048cd377237140643e1f27608f3e72f72bd))
+* **client:** rename journal tab to journals ([71259ec](https://github.com/NikolasVir/journalt/commit/71259ecc8c64d0d9ed28f373d36397af119b4eef))
+* **libraries:** add delete api with notes guard ([df05035](https://github.com/NikolasVir/journalt/commit/df05035e61276dece0d063c68f2ae4893a2d8e26))
+* **libraries:** add in-place ux and delete guard ([498bfc2](https://github.com/NikolasVir/journalt/commit/498bfc22e9e6d15c1b67b8c70e6b813e7d5718c5))
+* **libraries:** add library notes showcase view ([23d6738](https://github.com/NikolasVir/journalt/commit/23d6738d8e1e9b7cd648d80af6a83406df78e1d2))
+* **notes:** add level filter to consolidated tab ([73143b4](https://github.com/NikolasVir/journalt/commit/73143b4bdd7125ee886cf009123e72374f17bb80))
+* **settings:** refactor into tabbed navigation ([7cae7ce](https://github.com/NikolasVir/journalt/commit/7cae7cee59c98a22144a78322efc6eec46a0c0fa))
+* **sidebar:** add collapsible library hierarchy ([ef2afb7](https://github.com/NikolasVir/journalt/commit/ef2afb7f92b5f709df7c5e0bb7d2d7e18789a754))
+* **sidebar:** consolidate notes and journals nav ([b0f43e2](https://github.com/NikolasVir/journalt/commit/b0f43e2d7a99ca62a96200e6d3aa61df99071c1b))
+
+
+### Bug Fixes
+
+* **server:** rank exact title matches first ([31969dd](https://github.com/NikolasVir/journalt/commit/31969ddafdee7a98dd9ee77a39c346bbded2a7ec))
+* **sidebar:** prevent scrollbar layout shift ([417f71f](https://github.com/NikolasVir/journalt/commit/417f71f1b765618cacd1d0bd6a3b635184bdfd6b))
+
 ## [1.0.1](https://github.com/NikolasVir/journalt/compare/v1.0.0...v1.0.1) (2026-10-09)
 
 
