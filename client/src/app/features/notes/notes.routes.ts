@@ -14,26 +14,23 @@ export const NOTES_ROUTES: Routes = [
   },
   {
     path: 'notes',
-    loadComponent: () =>
-      import('./notes-page.component').then((m) => m.NotesPageComponent),
-    data: { level: 'Note' }
+    redirectTo: '',
+    pathMatch: 'full'
   },
   {
     path: 'note',
-    loadComponent: () =>
-      import('./notes-page.component').then((m) => m.NotesPageComponent),
-    data: { level: 'Note' }
+    redirectTo: '',
+    pathMatch: 'full'
   },
   {
     path: 'quick',
-    redirectTo: 'notes',
+    redirectTo: '',
     pathMatch: 'full'
   },
   {
     path: 'journal',
-    loadComponent: () =>
-      import('./notes-page.component').then((m) => m.NotesPageComponent),
-    data: { level: 'Journal' }
+    redirectTo: '',
+    pathMatch: 'full'
   },
   {
     path: 'new',

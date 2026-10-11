@@ -39,6 +39,20 @@ describe('SidebarComponent', () => {
     expect(component['versionTooltip']).toContain(APP_VERSION_INFO.commit);
   });
 
+  it('should contain consolidated Notes & Journals navigation item', () => {
+    const navItems = component['mainNavItems'];
+    const notesAndJournals = navItems.find((item) => item.label === 'Notes & Journals');
+    expect(notesAndJournals).toBeDefined();
+    expect(notesAndJournals?.route).toBe('/notes');
+    expect(notesAndJournals?.icon).toBe('auto_stories');
+    expect(notesAndJournals?.exact).toBe(true);
+
+    const oldNotes = navItems.find((item) => item.label === 'Notes');
+    const oldJournals = navItems.find((item) => item.label === 'Journals');
+    expect(oldNotes).toBeUndefined();
+    expect(oldJournals).toBeUndefined();
+  });
+
   it('should display the version string in expanded mode', () => {
     layoutService.setSidebarCollapsed(false);
     fixture.detectChanges();
