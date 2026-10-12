@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/NikolasVir/journalt/compare/v1.1.0...v1.2.0) (2026-10-12)
+
+
+### Features
+
+* **client:** add vault crypto and service ([80fe9bb](https://github.com/NikolasVir/journalt/commit/80fe9bbeaee3a648aa6cec9879803dec6fa2d694))
+* **dashboard:** rework home and add note pinning ([742f572](https://github.com/NikolasVir/journalt/commit/742f5724e858fb578029a830b7dc04228c92ec73))
+* library and subfolder sharing ([e280dcf](https://github.com/NikolasVir/journalt/commit/e280dcf62175b04e5ff4af7ef7ba401624426ab4))
+* **notes:** show pin always, wire toggle ([91168a3](https://github.com/NikolasVir/journalt/commit/91168a310d2124594d6db69afa8ee19d524ae8b6))
+* **server:** add vault api, service, dtos ([53c06ae](https://github.com/NikolasVir/journalt/commit/53c06ae9da9c85431ca86a7fd8930586ac514f20))
+* **server:** add vault entities, migration ([8b4c0ee](https://github.com/NikolasVir/journalt/commit/8b4c0ee273236b90ff273523f612d35c09ad0480))
+* **vault:** add encrypted notes page ([30912a6](https://github.com/NikolasVir/journalt/commit/30912a6a6ba344b7b22f592bb0c7ffda064912ca))
+
 ## [1.1.0](https://github.com/NikolasVir/journalt/compare/v1.0.1...v1.1.0) (2026-10-11)
 
 
