@@ -1,0 +1,77 @@
+<div class="vault-dialog">
+  <div class="vault-dialog__header">
+    <h2 mat-dialog-title class="vault-dialog__title">
+      {{ isEdit ? 'Edit Secret Note' : 'New Secret Note' }}
+    </h2>
+    <button
+      mat-icon-button
+      type="button"
+      class="vault-dialog__pin-btn"
+      [class.vault-dialog__pin-btn--pinned]="isPinned()"
+      (click)="togglePin()"
+      [attr.aria-label]="isPinned() ? 'Unpin note' : 'Pin note'"
+    >
+      <mat-icon>{{ isPinned() ? 'push_pin' : 'push_pin' }}</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content class="vault-dialog__content">
+    <mat-form-field appearance="outline" class="vault-dialog__field">
+      <mat-label>Level</mat-label>
+      <mat-select [value]="level()" (valueChange)="level.set($event)">
+        @for (l of levels; track l) {
+          <mat-option [value]="l">{{ l }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="vault-dialog__field">
+      <mat-label>Title</mat-label>
+      <input
+        matInput
+        [ngModel]="title()"
+        (ngModelChange)="title.set($event)"
+        placeholder="Note title"
+        required
+        autocomplete="off"
+        cdkFocusInitial
+      />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="vault-dialog__field">
+      <mat-label>Content (Markdown)</mat-label>
+      <textarea
+        matInput
+        rows="8"
+        [ngModel]="bodyMarkdown()"
+        (ngModelChange)="bodyMarkdown.set($event)"
+        placeholder="Write your encrypted notes here..."
+      ></textarea>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="vault-dialog__field">
+      <mat-label>Tags (comma-separated)</mat-label>
+      <input
+        matInput
+        [ngModel]="tagsString()"
+        (ngModelChange)="tagsString.set($event)"
+        placeholder="personal, secrets, taxes"
+        autocomplete="off"
+      />
+    </mat-form-field>
+    <mat-checkbox [ngModel]="isTodo()" (ngModelChange)="isTodo.set($event)">Track as todo</mat-checkbox>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="vault-dialog__actions">
+    <button mat-button type="button" (click)="onCancel()">Cancel</button>
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="!title().trim()"
+      (click)="onSave()"
+    >
+      Save Note
+    </button>
+  </mat-dialog-actions>
+</div>

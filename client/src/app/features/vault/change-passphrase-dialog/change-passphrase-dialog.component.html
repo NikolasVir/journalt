@@ -1,0 +1,87 @@
+<div class="change-pass-dialog">
+  <div class="change-pass-dialog__header">
+    <mat-icon class="change-pass-dialog__icon">vpn_key</mat-icon>
+    <h2 mat-dialog-title class="change-pass-dialog__title">Change Vault Passphrase</h2>
+  </div>
+
+  <p class="change-pass-dialog__desc">
+    All notes in this vault will be re-encrypted client-side using your new passphrase.
+  </p>
+
+  @if (errorMessage()) {
+    <div class="change-pass-dialog__error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <form (ngSubmit)="onSubmit()">
+    <mat-dialog-content class="change-pass-dialog__content">
+      <mat-form-field appearance="outline" class="change-pass-dialog__field">
+        <mat-label>New Passphrase</mat-label>
+        <input
+          matInput
+          [type]="showNewPassword() ? 'text' : 'password'"
+          [ngModel]="newPassphrase()"
+          (ngModelChange)="newPassphrase.set($event)"
+          name="newPassphrase"
+          placeholder="Enter new passphrase"
+          required
+          autocomplete="new-password"
+          cdkFocusInitial
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="toggleNewPassword()"
+          aria-label="Toggle password visibility"
+        >
+          <mat-icon>{{ showNewPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="change-pass-dialog__field">
+        <mat-label>Confirm New Passphrase</mat-label>
+        <input
+          matInput
+          [type]="showConfirmPassword() ? 'text' : 'password'"
+          [ngModel]="confirmPassphrase()"
+          (ngModelChange)="confirmPassphrase.set($event)"
+          name="confirmPassphrase"
+          placeholder="Repeat new passphrase"
+          required
+          autocomplete="new-password"
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="toggleConfirmPassword()"
+          aria-label="Toggle password visibility"
+        >
+          <mat-icon>{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+      </mat-form-field>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="change-pass-dialog__actions">
+      <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting()">
+        Cancel
+      </button>
+      <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        [disabled]="!newPassphrase().trim() || !confirmPassphrase().trim() || isSubmitting()"
+      >
+        @if (isSubmitting()) {
+          <mat-spinner diameter="18" class="change-pass-dialog__spinner"></mat-spinner>
+          <span>Re-encrypting...</span>
+        } @else {
+          <span>Update Passphrase</span>
+        }
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

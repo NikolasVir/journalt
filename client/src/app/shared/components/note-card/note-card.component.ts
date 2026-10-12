@@ -29,6 +29,8 @@ import { ShareDialogComponent } from '@shared/components/share-dialog/share-dial
 export class NoteCardComponent {
   private readonly dialog = inject(MatDialog);
   public readonly note = input.required<NoteResponse>();
+  /** Vault reuses this card but must not offer sharing. */
+  public readonly showShare = input<boolean>(true);
 
   protected readonly listPreview = computed<{ items: ChecklistItem[]; remainingCount: number } | null>(() => {
     const n = this.note();

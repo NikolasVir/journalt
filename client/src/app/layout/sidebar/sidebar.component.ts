@@ -289,7 +289,8 @@ export class SidebarComponent implements OnInit {
     { label: 'Todos', route: '/todos', icon: 'check_circle' },
     { label: 'Explore', route: '/explore', icon: 'account_tree', exact: true },
     { label: 'Inbox', route: '/notes/inbox', icon: 'inbox' },
-    { label: 'Notes & Journals', route: '/notes', icon: 'auto_stories', exact: true }
+    { label: 'Notes & Journals', route: '/notes', icon: 'auto_stories', exact: true },
+    { label: 'Vault', route: '/vault', icon: 'lock' }
   ];
 
   protected readonly systemNavItems: NavItem[] = [

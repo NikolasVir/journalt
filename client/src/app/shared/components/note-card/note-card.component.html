@@ -40,7 +40,7 @@
         [attr.aria-label]="note().isPinned ? 'Unpin note' : 'Pin note'"
         [matTooltip]="note().isPinned ? 'Unpin note' : 'Pin note'"
       >
-        <mat-icon>{{ note().isPinned ? 'push_pin' : 'push_pin' }}</mat-icon>
+        <mat-icon>push_pin</mat-icon>
       </button>
 
       <button
@@ -106,10 +106,12 @@
     <span>{{ note().isPinned ? 'Unpin note' : 'Pin note' }}</span>
   </button>
 
-  <button mat-menu-item (click)="onShare($event)" aria-label="Share note">
-    <mat-icon>share</mat-icon>
-    <span>Share note</span>
-  </button>
+  @if (showShare()) {
+    <button mat-menu-item (click)="onShare($event)" aria-label="Share note">
+      <mat-icon>share</mat-icon>
+      <span>Share note</span>
+    </button>
+  }
 
   <button
     mat-menu-item

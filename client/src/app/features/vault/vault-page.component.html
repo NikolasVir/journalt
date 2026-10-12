@@ -1,0 +1,343 @@
+<div class="vault-container">
+  @if (!vaultService.isUnlocked()) {
+    <!-- LOCKED VIEW -->
+    <div class="vault-locked">
+      <mat-card appearance="outlined" class="vault-locked__card">
+        <div class="vault-locked__icon-wrapper">
+          <mat-icon class="vault-locked__icon">lock</mat-icon>
+        </div>
+
+        <h1 class="vault-locked__title">Encrypted Vault</h1>
+        <p class="vault-locked__subtitle">
+          End-to-end encrypted notes with zero-knowledge security.
+        </p>
+
+        @if (errorMessage()) {
+          <div class="vault-locked__error" role="alert">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <div class="vault-locked__hint">
+          <mat-icon class="vault-locked__hint-icon">lightbulb</mat-icon>
+          <div class="vault-locked__hint-text">
+            <strong>First time?</strong> Enter any passphrase to create your vault. Or enter an existing passphrase to unlock.
+          </div>
+        </div>
+
+        @if (!needsInit()) {
+          <form class="vault-locked__form" (ngSubmit)="onUnlock()">
+            <mat-form-field appearance="outline" class="vault-locked__input">
+              <mat-label>Vault Passphrase</mat-label>
+              <input
+                matInput
+                [type]="showPassword() ? 'text' : 'password'"
+                [ngModel]="passphrase()"
+                (ngModelChange)="passphrase.set($event)"
+                name="passphrase"
+                placeholder="Enter passphrase"
+                autocomplete="off"
+                cdkFocusInitial
+                required
+              />
+              <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="togglePasswordVisibility()"
+                [attr.aria-label]="showPassword() ? 'Hide passphrase' : 'Show passphrase'"
+              >
+                <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </mat-form-field>
+
+            <button
+              mat-flat-button
+              color="primary"
+              type="submit"
+              class="vault-locked__submit-btn"
+              [disabled]="!passphrase().trim() || vaultService.isLoading()"
+            >
+              @if (vaultService.isLoading()) {
+                <mat-spinner diameter="20" class="vault-locked__spinner"></mat-spinner>
+                <span>Deriving Key...</span>
+              } @else {
+                <span>Unlock Vault</span>
+              }
+            </button>
+          </form>
+        } @else {
+          <!-- INITIALIZE NEW VAULT VIEW -->
+          <div class="vault-locked__init-box">
+            <div class="vault-locked__init-info">
+              <mat-icon class="vault-locked__init-icon">info</mat-icon>
+              <p>
+                No vault matches this passphrase. Would you like to initialize a new encrypted vault namespace?
+              </p>
+            </div>
+
+            <mat-checkbox
+              class="vault-locked__seed-checkbox"
+              [ngModel]="seedNotes()"
+              (ngModelChange)="seedNotes.set($event)"
+            >
+              Seed realistic starter notes (Recommended for decoy vaults)
+            </mat-checkbox>
+
+            <div class="vault-locked__init-actions">
+              <button
+                mat-button
+                type="button"
+                (click)="needsInit.set(false)"
+                [disabled]="vaultService.isLoading()"
+              >
+                Back
+              </button>
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                (click)="onInitialize()"
+                [disabled]="vaultService.isLoading()"
+              >
+                @if (vaultService.isLoading()) {
+                  <mat-spinner diameter="20" class="vault-locked__spinner"></mat-spinner>
+                  <span>Creating Vault...</span>
+                } @else {
+                  <span>Initialize Vault</span>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </mat-card>
+    </div>
+  } @else {
+    <!-- UNLOCKED VIEW: single page with everything, same cards/layout as normal notes -->
+    <div class="notes-page vault-unlocked">
+      <header class="notes-page__header">
+        <div class="notes-page__header-text">
+          <h1 class="notes-page__title">Vault</h1>
+          <p class="notes-page__subtitle">End-to-end encrypted notes. Deletes are permanent.</p>
+        </div>
+
+        <div class="notes-page__header-actions">
+          <div class="timeline-basis-compact" role="group" aria-label="Timeline date basis">
+            <button
+              type="button"
+              class="timeline-pill-btn"
+              [class.timeline-pill-btn--active]="timelineBasis() === 'createdAt'"
+              (click)="setTimelineBasis('createdAt')"
+              matTooltip="Group notes by creation date"
+            >
+              <mat-icon class="timeline-pill-btn__icon">add_circle_outline</mat-icon>
+              <span>Created</span>
+            </button>
+            <button
+              type="button"
+              class="timeline-pill-btn"
+              [class.timeline-pill-btn--active]="timelineBasis() === 'updatedAt'"
+              (click)="setTimelineBasis('updatedAt')"
+              matTooltip="Group notes by last access or modification date"
+            >
+              <mat-icon class="timeline-pill-btn__icon">schedule</mat-icon>
+              <span>Updated</span>
+            </button>
+          </div>
+
+          <button
+            mat-icon-button
+            class="timeline-direction-btn"
+            (click)="toggleSortDirection()"
+            [matTooltip]="sortDirection() === 'desc' ? 'Newest first' : 'Oldest first'"
+            [attr.aria-label]="sortDirection() === 'desc' ? 'Newest first' : 'Oldest first'"
+          >
+            <mat-icon>{{ sortDirection() === 'desc' ? 'south' : 'north' }}</mat-icon>
+          </button>
+
+          <div class="header-actions-divider" aria-hidden="true"></div>
+
+          <div class="view-mode-toggle" role="group" aria-label="View layout">
+            <button
+              type="button"
+              class="view-mode-toggle__btn"
+              [class.view-mode-toggle__btn--active]="layoutService.viewMode() === 'grid'"
+              (click)="layoutService.setViewMode('grid')"
+              matTooltip="Grid view"
+              aria-label="Grid view"
+            >
+              <mat-icon>grid_view</mat-icon>
+            </button>
+            <button
+              type="button"
+              class="view-mode-toggle__btn"
+              [class.view-mode-toggle__btn--active]="layoutService.viewMode() === 'list'"
+              (click)="layoutService.setViewMode('list')"
+              matTooltip="List view"
+              aria-label="List view"
+            >
+              <mat-icon>view_agenda</mat-icon>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="vault-toolbar">
+        <mat-form-field appearance="outline" class="vault-toolbar__search" subscriptSizing="dynamic">
+          <mat-icon matPrefix>search</mat-icon>
+          <input
+            matInput
+            placeholder="Search secret notes..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+            autocomplete="off"
+          />
+          @if (searchQuery()) {
+            <button mat-icon-button matSuffix (click)="searchQuery.set('')" aria-label="Clear search">
+              <mat-icon>clear</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
+        <div class="vault-toolbar__actions">
+          <button mat-flat-button color="primary" type="button" (click)="openCreateDialog()">
+            <mat-icon>add</mat-icon>
+            <span>New Note</span>
+          </button>
+
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="openChangePassphraseDialog()"
+            matTooltip="Change encryption passphrase for this vault"
+          >
+            <mat-icon>vpn_key</mat-icon>
+            <span>Change Passphrase</span>
+          </button>
+
+          <button
+            mat-stroked-button
+            type="button"
+            [matMenuTriggerFor]="timerMenu"
+            matTooltip="Inactivity timer • Click to reset or add time"
+            aria-label="Manage auto-lock timer"
+          >
+            <mat-icon>timer</mat-icon>
+            <span>{{ formattedTimer() }}</span>
+            <mat-icon>expand_more</mat-icon>
+          </button>
+
+          <mat-menu #timerMenu="matMenu" xPosition="before">
+            <button mat-menu-item (click)="onResetTimer()">
+              <mat-icon>restart_alt</mat-icon>
+              <span>Reset to 5 min</span>
+            </button>
+            <button mat-menu-item (click)="onAddTime(5)">
+              <mat-icon>more_time</mat-icon>
+              <span>+5 minutes</span>
+            </button>
+            <button mat-menu-item (click)="onAddTime(15)">
+              <mat-icon>more_time</mat-icon>
+              <span>+15 minutes</span>
+            </button>
+            <button mat-menu-item (click)="onAddTime(30)">
+              <mat-icon>more_time</mat-icon>
+              <span>+30 minutes</span>
+            </button>
+          </mat-menu>
+
+          <button
+            mat-stroked-button
+            color="warn"
+            type="button"
+            (click)="onLock()"
+            matTooltip="Click to lock immediately • Shortcut: Esc 3x"
+          >
+            <mat-icon>lock</mat-icon>
+            <span>Lock</span>
+          </button>
+        </div>
+      </div>
+
+      @if (activeTag() || searchQuery()) {
+        <div class="active-filters-bar">
+          <span class="active-filters-bar__label">Active filters:</span>
+          @if (searchQuery()) {
+            <span class="filter-chip">
+              <mat-icon class="filter-chip__icon">search</mat-icon>
+              "{{ searchQuery() }}"
+              <button type="button" class="filter-chip__clear" (click)="clearSearchFilter()" aria-label="Clear search filter">
+                <mat-icon>close</mat-icon>
+              </button>
+            </span>
+          }
+          @if (activeTag(); as tag) {
+            <span class="filter-chip">
+              <mat-icon class="filter-chip__icon">label</mat-icon>
+              #{{ tag }}
+              <button type="button" class="filter-chip__clear" (click)="clearTagFilter()" aria-label="Clear tag filter">
+                <mat-icon>close</mat-icon>
+              </button>
+            </span>
+          }
+          <button mat-button class="active-filters-bar__reset-btn" (click)="clearAllFilters()">
+            Clear all
+          </button>
+        </div>
+      }
+
+      <section class="notes-page__section" aria-label="Vault notes">
+        @if (timelineGroups().length > 0) {
+          <div class="timeline-container">
+            @for (group of timelineGroups(); track group.dateKey) {
+              <section class="timeline-section" [attr.aria-label]="group.dateLabel">
+                <header class="timeline-section__header">
+                  <div class="timeline-section__badge-group">
+                    <div class="timeline-section__dot"></div>
+                    <div class="timeline-section__date-pill">
+                      <mat-icon class="timeline-section__calendar-icon">calendar_today</mat-icon>
+                      <h2 class="timeline-section__title">{{ group.dateLabel }}</h2>
+                      @if (group.relativeLabel) {
+                        <span class="timeline-section__relative-badge">{{ group.relativeLabel }}</span>
+                      }
+                    </div>
+                    <span class="timeline-section__count">{{ group.notes.length }} {{ group.notes.length === 1 ? 'note' : 'notes' }}</span>
+                  </div>
+                  <div class="timeline-section__line" aria-hidden="true"></div>
+                </header>
+
+                <div
+                  class="notes-page__grid"
+                  [class.notes-page__grid--list]="layoutService.viewMode() === 'list'"
+                >
+                  @for (note of group.notes; track note.id) {
+                    <app-note-card
+                      [note]="note"
+                      [showShare]="false"
+                      (cardClick)="openEditDialog($event)"
+                      (editRequested)="openEditDialog($event)"
+                      (tagClick)="onTagClick($event)"
+                      (toggleTodo)="handleToggleTodo($event)"
+                      (togglePin)="handleTogglePin($event)"
+                      (trashNote)="handleDeleteNote($event)"
+                      (promoteNote)="handlePromoteNote($event)"
+                    />
+                  }
+                </div>
+              </section>
+            }
+          </div>
+        } @else {
+          <div class="notes-page__empty">
+            <mat-icon class="notes-page__empty-icon">enhanced_encryption</mat-icon>
+            <p class="notes-page__empty-title">
+              {{ searchQuery() || activeTag() ? 'No matching secret notes' : 'No secret notes yet' }}
+            </p>
+            <p class="notes-page__empty-subtitle">Use New Note above to add an encrypted note.</p>
+          </div>
+        }
+      </section>
+    </div>
+  }
+</div>

@@ -53,6 +53,11 @@ describe('SidebarComponent', () => {
     const oldJournals = navItems.find((item) => item.label === 'Journals');
     expect(oldNotes).toBeUndefined();
     expect(oldJournals).toBeUndefined();
+
+    const vaultItem = navItems.find((item) => item.label === 'Vault');
+    expect(vaultItem).toBeDefined();
+    expect(vaultItem?.route).toBe('/vault');
+    expect(vaultItem?.icon).toBe('lock');
   });
 
   it('should display the version string in expanded mode', () => {

@@ -57,6 +57,11 @@ export const routes: Routes = [
         pathMatch: 'full'
       },
       {
+        path: 'vault',
+        loadChildren: () =>
+          import('@features/vault/vault.routes').then((m) => m.VAULT_ROUTES)
+      },
+      {
         path: 'trash',
         loadChildren: () =>
           import('@features/trash/trash.routes').then((m) => m.TRASH_ROUTES)
