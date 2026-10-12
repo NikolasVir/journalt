@@ -361,6 +361,26 @@ export class NotesPageComponent implements OnInit {
     });
   }
 
+  public handleTogglePin(note: NoteResponse): void {
+    this.noteService.togglePin(note.id).subscribe({
+      next: (updated) => {
+        this.notes.update((list) => list.map((n) => (n.id === updated.id ? updated : n)));
+        if (this.selectedNote()?.id === updated.id) {
+          this.selectedNote.set(updated);
+        }
+        this.notification.showSuccess(updated.isPinned ? 'Note pinned.' : 'Note unpinned.');
+      },
+      error: (err: { error?: { detail?: string } }) => {
+        this.notification.showError(err.error?.detail ?? 'Failed to update pin state.');
+      }
+    });
+  }
+
+  public handlePinDialog(updated: NoteResponse): void {
+    this.notes.update((list) => list.map((n) => (n.id === updated.id ? updated : n)));
+    this.selectedNote.set(updated);
+  }
+
   public handleTrashNote(note: NoteResponse): void {
     const originalIndex = this.notes().findIndex((n) => n.id === note.id);
     this.noteService.trash(note.id).subscribe({

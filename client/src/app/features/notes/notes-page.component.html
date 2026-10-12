@@ -233,6 +233,7 @@
                   (editRequested)="openFullEditor($event)"
                   (tagClick)="onTagClick($event)"
                   (toggleTodo)="handleToggleTodo($event)"
+                  (togglePin)="handleTogglePin($event)"
                   (trashNote)="handleTrashNote($event)"
                   (promoteNote)="handlePromoteNote($event)"
                 />
@@ -263,6 +264,7 @@
     [note]="selectedNote()"
     (close)="selectedNote.set(null)"
     (save)="handleSaveDialog($event)"
+    (pin)="handlePinDialog($event)"
     (trash)="handleTrashNote($event)"
     (promote)="handlePromoteNote({ note: selectedNote()!, targetLevel: $event.targetLevel })"
   />
