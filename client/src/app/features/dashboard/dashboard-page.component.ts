@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
 import { LayoutService } from '@layout/layout.service';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { NotificationService } from '@core/services/notification.service';
 import { NoteCardComponent } from '@shared/components/note-card/note-card.component';
 import { NoteDialogComponent, NoteDialogSavePayload } from '@shared/components/note-dialog/note-dialog.component';
@@ -14,7 +16,16 @@ import { openNoteEditor } from '@shared/utils/note-navigation';
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, QuickCaptureComponent, NoteCardComponent, NoteDialogComponent],
+  imports: [
+    RouterLink,
+    MatIconModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatTooltipModule,
+    QuickCaptureComponent,
+    NoteCardComponent,
+    NoteDialogComponent,
+  ],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -38,6 +49,10 @@ export class DashboardPageComponent implements OnInit {
   protected readonly activeTag = signal<string | null>(null);
   protected readonly activeLibraryId = signal<string | null>(null);
 
+  protected readonly isFiltered = computed<boolean>(() =>
+    Boolean(this.layoutService.searchQuery() || this.activeTag() || this.activeLibraryId())
+  );
+
   protected readonly filteredNotes = computed<NoteResponse[]>(() => {
     const query = this.layoutService.searchQuery().toLowerCase().trim();
     const tag = this.activeTag()?.toLowerCase().trim();
@@ -56,6 +71,37 @@ export class DashboardPageComponent implements OnInit {
       );
     });
   });
+
+  protected readonly inboxNotesCount = computed<number>(() =>
+    this.notes().filter((n) => !n.isTrashed && n.level === 'Inbox').length
+  );
+
+  protected readonly pinnedNotes = computed<NoteResponse[]>(() => {
+    return this.filteredNotes()
+      .filter((n) => n.isPinned)
+      .sort((a, b) => {
+        const timeA = a.pinnedAtUtc || a.updatedAtUtc;
+        const timeB = b.pinnedAtUtc || b.updatedAtUtc;
+        return timeB.localeCompare(timeA);
+      });
+  });
+
+  protected readonly recentNotes = computed<NoteResponse[]>(() => {
+    return this.filteredNotes()
+      .filter((n) => !n.isPinned)
+      .sort((a, b) => b.updatedAtUtc.localeCompare(a.updatedAtUtc))
+      .slice(0, 4);
+  });
+
+  protected readonly pendingTodos = computed<NoteResponse[]>(() => {
+    return this.notes()
+      .filter((n) => !n.isTrashed && n.isTodo && !n.todoCompletedAtUtc)
+      .sort((a, b) => b.updatedAtUtc.localeCompare(a.updatedAtUtc));
+  });
+
+  protected readonly displayPendingTodos = computed<NoteResponse[]>(() =>
+    this.pendingTodos().slice(0, 5)
+  );
 
   constructor() {
     effect(() => {
@@ -115,7 +161,7 @@ export class DashboardPageComponent implements OnInit {
 
   public loadNotes(): void {
     this.isLoading.set(true);
-    this.noteService.list({ isTrashed: false }).subscribe({
+    this.noteService.list({ isTrashed: false, pageSize: 100 }).subscribe({
       next: (result) => {
         this.notes.set(result.items);
         this.isLoading.set(false);
@@ -225,6 +271,26 @@ export class DashboardPageComponent implements OnInit {
           this.notes.update((list) => list.map((n) => (n.id === updated.id ? updated : n)));
         }
       });
+  }
+
+  public handleTogglePin(note: NoteResponse): void {
+    this.noteService.togglePin(note.id).subscribe({
+      next: (updated) => {
+        this.notes.update((list) => list.map((n) => (n.id === updated.id ? updated : n)));
+        if (this.selectedNote()?.id === updated.id) {
+          this.selectedNote.set(updated);
+        }
+        this.notification.showSuccess(updated.isPinned ? 'Note pinned to Home.' : 'Note unpinned from Home.');
+      },
+      error: (err: { error?: { detail?: string } }) => {
+        this.notification.showError(err.error?.detail ?? 'Failed to update pin state.');
+      }
+    });
+  }
+
+  public handlePinDialog(updated: NoteResponse): void {
+    this.notes.update((list) => list.map((n) => (n.id === updated.id ? updated : n)));
+    this.selectedNote.set(updated);
   }
 
   public openNoteDialog(note: NoteResponse): void {

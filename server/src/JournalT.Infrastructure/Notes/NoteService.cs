@@ -118,6 +118,8 @@ public sealed class NoteService(
             TypedMetadataJson = request.Level == NoteLevel.Journal ? (string.IsNullOrWhiteSpace(request.TypedMetadataJson) ? "{}" : request.TypedMetadataJson) : null,
             IsTodo = request.IsTodo,
             TodoCompletedAtUtc = null,
+            IsPinned = request.IsPinned ?? false,
+            PinnedAtUtc = (request.IsPinned ?? false) ? DateTime.UtcNow : null,
             IsTrashed = false,
             Format = request.Format,
         };
@@ -332,7 +334,9 @@ public sealed class NoteService(
                 n.UserId,
                 n.UserId == currentUserId,
                 n.Shares.Any() || n.UserId != currentUserId,
-                null
+                null,
+                n.IsPinned,
+                n.PinnedAtUtc
             ))
             .ToListAsync(ct);
 
@@ -472,6 +476,12 @@ public sealed class NoteService(
         {
             note.IsTodo = request.IsTodo;
             note.TodoCompletedAtUtc = request.IsTodo ? null : DateTime.UtcNow;
+        }
+
+        if (request.IsPinned.HasValue && request.IsPinned.Value != note.IsPinned)
+        {
+            note.IsPinned = request.IsPinned.Value;
+            note.PinnedAtUtc = note.IsPinned ? DateTime.UtcNow : null;
         }
 
         if (request.Tags != null)
@@ -790,7 +800,9 @@ public sealed class NoteService(
             [],
             [],
             sourceNote.Format,
-            OutboundRelations: [response]
+            OutboundRelations: [response],
+            IsPinned: sourceNote.IsPinned,
+            PinnedAtUtc: sourceNote.PinnedAtUtc
         ));
     }
 
@@ -889,6 +901,40 @@ public sealed class NoteService(
         return MapToResponse(note, wikiLinks, wikiWarnings, freshTodoHtml, null, isOwner, isShared, ownerUserName);
     }
 
+    // Pinning
+    public async Task<NoteResponse?> TogglePinAsync(Guid id, CancellationToken ct = default)
+    {
+        var accessibleLibIds = await _libraryService.GetAccessibleLibraryIdsAsync(_currentUser.UserId, ct);
+        var note = await _db.Notes
+            .Include(n => n.Tags)
+            .Include(n => n.Sources)
+            .Include(n => n.Shares)
+            .Include(n => n.OutboundRelations)
+                .ThenInclude(r => r.TargetNote)
+            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == _currentUser.UserId || n.Shares.Any(s => s.UserId == _currentUser.UserId) || (n.LibraryId.HasValue && accessibleLibIds.Contains(n.LibraryId.Value))) && !n.IsTrashed, ct);
+
+        if (note is null) return null;
+
+        note.IsPinned = !note.IsPinned;
+        note.PinnedAtUtc = note.IsPinned ? DateTime.UtcNow : null;
+        note.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+        var (freshHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(_currentUser.UserId, note.BodyMarkdown, ct);
+
+        var isOwner = note.UserId == _currentUser.UserId;
+        var isShared = note.Shares.Any();
+        string? ownerUserName = null;
+        if (!isOwner)
+        {
+            ownerUserName = await _db.Users
+                .Where(u => u.Id == note.UserId)
+                .Select(u => u.UserName)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        return MapToResponse(note, wikiLinks, wikiWarnings, freshHtml, null, isOwner, isShared, ownerUserName);
+    }
 
     public async Task<TodoSummaryResponse> GetTodoSummaryAsync(CancellationToken ct = default)
     {
@@ -910,7 +956,7 @@ public sealed class NoteService(
             .Take(50)
             .Select(n => new NoteSummaryResponse(
                 n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
-                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format, n.UserId, n.UserId == userId, n.Shares.Any(), null))
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format, n.UserId, n.UserId == userId, n.Shares.Any(), null, n.IsPinned, n.PinnedAtUtc))
             .ToListAsync(ct);
 
         var completedNotes = await completedQuery
@@ -918,7 +964,7 @@ public sealed class NoteService(
             .Take(20)
             .Select(n => new NoteSummaryResponse(
                 n.Id, n.Level, n.Title, n.Summary, n.BodyMarkdown, n.RenderedHtml, n.LibraryId, n.TypeId, n.IsTodo, n.TodoCompletedAtUtc, n.IsTrashed, n.CreatedAtUtc, n.UpdatedAtUtc,
-                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format, n.UserId, n.UserId == userId, n.Shares.Any(), null))
+                n.Tags.Select(t => new TagDto(t.TagType, t.Category, t.Value)).ToList(), n.TypedMetadataJson, n.Format, n.UserId, n.UserId == userId, n.Shares.Any(), null, n.IsPinned, n.PinnedAtUtc))
             .ToListAsync(ct);
 
         return new TodoSummaryResponse(pendingCount, completedCount, pendingNotes, completedNotes);
@@ -1111,7 +1157,9 @@ public sealed class NoteService(
             IsOwner: isOwner,
             IsShared: isShared,
             OwnerUserName: ownerUserName,
-            Shares: shares
+            Shares: shares,
+            IsPinned: note.IsPinned,
+            PinnedAtUtc: note.PinnedAtUtc
         );
 
     public async Task<IReadOnlyList<string>> GetDistinctTagsAsync(CancellationToken ct = default)

@@ -73,6 +73,53 @@
     flex-shrink: 0;
   }
 
+  &__pin-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-pill);
+    opacity: 0;
+    transition: opacity var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast);
+
+    &:hover,
+    &:focus-visible {
+      opacity: 1 !important;
+      color: var(--color-text-primary);
+      background-color: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+    }
+
+    &--pinned {
+      opacity: 1 !important;
+      color: var(--color-primary);
+
+      &:hover {
+        color: var(--color-primary-hover);
+        background-color: var(--color-primary-light);
+      }
+    }
+
+    .mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+    }
+
+    ::ng-deep .mat-mdc-button-touch-target {
+      display: none;
+    }
+  }
+
+  &:hover &__pin-btn,
+  &:focus-within &__pin-btn {
+    opacity: 0.65;
+  }
+
   &__menu-btn {
     width: 28px !important;
     height: 28px !important;
@@ -324,6 +371,20 @@
     &__level-badge {
       font-size: 10px;
       padding: 1px 5px;
+    }
+
+    &__pin-btn {
+      width: 26px !important;
+      height: 26px !important;
+      min-width: 26px !important;
+      opacity: 0.85;
+
+      .mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
+      }
     }
 
     &__menu-btn {

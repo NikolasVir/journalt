@@ -39,5 +39,7 @@ public sealed record NoteResponse(
     bool IsOwner = true,
     bool IsShared = false,
     string? OwnerUserName = null,
-    IReadOnlyList<NoteShareUserDto>? Shares = null
+    IReadOnlyList<NoteShareUserDto>? Shares = null,
+    bool IsPinned = false,
+    DateTime? PinnedAtUtc = null
 );

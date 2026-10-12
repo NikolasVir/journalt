@@ -118,4 +118,32 @@ describe('NoteCardComponent', () => {
     expect(clickedTag).toBe('testing');
     expect(clickedNote).toBeNull();
   });
+
+  it('should emit togglePin when pin button in header is clicked', () => {
+    let pinnedNote: NoteResponse | null = null;
+    component.togglePin.subscribe((n) => {
+      pinnedNote = n;
+    });
+
+    const pinBtn = fixture.nativeElement.querySelector('.note-card__pin-btn') as HTMLButtonElement;
+    pinBtn.click();
+
+    expect(pinnedNote).toEqual(mockNote);
+  });
+
+  it('should emit togglePin when pin menu item is clicked', () => {
+    let pinnedNote: NoteResponse | null = null;
+    component.togglePin.subscribe((n) => {
+      pinnedNote = n;
+    });
+
+    const menuBtn = fixture.nativeElement.querySelector('.note-card__menu-btn') as HTMLButtonElement;
+    menuBtn.click();
+    fixture.detectChanges();
+
+    const pinMenuItem = document.querySelector('button[aria-label="Pin note"]') as HTMLButtonElement;
+    pinMenuItem.click();
+
+    expect(pinnedNote).toEqual(mockNote);
+  });
 });

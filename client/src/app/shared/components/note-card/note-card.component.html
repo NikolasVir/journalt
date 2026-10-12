@@ -34,6 +34,17 @@
 
       <button
         mat-icon-button
+        class="note-card__pin-btn"
+        [class.note-card__pin-btn--pinned]="note().isPinned"
+        (click)="onTogglePin($event)"
+        [attr.aria-label]="note().isPinned ? 'Unpin note' : 'Pin note'"
+        [matTooltip]="note().isPinned ? 'Unpin note' : 'Pin note'"
+      >
+        <mat-icon>{{ note().isPinned ? 'push_pin' : 'push_pin' }}</mat-icon>
+      </button>
+
+      <button
+        mat-icon-button
         class="note-card__menu-btn"
         [matMenuTriggerFor]="cardMenu"
         (click)="$event.stopPropagation()"
@@ -88,6 +99,11 @@
   <button mat-menu-item (click)="onEdit($event)" aria-label="Edit note">
     <mat-icon>edit</mat-icon>
     <span>Edit note</span>
+  </button>
+
+  <button mat-menu-item (click)="onTogglePin($event)" [attr.aria-label]="note().isPinned ? 'Unpin note' : 'Pin note'">
+    <mat-icon>push_pin</mat-icon>
+    <span>{{ note().isPinned ? 'Unpin note' : 'Pin note' }}</span>
   </button>
 
   <button mat-menu-item (click)="onShare($event)" aria-label="Share note">

@@ -18,6 +18,8 @@ public class Note : BaseEntity
     public string? TypedMetadataJson { get; set; }
     public bool IsTodo { get; set; }
     public DateTime? TodoCompletedAtUtc { get; set; }
+    public bool IsPinned { get; set; }
+    public DateTime? PinnedAtUtc { get; set; }
     public bool IsTrashed { get; set; }
     public DateTime? TrashedAtUtc { get; set; }
 

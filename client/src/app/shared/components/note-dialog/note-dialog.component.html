@@ -56,6 +56,18 @@
             <mat-icon>share</mat-icon>
           </button>
 
+          <button
+            type="button"
+            class="dialog-panel__pin-btn"
+            [class.dialog-panel__pin-btn--pinned]="n.isPinned"
+            mat-icon-button
+            (click)="onTogglePin()"
+            [attr.aria-label]="n.isPinned ? 'Unpin note' : 'Pin note'"
+            [matTooltip]="n.isPinned ? 'Unpin note' : 'Pin note'"
+          >
+            <mat-icon>push_pin</mat-icon>
+          </button>
+
           <app-note-edit-button
             tooltip="Open full editor"
             ariaLabel="Open full editor"

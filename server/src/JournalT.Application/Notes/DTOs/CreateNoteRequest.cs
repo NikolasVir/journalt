@@ -12,5 +12,6 @@ public sealed record CreateNoteRequest(
     string? TypedMetadataJson = null,
     bool IsTodo = false,
     List<TagDto>? Tags = null,
-    NoteFormat Format = NoteFormat.Markdown
+    NoteFormat Format = NoteFormat.Markdown,
+    bool? IsPinned = false
 );

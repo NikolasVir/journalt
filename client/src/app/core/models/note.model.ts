@@ -88,6 +88,8 @@ export interface NoteResponse {
   isShared?: boolean;
   ownerUserName?: string | null;
   shares?: NoteShareUserDto[] | null;
+  isPinned?: boolean;
+  pinnedAtUtc?: string | null;
 }
 
 export interface NoteSummaryResponse {
@@ -111,6 +113,8 @@ export interface NoteSummaryResponse {
   isOwner?: boolean;
   isShared?: boolean;
   ownerUserName?: string | null;
+  isPinned?: boolean;
+  pinnedAtUtc?: string | null;
 }
 
 export interface NoteShareUserDto {
@@ -143,6 +147,7 @@ export interface CreateNoteRequest {
   typedMetadataJson?: string | null;
   isTodo?: boolean;
   tags?: (TagDto | string)[];
+  isPinned?: boolean;
 }
 
 export interface UpdateNoteRequest {
@@ -154,6 +159,7 @@ export interface UpdateNoteRequest {
   typedMetadataJson?: string | null;
   isTodo?: boolean;
   tags?: (TagDto | string)[];
+  isPinned?: boolean;
 }
 
 export interface PromoteNoteRequest {

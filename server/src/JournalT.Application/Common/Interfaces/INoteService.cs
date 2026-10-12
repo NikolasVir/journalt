@@ -32,6 +32,9 @@ public interface INoteService
     Task<NoteResponse?> ToggleTodoAsync(Guid id, CancellationToken ct = default);
     Task<TodoSummaryResponse> GetTodoSummaryAsync(CancellationToken ct = default);
 
+    // Pinning
+    Task<NoteResponse?> TogglePinAsync(Guid id, CancellationToken ct = default);
+
     // Markdown Preview
     Task<string> RenderPreviewAsync(string markdown, CancellationToken ct = default);
 

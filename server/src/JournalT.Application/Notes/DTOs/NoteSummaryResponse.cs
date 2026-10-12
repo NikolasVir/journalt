@@ -22,5 +22,7 @@ public sealed record NoteSummaryResponse(
     Guid UserId = default,
     bool IsOwner = true,
     bool IsShared = false,
-    string? OwnerUserName = null
+    string? OwnerUserName = null,
+    bool IsPinned = false,
+    DateTime? PinnedAtUtc = null
 );

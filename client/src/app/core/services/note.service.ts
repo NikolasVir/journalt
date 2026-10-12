@@ -127,6 +127,10 @@ export class NoteService {
     return this.http.patch<NoteResponse>(`${this.baseUrl}/${id}/todo`, {});
   }
 
+  public togglePin(id: string): Observable<NoteResponse> {
+    return this.http.patch<NoteResponse>(`${this.baseUrl}/${id}/pin`, {});
+  }
+
   public getTodoSummary(): Observable<TodoSummaryResponse> {
     return this.http.get<TodoSummaryResponse>(`${this.baseUrl}/todos/summary`);
   }

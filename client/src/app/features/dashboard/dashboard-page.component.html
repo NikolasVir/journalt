@@ -42,43 +42,185 @@
     </div>
   }
 
-  <!-- Notes Grid -->
-  <section class="dashboard__section" aria-label="Notes">
-    @if (isLoading()) {
-      <div class="dashboard__loading">
-        <p>Loading notes...</p>
+  @if (isLoading()) {
+    <div class="dashboard__loading">
+      <p>Loading notes...</p>
+    </div>
+  } @else if (isFiltered()) {
+    <!-- Search / Filter Results View -->
+    <section class="dashboard__section" aria-label="Filtered Notes">
+      <div class="dashboard__section-header">
+        <div class="dashboard__section-title-wrap">
+          <mat-icon class="dashboard__section-icon">filter_list</mat-icon>
+          <h2 class="dashboard__section-title">Matching Notes</h2>
+          <span class="dashboard__section-count">{{ filteredNotes().length }}</span>
+        </div>
       </div>
-    } @else if (filteredNotes().length > 0) {
-      <div
-        class="dashboard__grid"
-        [class.dashboard__grid--list]="layoutService.viewMode() === 'list'"
-      >
-        @for (note of filteredNotes(); track note.id) {
-          <app-note-card
-            [note]="note"
-            (cardClick)="openNoteDialog($event)"
-            (editRequested)="openFullEditor($event)"
-            (tagClick)="onTagClick($event)"
-            (toggleTodo)="handleToggleTodo($event)"
-            (trashNote)="handleTrashNote($event)"
-            (promoteNote)="handlePromoteNote($event)"
-          />
-        }
-      </div>
-    } @else {
+
+      @if (filteredNotes().length > 0) {
+        <div
+          class="dashboard__grid"
+          [class.dashboard__grid--list]="layoutService.viewMode() === 'list'"
+        >
+          @for (note of filteredNotes(); track note.id) {
+            <app-note-card
+              [note]="note"
+              (cardClick)="openNoteDialog($event)"
+              (editRequested)="openFullEditor($event)"
+              (tagClick)="onTagClick($event)"
+              (toggleTodo)="handleToggleTodo($event)"
+              (togglePin)="handleTogglePin($event)"
+              (trashNote)="handleTrashNote($event)"
+              (promoteNote)="handlePromoteNote($event)"
+            />
+          }
+        </div>
+      } @else {
+        <div class="dashboard__empty">
+          <mat-icon class="dashboard__empty-icon">search_off</mat-icon>
+          <p class="dashboard__empty-title">No notes match your filter</p>
+          <p class="dashboard__empty-subtitle">Try adjusting your search query or clear active filters.</p>
+        </div>
+      }
+    </section>
+  } @else {
+    <!-- Normal Home Dashboard View -->
+
+    <!-- 1. Inbox Triage Strip -->
+    @if (inboxNotesCount() > 0) {
+      <aside class="dashboard__inbox-triage" aria-label="Inbox triage alert">
+        <div class="dashboard__inbox-triage-content">
+          <mat-icon class="dashboard__inbox-triage-icon">inbox</mat-icon>
+          <span class="dashboard__inbox-triage-text">
+            <strong>{{ inboxNotesCount() }} {{ inboxNotesCount() === 1 ? 'item' : 'items' }}</strong> in Inbox awaiting triage
+          </span>
+        </div>
+        <a mat-button class="dashboard__inbox-triage-btn" routerLink="/notes/inbox">
+          <span>Review Inbox</span>
+          <mat-icon class="dashboard__inbox-triage-arrow">arrow_forward</mat-icon>
+        </a>
+      </aside>
+    }
+
+    <!-- 2. Pinned Notes Section -->
+    @if (pinnedNotes().length > 0) {
+      <section class="dashboard__section dashboard__section--pinned" aria-label="Pinned Notes">
+        <div class="dashboard__section-header">
+          <div class="dashboard__section-title-wrap">
+            <mat-icon class="dashboard__section-icon dashboard__section-icon--pinned">push_pin</mat-icon>
+            <h2 class="dashboard__section-title">Pinned</h2>
+            <span class="dashboard__section-count">{{ pinnedNotes().length }}</span>
+          </div>
+        </div>
+
+        <div
+          class="dashboard__grid"
+          [class.dashboard__grid--list]="layoutService.viewMode() === 'list'"
+        >
+          @for (note of pinnedNotes(); track note.id) {
+            <app-note-card
+              [note]="note"
+              (cardClick)="openNoteDialog($event)"
+              (editRequested)="openFullEditor($event)"
+              (tagClick)="onTagClick($event)"
+              (toggleTodo)="handleToggleTodo($event)"
+              (togglePin)="handleTogglePin($event)"
+              (trashNote)="handleTrashNote($event)"
+              (promoteNote)="handlePromoteNote($event)"
+            />
+          }
+        </div>
+      </section>
+    }
+
+    <!-- 3. Up to 4 Recently Edited Notes -->
+    @if (recentNotes().length > 0) {
+      <section class="dashboard__section" aria-label="Recently Edited Notes">
+        <div class="dashboard__section-header">
+          <div class="dashboard__section-title-wrap">
+            <mat-icon class="dashboard__section-icon">schedule</mat-icon>
+            <h2 class="dashboard__section-title">Recently Edited</h2>
+          </div>
+        </div>
+
+        <div
+          class="dashboard__grid"
+          [class.dashboard__grid--list]="layoutService.viewMode() === 'list'"
+        >
+          @for (note of recentNotes(); track note.id) {
+            <app-note-card
+              [note]="note"
+              (cardClick)="openNoteDialog($event)"
+              (editRequested)="openFullEditor($event)"
+              (tagClick)="onTagClick($event)"
+              (toggleTodo)="handleToggleTodo($event)"
+              (togglePin)="handleTogglePin($event)"
+              (trashNote)="handleTrashNote($event)"
+              (promoteNote)="handlePromoteNote($event)"
+            />
+          }
+        </div>
+      </section>
+    }
+
+    <!-- 4. Pending Tasks Widget -->
+    @if (displayPendingTodos().length > 0) {
+      <section class="dashboard__section dashboard__section--todos" aria-label="Pending Tasks">
+        <div class="dashboard__section-header">
+          <div class="dashboard__section-title-wrap">
+            <mat-icon class="dashboard__section-icon dashboard__section-icon--todo">check_circle</mat-icon>
+            <h2 class="dashboard__section-title">Pending Tasks</h2>
+            <span class="dashboard__section-count">{{ pendingTodos().length }}</span>
+          </div>
+          <a mat-button class="dashboard__section-link" routerLink="/todos">
+            <span>All tasks</span>
+            <mat-icon class="dashboard__section-link-icon">arrow_forward</mat-icon>
+          </a>
+        </div>
+
+        <div class="dashboard__todos-card">
+          <div class="dashboard__todos-list">
+            @for (todo of displayPendingTodos(); track todo.id) {
+              <div class="dashboard__todo-item">
+                <mat-checkbox
+                  [checked]="todo.todoCompletedAtUtc !== null"
+                  (change)="handleToggleTodo(todo)"
+                  [aria-label]="'Mark ' + todo.title + ' as complete'"
+                  class="dashboard__todo-checkbox"
+                />
+                <button
+                  type="button"
+                  class="dashboard__todo-title-btn"
+                  (click)="openNoteDialog(todo)"
+                >
+                  <span class="dashboard__todo-title">{{ todo.title || 'Untitled task' }}</span>
+                </button>
+                <span class="dashboard__todo-level-badge" [class]="'dashboard__todo-level-badge--' + todo.level.toLowerCase()">
+                  {{ todo.level }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- 5. Empty State (if no notes exist at all) -->
+    @if (notes().length === 0) {
       <div class="dashboard__empty">
         <mat-icon class="dashboard__empty-icon">lightbulb</mat-icon>
         <p class="dashboard__empty-title">Notes you add appear here</p>
         <p class="dashboard__empty-subtitle">Capture thoughts as Inbox, Note, or Journal notes above.</p>
       </div>
     }
-  </section>
+  }
 
   <!-- Google Keep-style In-place Dialog Editor -->
   <app-note-dialog
     [note]="selectedNote()"
     (close)="selectedNote.set(null)"
     (save)="handleSaveDialog($event)"
+    (pin)="handlePinDialog($event)"
     (trash)="handleTrashNote($event)"
     (promote)="handlePromoteNote({ note: selectedNote()!, targetLevel: $event.targetLevel })"
   />

@@ -52,6 +52,7 @@ export class NoteCardComponent {
   public readonly cardClick = output<NoteResponse>();
   public readonly tagClick = output<string>();
   public readonly toggleTodo = output<NoteResponse>();
+  public readonly togglePin = output<NoteResponse>();
   public readonly trashNote = output<NoteResponse>();
   public readonly promoteNote = output<{ note: NoteResponse; targetLevel: NoteLevel }>();
   public readonly editRequested = output<NoteResponse>();
@@ -78,6 +79,11 @@ export class NoteCardComponent {
   public onEdit(event?: Event): void {
     event?.stopPropagation();
     this.editRequested.emit(this.note());
+  }
+
+  public onTogglePin(event: Event): void {
+    event.stopPropagation();
+    this.togglePin.emit(this.note());
   }
 
   public onToggleTodo(event: Event): void {

@@ -7,5 +7,6 @@ public sealed record UpdateNoteRequest(
     Guid? LibraryId = null,
     string? TypedMetadataJson = null,
     bool IsTodo = false,
-    List<TagDto>? Tags = null
+    List<TagDto>? Tags = null,
+    bool? IsPinned = null
 );

@@ -164,6 +164,13 @@ public class NotesController(INoteService noteService) : ControllerBase
         return note is not null ? Ok(note) : NotFound();
     }
 
+    [HttpPatch("{id:guid}/pin")]
+    public async Task<IActionResult> TogglePin(Guid id, CancellationToken ct)
+    {
+        var note = await _noteService.TogglePinAsync(id, ct);
+        return note is not null ? Ok(note) : NotFound();
+    }
+
     // Markdown Preview
     [HttpPost("render")]
     public async Task<IActionResult> RenderMarkdown([FromBody] RenderMarkdownRequest request, CancellationToken ct)

@@ -56,8 +56,13 @@ public class NoteConfiguration : IEntityTypeConfiguration<Note>
             .HasForeignKey(n => n.TypeId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Property(n => n.IsPinned)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.HasIndex(n => new { n.UserId, n.Level, n.IsTrashed });
         builder.HasIndex(n => new { n.UserId, n.LibraryId });
         builder.HasIndex(n => new { n.UserId, n.IsTodo, n.IsTrashed });
+        builder.HasIndex(n => new { n.UserId, n.IsPinned, n.IsTrashed });
     }
 }

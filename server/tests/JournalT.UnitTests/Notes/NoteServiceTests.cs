@@ -735,6 +735,56 @@ public class NoteServiceTests : IDisposable
         Assert.False(invalidUpdate.Succeeded);
     }
 
+    [Fact]
+    public async Task TogglePin_ExistingNote_TogglesPinAndSetsPinnedAtUtc()
+    {
+        var createResult = await _sut.CreateAsync(new CreateNoteRequest("Pin Test Note", NoteLevel.Note, "body"));
+        Assert.True(createResult.Succeeded);
+        var noteId = createResult.Note!.Id;
+        Assert.False(createResult.Note.IsPinned);
+        Assert.Null(createResult.Note.PinnedAtUtc);
+
+        // Pin it
+        var pinned = await _sut.TogglePinAsync(noteId);
+        Assert.NotNull(pinned);
+        Assert.True(pinned.IsPinned);
+        Assert.NotNull(pinned.PinnedAtUtc);
+
+        // Unpin it
+        var unpinned = await _sut.TogglePinAsync(noteId);
+        Assert.NotNull(unpinned);
+        Assert.False(unpinned.IsPinned);
+        Assert.Null(unpinned.PinnedAtUtc);
+    }
+
+    [Fact]
+    public async Task TogglePin_NonExistentOrTrashedNote_ReturnsNull()
+    {
+        var nonExistent = await _sut.TogglePinAsync(Guid.NewGuid());
+        Assert.Null(nonExistent);
+
+        var createResult = await _sut.CreateAsync(new CreateNoteRequest("To Trash Note", NoteLevel.Note, "body"));
+        var noteId = createResult.Note!.Id;
+        await _sut.TrashAsync(noteId);
+
+        var trashedToggle = await _sut.TogglePinAsync(noteId);
+        Assert.Null(trashedToggle);
+    }
+
+    [Fact]
+    public async Task Create_WithIsPinnedTrue_SetsPinnedState()
+    {
+        var createResult = await _sut.CreateAsync(new CreateNoteRequest("Initially Pinned", NoteLevel.Note, "body", IsPinned: true));
+        Assert.True(createResult.Succeeded);
+        Assert.True(createResult.Note!.IsPinned);
+        Assert.NotNull(createResult.Note.PinnedAtUtc);
+
+        var list = await _sut.ListAsync(new NoteFilterParams());
+        var item = list.Items.FirstOrDefault(i => i.Id == createResult.Note.Id);
+        Assert.NotNull(item);
+        Assert.True(item.IsPinned);
+    }
+
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser
     {
         public Guid UserId { get; } = userId;

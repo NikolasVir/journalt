@@ -88,6 +88,7 @@ export class NoteDialogComponent {
   public readonly save = output<NoteDialogSavePayload>();
   public readonly trash = output<NoteResponse>();
   public readonly promote = output<{ id: string; targetLevel: NoteLevel }>();
+  public readonly pin = output<NoteResponse>();
 
   protected readonly renderedContainer = viewChild<ElementRef<HTMLElement>>('renderedContainer');
 
@@ -319,6 +320,18 @@ export class NoteDialogComponent {
       this.trash.emit(current);
       this.close.emit();
     }
+  }
+
+  public onTogglePin(): void {
+    const current = this.note();
+    if (!current) return;
+    this.noteService.togglePin(current.id).subscribe({
+      next: (updated) => {
+        this.pin.emit(updated);
+        this.notification.showSuccess(updated.isPinned ? 'Note pinned.' : 'Note unpinned.');
+      },
+      error: () => this.notification.showError('Failed to update pin.')
+    });
   }
 
   public onPromote(): void {

@@ -153,6 +153,11 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValue("Markdown");
 
+                    b.Property<bool>("IsPinned")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("IsTodo")
                         .HasColumnType("INTEGER");
 
@@ -165,6 +170,9 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("LibraryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PinnedAtUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("RenderedHtml")
@@ -210,6 +218,8 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                     b.HasIndex("TypeId");
 
                     b.HasIndex("UserId", "LibraryId");
+
+                    b.HasIndex("UserId", "IsPinned", "IsTrashed");
 
                     b.HasIndex("UserId", "IsTodo", "IsTrashed");
 
