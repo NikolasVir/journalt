@@ -15,6 +15,8 @@ public interface IJournalTDbContext
     DbSet<NoteShare> NoteShares { get; }
     DbSet<LibraryShare> LibraryShares { get; }
     DbSet<ApiKey> ApiKeys { get; }
+    DbSet<VaultNote> VaultNotes { get; }
+    DbSet<VaultCanary> VaultCanaries { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

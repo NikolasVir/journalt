@@ -36,6 +36,7 @@ public static class InfrastructureExtensions
         services.AddScoped<ILibraryService, LibraryService>();
         services.AddScoped<ITagDefinitionService, TagDefinitionService>();
         services.AddScoped<ITypeDefinitionService, TypeDefinitionService>();
+        services.AddScoped<IVaultService, Vault.VaultService>();
         return services;
     }
 

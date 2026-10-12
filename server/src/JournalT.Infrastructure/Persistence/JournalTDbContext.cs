@@ -24,6 +24,8 @@ public class JournalTDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<NoteShare> NoteShares => Set<NoteShare>();
     public DbSet<LibraryShare> LibraryShares => Set<LibraryShare>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<VaultNote> VaultNotes => Set<VaultNote>();
+    public DbSet<VaultCanary> VaultCanaries => Set<VaultCanary>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
