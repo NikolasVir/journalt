@@ -3,6 +3,7 @@ namespace JournalT.UnitTests.Libraries;
 using JournalT.Application.Common.Interfaces;
 using JournalT.Application.Libraries.DTOs;
 using JournalT.Domain.Entities;
+using JournalT.Infrastructure.Identity;
 using JournalT.Infrastructure.Libraries;
 using JournalT.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
@@ -27,6 +28,12 @@ public class LibraryServiceTests : IDisposable
 
         _db = new JournalTDbContext(options);
         _db.Database.EnsureCreated();
+
+        _db.Users.AddRange(
+            new AppUser { Id = _userId, UserName = "Nikolas", NormalizedUserName = "NIKOLAS", IsActive = true },
+            new AppUser { Id = _otherUserId, UserName = "AnnaMaria", NormalizedUserName = "ANNAMARIA", IsActive = true }
+        );
+        _db.SaveChanges();
 
         var currentUser = new TestCurrentUser(_userId);
         _sut = new LibraryService(_db, currentUser);
@@ -183,6 +190,131 @@ public class LibraryServiceTests : IDisposable
         var item = tree.First(t => t.Id == lib.Id);
 
         Assert.Equal(2, item.NotesCount);
+    }
+
+    [Fact]
+    public async Task ShareLibraryAsync_ValidUser_AddsShareAndReturnsSharesList()
+    {
+        var lib = (await _sut.CreateAsync(new CreateLibraryRequest("Shared Lib"))).Library!;
+
+        var shareResult = await _sut.ShareLibraryAsync(lib.Id, new ShareLibraryRequest(UserName: "AnnaMaria"));
+        Assert.True(shareResult.Succeeded);
+
+        var shares = await _sut.GetSharesAsync(lib.Id);
+        Assert.NotNull(shares);
+        Assert.True(shares.IsOwner);
+        Assert.Single(shares.Shares);
+        Assert.Equal(_otherUserId, shares.Shares[0].UserId);
+        Assert.Equal("AnnaMaria", shares.Shares[0].UserName);
+    }
+
+    [Fact]
+    public async Task ShareLibraryAsync_Self_Fails()
+    {
+        var lib = (await _sut.CreateAsync(new CreateLibraryRequest("Own Lib"))).Library!;
+
+        var result = await _sut.ShareLibraryAsync(lib.Id, new ShareLibraryRequest(UserId: _userId));
+        Assert.False(result.Succeeded);
+        Assert.Contains("yourself", result.Errors[0]);
+    }
+
+    [Fact]
+    public async Task ShareLibraryAsync_Duplicate_FailsWithConflict()
+    {
+        var lib = (await _sut.CreateAsync(new CreateLibraryRequest("Shared Lib"))).Library!;
+        await _sut.ShareLibraryAsync(lib.Id, new ShareLibraryRequest(UserId: _otherUserId));
+
+        var duplicateResult = await _sut.ShareLibraryAsync(lib.Id, new ShareLibraryRequest(UserId: _otherUserId));
+        Assert.False(duplicateResult.Succeeded);
+        Assert.Equal(409, duplicateResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task RemoveShareAsync_RemovesShareSuccessfully()
+    {
+        var lib = (await _sut.CreateAsync(new CreateLibraryRequest("To Unshare"))).Library!;
+        await _sut.ShareLibraryAsync(lib.Id, new ShareLibraryRequest(UserId: _otherUserId));
+
+        var removeResult = await _sut.RemoveShareAsync(lib.Id, _otherUserId);
+        Assert.True(removeResult.Succeeded);
+
+        var shares = await _sut.GetSharesAsync(lib.Id);
+        Assert.NotNull(shares);
+        Assert.Empty(shares.Shares);
+    }
+
+    [Fact]
+    public async Task TopDownInheritance_ChildSubfoldersInheritParentShare()
+    {
+        // Root -> Child -> GrandChild
+        var root = (await _sut.CreateAsync(new CreateLibraryRequest("Root"))).Library!;
+        var child = (await _sut.CreateAsync(new CreateLibraryRequest("Child", root.Id))).Library!;
+        var grandChild = (await _sut.CreateAsync(new CreateLibraryRequest("GrandChild", child.Id))).Library!;
+
+        // Before sharing, other user has no access to any of them
+        Assert.False(await _sut.HasLibraryAccessAsync(root.Id, _otherUserId));
+        Assert.False(await _sut.HasLibraryAccessAsync(child.Id, _otherUserId));
+        Assert.False(await _sut.HasLibraryAccessAsync(grandChild.Id, _otherUserId));
+
+        // Share only root with other user
+        var shareResult = await _sut.ShareLibraryAsync(root.Id, new ShareLibraryRequest(UserId: _otherUserId));
+        Assert.True(shareResult.Succeeded);
+
+        // Child and GrandChild must inherit access from Root!
+        Assert.True(await _sut.HasLibraryAccessAsync(root.Id, _otherUserId));
+        Assert.True(await _sut.HasLibraryAccessAsync(child.Id, _otherUserId));
+        Assert.True(await _sut.HasLibraryAccessAsync(grandChild.Id, _otherUserId));
+
+        // Accessible ids set includes all three
+        var accessibleIds = await _sut.GetAccessibleLibraryIdsAsync(_otherUserId);
+        Assert.Contains(root.Id, accessibleIds);
+        Assert.Contains(child.Id, accessibleIds);
+        Assert.Contains(grandChild.Id, accessibleIds);
+
+        // Remove share on root
+        await _sut.RemoveShareAsync(root.Id, _otherUserId);
+        Assert.False(await _sut.HasLibraryAccessAsync(child.Id, _otherUserId));
+        Assert.False(await _sut.HasLibraryAccessAsync(grandChild.Id, _otherUserId));
+    }
+
+    [Fact]
+    public async Task GetSharedTreeAsync_CollaboratorCanSeeSharedLibraryHierarchy()
+    {
+        var root = (await _sut.CreateAsync(new CreateLibraryRequest("Shared Root"))).Library!;
+        var child = (await _sut.CreateAsync(new CreateLibraryRequest("SubFolder", root.Id))).Library!;
+
+        _db.Notes.Add(new Note
+        {
+            UserId = _userId,
+            LibraryId = child.Id,
+            Title = "Note in child",
+            BodyMarkdown = "hello",
+            RenderedHtml = "<p>hello</p>"
+        });
+        await _db.SaveChangesAsync();
+
+        await _sut.ShareLibraryAsync(root.Id, new ShareLibraryRequest(UserId: _otherUserId));
+
+        // SUT from other user's perspective
+        var otherUserSut = new LibraryService(_db, new TestCurrentUser(_otherUserId));
+        var sharedTree = await otherUserSut.GetSharedTreeAsync();
+
+        Assert.Single(sharedTree);
+        var sharedRoot = sharedTree[0];
+        Assert.Equal("Shared Root", sharedRoot.Name);
+        Assert.False(sharedRoot.IsOwner);
+        Assert.True(sharedRoot.IsShared);
+        Assert.Equal("Nikolas", sharedRoot.OwnerUserName);
+        Assert.Equal(_userId, sharedRoot.OwnerId);
+
+        // Child subfolder inside shared tree
+        Assert.Single(sharedRoot.Children);
+        var sharedChild = sharedRoot.Children[0];
+        Assert.Equal("SubFolder", sharedChild.Name);
+        Assert.False(sharedChild.IsOwner);
+        Assert.True(sharedChild.IsShared);
+        Assert.Equal("Nikolas", sharedChild.OwnerUserName);
+        Assert.Equal(1, sharedChild.NotesCount);
     }
 
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser

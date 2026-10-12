@@ -6,8 +6,8 @@
         <mat-icon>group_add</mat-icon>
       </div>
       <div class="share-dialog__title-block">
-        <h2 mat-dialog-title class="share-dialog__title">Share Note</h2>
-        <span class="share-dialog__note-name" [title]="noteTitle()">{{ noteTitle() }}</span>
+        <h2 mat-dialog-title class="share-dialog__title">{{ dialogTitle() }}</h2>
+        <span class="share-dialog__note-name" [title]="itemTitle()">{{ itemTitle() }}</span>
       </div>
     </div>
     <button
@@ -152,7 +152,7 @@
 
         @if (shares.shares.length === 0) {
           <p class="share-dialog__empty-shares">
-            No collaborators yet. Only you can view and edit this note.
+            No collaborators yet. Only you can view and edit this {{ isLibrary() ? 'library and its notes' : 'note' }}.
           </p>
         }
       </div>
@@ -172,10 +172,10 @@
             type="button"
             class="share-dialog__leave-btn"
             [disabled]="isSubmitting()"
-            (click)="leaveNote()"
+            (click)="leaveItem()"
           >
             <mat-icon>exit_to_app</mat-icon>
-            <span>Leave note</span>
+            <span>Leave {{ isLibrary() ? 'library' : 'note' }}</span>
           </button>
         </div>
       }

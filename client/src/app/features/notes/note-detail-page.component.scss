@@ -253,10 +253,23 @@
     }
   }
 
-  &__checkbox {
+  &__type-lock-notice {
     display: flex;
     align-items: center;
-    padding: var(--spacing-2xs) 0;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-bg-surface-hover);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    grid-column: 1 / -1;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: var(--color-text-muted);
+    }
   }
 
   &__actions {

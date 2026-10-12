@@ -11,4 +11,5 @@ public class Library : BaseEntity
     public Library? ParentLibrary { get; set; }
     public ICollection<Library> SubLibraries { get; set; } = [];
     public ICollection<Note> Notes { get; set; } = [];
+    public ICollection<LibraryShare> Shares { get; set; } = [];
 }

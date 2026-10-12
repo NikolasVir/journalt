@@ -96,6 +96,84 @@
       }
     }
 
+    <!-- Shared Libraries Section -->
+    @if (hasSharedLibraries()) {
+      <mat-divider class="sidebar__divider" />
+      @if (!layoutService.isSidebarCollapsed() || layoutService.isHandset()) {
+        <div
+          class="sidebar__section-header"
+          role="button"
+          tabindex="0"
+          (click)="toggleSharedSection($event)"
+          (keydown.enter)="toggleSharedSection($event)"
+          (keydown.space)="toggleSharedSection($event)"
+          [attr.aria-label]="isSharedSectionCollapsed() ? 'Expand Shared Libraries section' : 'Collapse Shared Libraries section'"
+          [attr.aria-expanded]="!isSharedSectionCollapsed()"
+        >
+          <span class="sidebar__section-title">SHARED LIBRARIES</span>
+          <button
+            type="button"
+            class="sidebar__section-toggle"
+            aria-hidden="true"
+            tabindex="-1"
+          >
+            <mat-icon class="sidebar__section-toggle-icon">
+              {{ isSharedSectionCollapsed() ? 'chevron_right' : 'expand_more' }}
+            </mat-icon>
+          </button>
+        </div>
+      }
+
+      @if (!isSharedSectionCollapsed() || (layoutService.isSidebarCollapsed() && !layoutService.isHandset())) {
+        @for (lib of visibleSharedLibraries(); track lib.id) {
+          <a
+            mat-list-item
+            [routerLink]="['/libraries', lib.id]"
+            routerLinkActive
+            #rlaShared="routerLinkActive"
+            [activated]="rlaShared.isActive"
+            [matTooltip]="(layoutService.isSidebarCollapsed() && !layoutService.isHandset()) ? (lib.name + (lib.ownerUserName ? ' (@' + lib.ownerUserName + ')' : '')) : ''"
+            matTooltipPosition="right"
+            (click)="onLibraryItemClick(lib, $event)"
+            class="sidebar__library-item"
+            [class.sidebar__library-item--nested]="lib.depth > 0"
+            [style.padding-left.px]="(layoutService.isSidebarCollapsed() && !layoutService.isHandset()) ? null : (lib.depth * 14)"
+          >
+            <mat-icon matListItemIcon class="sidebar__library-icon">
+              folder_shared
+            </mat-icon>
+
+            @if (!layoutService.isSidebarCollapsed() || layoutService.isHandset()) {
+              <span matListItemTitle class="sidebar__library-title">
+                {{ lib.name }}
+                @if (lib.ownerUserName && lib.depth === 0) {
+                  <span class="sidebar__library-badge">@{{ lib.ownerUserName }}</span>
+                }
+              </span>
+            }
+
+            @if ((!layoutService.isSidebarCollapsed() || layoutService.isHandset()) && lib.hasChildren) {
+              <span
+                matListItemMeta
+                class="sidebar__library-twist"
+                role="button"
+                tabindex="0"
+                (click)="toggleLibraryCollapse(lib.id, $event)"
+                (keydown.enter)="toggleLibraryCollapse(lib.id, $event)"
+                (keydown.space)="toggleLibraryCollapse(lib.id, $event)"
+                [attr.aria-label]="isLibraryExpanded(lib.id) ? 'Collapse ' + lib.name : 'Expand ' + lib.name"
+                [attr.aria-expanded]="isLibraryExpanded(lib.id)"
+              >
+                <mat-icon class="sidebar__library-twist-icon">
+                  {{ isLibraryExpanded(lib.id) ? 'expand_more' : 'chevron_right' }}
+                </mat-icon>
+              </span>
+            }
+          </a>
+        }
+      }
+    }
+
     <mat-divider class="sidebar__divider" />
 
     @for (item of systemNavItems; track item.route) {

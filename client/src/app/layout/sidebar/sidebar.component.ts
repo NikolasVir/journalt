@@ -84,6 +84,7 @@ export class SidebarComponent implements OnInit {
   protected readonly libraries = this.libraryService.navLibraries;
 
   protected readonly isLibrariesSectionCollapsed = signal<boolean>(this.getStoredSectionCollapsed());
+  protected readonly isSharedSectionCollapsed = signal<boolean>(this.getStoredSharedSectionCollapsed());
   protected readonly collapsedLibraryIds = signal<Set<string>>(this.getStoredCollapsedLibraryIds());
 
   protected readonly libraryTree = computed<LibraryTreeResponse[]>(() => {
@@ -95,13 +96,27 @@ export class SidebarComponent implements OnInit {
     return buildTreeFromNav(navItems);
   });
 
+  protected readonly sharedLibraryTree = computed<LibraryTreeResponse[]>(() => {
+    return this.libraryService.sharedLibraryTree ? this.libraryService.sharedLibraryTree() : [];
+  });
+
   protected readonly hasLibraries = computed(() => this.libraryTree().length > 0);
+  protected readonly hasSharedLibraries = computed(() => this.sharedLibraryTree().length > 0);
 
   protected readonly visibleLibraries = computed<NavLibraryItem[]>(() => {
     if (this.isLibrariesSectionCollapsed()) {
       return [];
     }
     const tree = this.libraryTree();
+    const collapsed = this.collapsedLibraryIds();
+    return this.flattenVisible(tree, collapsed, 0, null);
+  });
+
+  protected readonly visibleSharedLibraries = computed<NavLibraryItem[]>(() => {
+    if (this.isSharedSectionCollapsed()) {
+      return [];
+    }
+    const tree = this.sharedLibraryTree();
     const collapsed = this.collapsedLibraryIds();
     return this.flattenVisible(tree, collapsed, 0, null);
   });
@@ -114,7 +129,8 @@ export class SidebarComponent implements OnInit {
       if (match) {
         const activeLibId = match[1];
         const tree = this.libraryTree();
-        const ancestors = this.findAncestorIds(tree, activeLibId);
+        const sharedTree = this.sharedLibraryTree();
+        const ancestors = this.findAncestorIds(tree, activeLibId) ?? this.findAncestorIds(sharedTree, activeLibId);
         if (ancestors && ancestors.length > 0) {
           untracked(() => {
             const current = this.collapsedLibraryIds();
@@ -149,6 +165,18 @@ export class SidebarComponent implements OnInit {
     this.isLibrariesSectionCollapsed.set(next);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('journalt-sidebar-libraries-collapsed', String(next));
+    }
+  }
+
+  public toggleSharedSection(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    const next = !this.isSharedSectionCollapsed();
+    this.isSharedSectionCollapsed.set(next);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('journalt-sidebar-shared-libraries-collapsed', String(next));
     }
   }
 
@@ -194,7 +222,11 @@ export class SidebarComponent implements OnInit {
         name: node.name,
         parentId,
         depth,
-        hasChildren
+        hasChildren,
+        isOwner: node.isOwner,
+        isShared: node.isShared,
+        ownerUserName: node.ownerUserName,
+        notesCount: node.notesCount
       });
       if (hasChildren && !collapsedIds.has(node.id)) {
         result.push(...this.flattenVisible(node.children, collapsedIds, depth + 1, node.id));
@@ -223,6 +255,11 @@ export class SidebarComponent implements OnInit {
   private getStoredSectionCollapsed(): boolean {
     if (typeof localStorage === 'undefined') return false;
     return localStorage.getItem('journalt-sidebar-libraries-collapsed') === 'true';
+  }
+
+  private getStoredSharedSectionCollapsed(): boolean {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem('journalt-sidebar-shared-libraries-collapsed') === 'true';
   }
 
   private getStoredCollapsedLibraryIds(): Set<string> {

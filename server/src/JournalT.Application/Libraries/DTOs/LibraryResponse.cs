@@ -5,5 +5,9 @@ public sealed record LibraryResponse(
     Guid? ParentLibraryId,
     string Name,
     DateTime CreatedAtUtc,
-    DateTime UpdatedAtUtc
+    DateTime UpdatedAtUtc,
+    bool IsOwner = true,
+    bool IsShared = false,
+    string? OwnerUserName = null,
+    Guid? OwnerId = null
 );

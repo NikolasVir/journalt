@@ -8,9 +8,10 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 [Authorize]
-public class CollaborationHub(IJournalTDbContext db) : Hub
+public class CollaborationHub(IJournalTDbContext db, ILibraryService libraryService) : Hub
 {
     private readonly IJournalTDbContext _db = db;
+    private readonly ILibraryService _libraryService = libraryService;
     private static readonly ConcurrentDictionary<Guid, List<string>> NoteSessions = new();
     private const int MaxUpdatesPerSession = 500;
 
@@ -25,9 +26,21 @@ public class CollaborationHub(IJournalTDbContext db) : Hub
         var userId = GetCurrentUserId();
         if (userId is null) return false;
 
-        return await _db.Notes
+        var note = await _db.Notes
             .AsNoTracking()
-            .AnyAsync(n => n.Id == noteId && (n.UserId == userId.Value || n.Shares.Any(s => s.UserId == userId.Value)));
+            .Where(n => n.Id == noteId)
+            .Select(n => new { n.UserId, n.LibraryId, IsDirectlyShared = n.Shares.Any(s => s.UserId == userId.Value) })
+            .FirstOrDefaultAsync();
+
+        if (note == null) return false;
+        if (note.UserId == userId.Value || note.IsDirectlyShared) return true;
+
+        if (note.LibraryId.HasValue)
+        {
+            return await _libraryService.HasLibraryAccessAsync(note.LibraryId.Value, userId.Value);
+        }
+
+        return false;
     }
 
     public async Task<List<string>> JoinNote(Guid noteId)

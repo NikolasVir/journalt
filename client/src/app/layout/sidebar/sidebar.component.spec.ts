@@ -20,6 +20,8 @@ describe('SidebarComponent', () => {
           provide: LibraryService,
           useValue: {
             navLibraries: signal([]),
+            libraryTree: signal([]),
+            sharedLibraryTree: signal([]),
             loadLibraries: vi.fn()
           }
         }
@@ -187,6 +189,35 @@ describe('SidebarComponent', () => {
 
     expect(component.isLibraryExpanded('lib-2')).toBe(true);
     expect(fixture.nativeElement.querySelectorAll('.sidebar__library-item').length).toBe(3);
+  });
+
+  it('should render shared libraries under SHARED LIBRARIES section header with owner attribution', () => {
+    const mockShared = [
+      {
+        id: 'shared-lib-1',
+        name: 'Team Docs',
+        createdAtUtc: '2026-10-01T12:00:00Z',
+        updatedAtUtc: '2026-10-01T12:00:00Z',
+        children: [],
+        notesCount: 5,
+        isOwner: false,
+        isShared: true,
+        ownerUserName: 'AnnaMaria'
+      }
+    ];
+    const libService = TestBed.inject(LibraryService);
+    (libService.sharedLibraryTree as any).set(mockShared);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const sectionHeaders = Array.from(compiled.querySelectorAll('.sidebar__section-title')).map(
+      (el) => el.textContent?.trim()
+    );
+    expect(sectionHeaders).toContain('SHARED LIBRARIES');
+
+    const badge = compiled.querySelector('.sidebar__library-badge');
+    expect(badge).toBeTruthy();
+    expect(badge?.textContent?.trim()).toBe('@AnnaMaria');
   });
 });
 

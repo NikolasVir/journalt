@@ -39,8 +39,8 @@
             </button>
             @for (lib of libraries(); track lib.id) {
               <button mat-menu-item (click)="editLibraryId.set(lib.id)">
-                <mat-icon>folder</mat-icon>
-                <span>{{ lib.name }}</span>
+                <mat-icon>{{ lib.isShared ? 'folder_shared' : 'folder' }}</mat-icon>
+                <span>{{ lib.name }}{{ lib.isShared && lib.ownerUserName ? ' (@' + lib.ownerUserName + ')' : '' }}</span>
               </button>
             }
           </mat-menu>

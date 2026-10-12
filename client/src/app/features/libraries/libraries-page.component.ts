@@ -3,12 +3,14 @@ import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { LibraryResponse, LibraryTreeResponse } from '@core/models/library.model';
 import { LibraryService } from '@core/services/library.service';
 import { NotificationService } from '@core/services/notification.service';
+import { ShareDialogComponent } from '@shared/components/share-dialog/share-dialog.component';
 
 @Component({
   selector: 'app-libraries-page',
@@ -21,7 +23,8 @@ import { NotificationService } from '@core/services/notification.service';
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatDialogModule
   ],
   template: `
     <div class="libraries-page">
@@ -50,7 +53,7 @@ import { NotificationService } from '@core/services/notification.service';
           <mat-icon class="spinning">sync</mat-icon>
           <span>Loading libraries...</span>
         </div>
-      } @else if (libraryTree().length === 0 && !isCreating()) {
+      } @else if (libraryTree().length === 0 && !isCreating() && sharedLibraryTree().length === 0) {
         <div class="libraries-page__empty">
           <mat-icon class="libraries-page__empty-icon">folder_off</mat-icon>
           <p class="libraries-page__empty-title">No libraries created yet</p>
@@ -68,6 +71,9 @@ import { NotificationService } from '@core/services/notification.service';
           </button>
         </div>
       } @else {
+        @if (sharedLibraryTree().length > 0) {
+          <h2 class="libraries-page__section-title">My Libraries</h2>
+        }
         <div class="libraries-tree">
           @if (isCreating() && createParentId() === null) {
             <ng-container
@@ -81,6 +87,22 @@ import { NotificationService } from '@core/services/notification.service';
             />
           }
         </div>
+
+        @if (sharedLibraryTree().length > 0) {
+          <div class="libraries-page__section-header">
+            <h2 class="libraries-page__section-title">Shared with Me</h2>
+            <p class="libraries-page__subtitle">
+              Libraries and folders shared with you by other users.
+            </p>
+          </div>
+          <div class="libraries-tree">
+            @for (root of sharedLibraryTree(); track root.id) {
+              <ng-container
+                *ngTemplateOutlet="nodeTmpl; context: { $implicit: root, level: 0 }"
+              />
+            }
+          </div>
+        }
       }
 
       <!-- Inline Create Template -->
@@ -139,7 +161,7 @@ import { NotificationService } from '@core/services/notification.service';
         >
           <div class="tree-node__main">
             <mat-icon class="tree-node__icon">
-              {{ (node.children?.length ?? 0) > 0 ? 'folder_open' : 'folder' }}
+              {{ node.isShared ? 'folder_shared' : ((node.children?.length ?? 0) > 0 ? 'folder_open' : 'folder') }}
             </mat-icon>
 
             @if (editingLibrary()?.id === node.id) {
@@ -156,7 +178,12 @@ import { NotificationService } from '@core/services/notification.service';
               </div>
             } @else {
               <div class="tree-node__info">
-                <span class="tree-node__name">{{ node.name }}</span>
+                <div class="tree-node__title-line">
+                  <span class="tree-node__name">{{ node.name }}</span>
+                  @if (node.isShared && node.ownerUserName) {
+                    <span class="tree-node__badge">Shared by @{{ node.ownerUserName }}</span>
+                  }
+                </div>
                 <span class="tree-node__meta">
                   Created {{ node.createdAtUtc | date:'mediumDate' }}
                   @if ((node.children?.length ?? 0) > 0) {
@@ -199,31 +226,50 @@ import { NotificationService } from '@core/services/notification.service';
               >
                 <mat-icon>open_in_new</mat-icon>
               </a>
-              <button
-                mat-icon-button
-                (click)="openSubfolderCreate(node)"
-                matTooltip="Add subfolder"
-                aria-label="Add subfolder"
-              >
-                <mat-icon>create_new_folder</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                (click)="openRename(node)"
-                matTooltip="Rename"
-                aria-label="Rename library"
-              >
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                class="tree-node__action-delete"
-                (click)="deleteLibrary(node)"
-                matTooltip="Delete library"
-                aria-label="Delete library"
-              >
-                <mat-icon>delete</mat-icon>
-              </button>
+              @if (node.isOwner !== false) {
+                <button
+                  mat-icon-button
+                  (click)="openShare(node)"
+                  matTooltip="Share library"
+                  aria-label="Share library"
+                >
+                  <mat-icon>share</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  (click)="openSubfolderCreate(node)"
+                  matTooltip="Add subfolder"
+                  aria-label="Add subfolder"
+                >
+                  <mat-icon>create_new_folder</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  (click)="openRename(node)"
+                  matTooltip="Rename"
+                  aria-label="Rename library"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  class="tree-node__action-delete"
+                  (click)="deleteLibrary(node)"
+                  matTooltip="Delete library"
+                  aria-label="Delete library"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              } @else {
+                <button
+                  mat-icon-button
+                  (click)="openShare(node)"
+                  matTooltip="Sharing info"
+                  aria-label="Sharing info"
+                >
+                  <mat-icon>people</mat-icon>
+                </button>
+              }
             }
           </div>
         </mat-card>
@@ -307,6 +353,19 @@ import { NotificationService } from '@core/services/notification.service';
       &__empty-cta {
         margin-top: var(--spacing-sm);
       }
+
+      &__section-header {
+        margin-top: var(--spacing-xl);
+        border-top: 1px solid var(--color-border-card);
+        padding-top: var(--spacing-lg);
+      }
+
+      &__section-title {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+        margin: 0;
+      }
     }
 
     .libraries-tree {
@@ -386,6 +445,23 @@ import { NotificationService } from '@core/services/notification.service';
         gap: var(--spacing-2xs);
       }
 
+      &__title-line {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        flex-wrap: wrap;
+      }
+
+      &__badge {
+        font-size: 11px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: var(--radius-pill, 9999px);
+        background-color: var(--color-bg-surface-hover);
+        color: var(--color-primary);
+        border: 1px solid var(--color-border-card);
+      }
+
       &__name {
         font-size: var(--font-size-base);
         font-weight: var(--font-weight-medium);
@@ -428,8 +504,10 @@ import { NotificationService } from '@core/services/notification.service';
 export class LibrariesPageComponent implements OnInit {
   private readonly libraryService = inject(LibraryService);
   private readonly notification = inject(NotificationService);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly libraryTree = signal<LibraryTreeResponse[]>([]);
+  protected readonly sharedLibraryTree = signal<LibraryTreeResponse[]>([]);
   protected readonly flatLibraries = signal<LibraryResponse[]>([]);
   protected readonly isLoading = signal<boolean>(false);
   protected readonly isSubmitting = signal<boolean>(false);
@@ -459,6 +537,32 @@ export class LibrariesPageComponent implements OnInit {
         this.notification.showError('Failed to load libraries.');
       }
     });
+
+    if (typeof this.libraryService.getSharedTree === 'function') {
+      this.libraryService.getSharedTree().subscribe({
+        next: (sharedTree) => {
+          this.sharedLibraryTree.set(sharedTree);
+        },
+        error: () => {
+          // gracefully handle
+        }
+      });
+    }
+  }
+
+  public openShare(node: LibraryTreeResponse): void {
+    this.dialog
+      .open(ShareDialogComponent, {
+        data: {
+          libraryId: node.id,
+          libraryName: node.name,
+        },
+        width: '480px',
+      })
+      .afterClosed()
+      .subscribe(() => {
+        this.loadData();
+      });
   }
 
   private loadFlat(): void {

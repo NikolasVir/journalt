@@ -8,6 +8,7 @@ using JournalT.Application.Notes.DTOs;
 using JournalT.Application.Types;
 using JournalT.Domain.Entities;
 using JournalT.Domain.Enums;
+using JournalT.Infrastructure.Libraries;
 using JournalT.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,12 +16,14 @@ public sealed class NoteService(
     JournalTDbContext db,
     ICurrentUser currentUser,
     IMarkdownService markdownService,
-    ITypeValidationService typeValidationService) : INoteService
+    ITypeValidationService typeValidationService,
+    ILibraryService? libraryService = null) : INoteService
 {
     private readonly JournalTDbContext _db = db;
     private readonly ICurrentUser _currentUser = currentUser;
     private readonly IMarkdownService _markdownService = markdownService;
     private readonly ITypeValidationService _typeValidationService = typeValidationService;
+    private readonly ILibraryService _libraryService = libraryService ?? new LibraryService(db, currentUser);
 
     public async Task<NoteResult> CreateAsync(CreateNoteRequest request, CancellationToken ct = default)
     {
@@ -35,6 +38,14 @@ public sealed class NoteService(
         // Format-level compatibility: only Notes can be lists (not Inbox or Journal)
         if (request.Format == NoteFormat.List && request.Level != NoteLevel.Note)
             return NoteResult.Failure("Only notes can have List format. Inbox and Journal items cannot be lists.");
+
+        // Library existence and access check
+        if (request.LibraryId.HasValue)
+        {
+            var libraryExists = await _libraryService.HasLibraryAccessAsync(request.LibraryId.Value, userId, ct);
+            if (!libraryExists)
+                return NoteResult.Failure("Library not found.");
+        }
 
         // Level-specific validation
         TypeDefinition? typeDef = null;
@@ -53,9 +64,20 @@ public sealed class NoteService(
             if (!request.TypeId.HasValue)
                 return NoteResult.Failure("Typed notes (Journal) require a TypeId.");
 
+            var originatingUserId = userId;
+            if (request.LibraryId.HasValue)
+            {
+                var libOwner = await _db.Libraries
+                    .Where(l => l.Id == request.LibraryId.Value)
+                    .Select(l => l.UserId)
+                    .FirstOrDefaultAsync(ct);
+                if (libOwner != Guid.Empty)
+                    originatingUserId = libOwner;
+            }
+
             typeDef = await _db.TypeDefinitions
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == request.TypeId.Value && t.UserId == userId && t.IsActive, ct);
+                .FirstOrDefaultAsync(t => t.Id == request.TypeId.Value && t.UserId == originatingUserId && t.IsActive, ct);
 
             if (typeDef is null)
                 return NoteResult.Failure("Type definition not found or inactive.");
@@ -78,15 +100,6 @@ public sealed class NoteService(
         var (normalizedTags, tagValidationError) = await ValidateTagsAsync(userId, request.Level, request.Tags, ct);
         if (tagValidationError != null)
             return NoteResult.Failure(tagValidationError);
-
-        // Library existence check
-        if (request.LibraryId.HasValue)
-        {
-            var libraryExists = await _db.Libraries
-                .AnyAsync(l => l.Id == request.LibraryId.Value && l.UserId == userId, ct);
-            if (!libraryExists)
-                return NoteResult.Failure("Library not found.");
-        }
 
         var body = request.BodyMarkdown ?? string.Empty;
         var (renderedHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(userId, body, ct);
@@ -133,6 +146,7 @@ public sealed class NoteService(
     public async Task<NoteResponse?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var userId = _currentUser.UserId;
+        var accessibleLibIds = await _libraryService.GetAccessibleLibraryIdsAsync(userId, ct);
         var note = await _db.Notes
             .AsNoTracking()
             .Include(n => n.Tags)
@@ -142,7 +156,7 @@ public sealed class NoteService(
                 .ThenInclude(r => r.TargetNote)
             .Include(n => n.InboundRelations.Where(r => !r.SourceNote.IsTrashed))
                 .ThenInclude(r => r.SourceNote)
-            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Shares.Any(s => s.UserId == userId)), ct);
+            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Shares.Any(s => s.UserId == userId) || (n.LibraryId.HasValue && accessibleLibIds.Contains(n.LibraryId.Value))), ct);
 
         if (note is null) return null;
 
@@ -154,9 +168,20 @@ public sealed class NoteService(
         List<string>? typeWarnings = null;
         if (note.Level == NoteLevel.Journal && note.TypeId.HasValue)
         {
+            var originatingUserId = note.UserId;
+            if (note.LibraryId.HasValue)
+            {
+                var libOwner = await _db.Libraries
+                    .Where(l => l.Id == note.LibraryId.Value)
+                    .Select(l => l.UserId)
+                    .FirstOrDefaultAsync(ct);
+                if (libOwner != Guid.Empty)
+                    originatingUserId = libOwner;
+            }
+
             var typeDef = await _db.TypeDefinitions
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == note.TypeId.Value && t.UserId == note.UserId, ct);
+                .FirstOrDefaultAsync(t => t.Id == note.TypeId.Value && t.UserId == originatingUserId, ct);
 
             if (typeDef == null)
             {
@@ -188,7 +213,7 @@ public sealed class NoteService(
         }
 
         var isOwner = note.UserId == userId;
-        var isShared = note.Shares.Any();
+        var isShared = note.Shares.Any() || !isOwner;
         string? ownerUserName = null;
         if (!isOwner)
         {
@@ -222,9 +247,10 @@ public sealed class NoteService(
     public async Task<PagedResult<NoteSummaryResponse>> ListAsync(NoteFilterParams filter, CancellationToken ct = default)
     {
         var currentUserId = _currentUser.UserId;
+        var accessibleLibIds = await _libraryService.GetAccessibleLibraryIdsAsync(currentUserId, ct);
         var query = _db.Notes
             .AsNoTracking()
-            .Where(n => n.UserId == currentUserId || n.Shares.Any(s => s.UserId == currentUserId));
+            .Where(n => n.UserId == currentUserId || n.Shares.Any(s => s.UserId == currentUserId) || (n.LibraryId.HasValue && accessibleLibIds.Contains(n.LibraryId.Value)));
 
         if (filter.IsTrashed.HasValue)
             query = query.Where(n => n.IsTrashed == filter.IsTrashed.Value);
@@ -305,7 +331,7 @@ public sealed class NoteService(
                 n.Format,
                 n.UserId,
                 n.UserId == currentUserId,
-                n.Shares.Any(),
+                n.Shares.Any() || n.UserId != currentUserId,
                 null
             ))
             .ToListAsync(ct);
@@ -337,10 +363,11 @@ public sealed class NoteService(
     public async Task<IReadOnlyList<NoteWikiIndexItem>> GetWikiIndexAsync(CancellationToken ct = default)
     {
         var userId = _currentUser.UserId;
+        var accessibleLibIds = await _libraryService.GetAccessibleLibraryIdsAsync(userId, ct);
 
         return await _db.Notes
             .AsNoTracking()
-            .Where(n => (n.UserId == userId || n.Shares.Any(s => s.UserId == userId))
+            .Where(n => (n.UserId == userId || n.Shares.Any(s => s.UserId == userId) || (n.LibraryId.HasValue && accessibleLibIds.Contains(n.LibraryId.Value)))
                      && !n.IsTrashed
                      && (n.Level == NoteLevel.Journal
                          || n.LibraryId != null
@@ -360,13 +387,14 @@ public sealed class NoteService(
     public async Task<NoteResult> UpdateAsync(Guid id, UpdateNoteRequest request, CancellationToken ct = default)
     {
         var userId = _currentUser.UserId;
+        var accessibleLibIds = await _libraryService.GetAccessibleLibraryIdsAsync(userId, ct);
         var note = await _db.Notes
             .Include(n => n.Tags)
             .Include(n => n.Sources)
             .Include(n => n.Shares)
             .Include(n => n.OutboundRelations)
                 .ThenInclude(r => r.TargetNote)
-            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Shares.Any(s => s.UserId == userId)), ct);
+            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Shares.Any(s => s.UserId == userId) || (n.LibraryId.HasValue && accessibleLibIds.Contains(n.LibraryId.Value))), ct);
 
         if (note is null)
             return NoteResult.NotFound();
@@ -382,8 +410,7 @@ public sealed class NoteService(
 
         if (request.LibraryId.HasValue && request.LibraryId != note.LibraryId)
         {
-            var libraryExists = await _db.Libraries
-                .AnyAsync(l => l.Id == request.LibraryId.Value && l.UserId == note.UserId, ct);
+            var libraryExists = await _libraryService.HasLibraryAccessAsync(request.LibraryId.Value, userId, ct);
             if (!libraryExists)
                 return NoteResult.Failure("Library not found.");
         }
@@ -396,9 +423,21 @@ public sealed class NoteService(
 
         if (note.Level == NoteLevel.Journal)
         {
+            var originatingUserId = note.UserId;
+            var effectiveLibId = request.LibraryId ?? note.LibraryId;
+            if (effectiveLibId.HasValue)
+            {
+                var libOwner = await _db.Libraries
+                    .Where(l => l.Id == effectiveLibId.Value)
+                    .Select(l => l.UserId)
+                    .FirstOrDefaultAsync(ct);
+                if (libOwner != Guid.Empty)
+                    originatingUserId = libOwner;
+            }
+
             var typeDef = await _db.TypeDefinitions
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == note.TypeId && t.UserId == note.UserId, ct);
+                .FirstOrDefaultAsync(t => t.Id == note.TypeId && t.UserId == originatingUserId, ct);
 
             if (typeDef != null)
             {
@@ -1078,9 +1117,10 @@ public sealed class NoteService(
     public async Task<IReadOnlyList<string>> GetDistinctTagsAsync(CancellationToken ct = default)
     {
         var currentUserId = _currentUser.UserId;
+        var accessibleLibIds = await _libraryService.GetAccessibleLibraryIdsAsync(currentUserId, ct);
         return await _db.NoteTags
             .AsNoTracking()
-            .Where(t => (t.Note.UserId == currentUserId || t.Note.Shares.Any(s => s.UserId == currentUserId))
+            .Where(t => (t.Note.UserId == currentUserId || t.Note.Shares.Any(s => s.UserId == currentUserId) || (t.Note.LibraryId.HasValue && accessibleLibIds.Contains(t.Note.LibraryId.Value)))
                         && !t.Note.IsTrashed
                         && !string.IsNullOrWhiteSpace(t.Value))
             .Select(t => t.Value!)
@@ -1093,10 +1133,11 @@ public sealed class NoteService(
     public async Task<NoteSharesResponse?> GetSharesAsync(Guid noteId, CancellationToken ct = default)
     {
         var currentUserId = _currentUser.UserId;
+        var accessibleLibIds = await _libraryService.GetAccessibleLibraryIdsAsync(currentUserId, ct);
         var note = await _db.Notes
             .AsNoTracking()
             .Include(n => n.Shares)
-            .FirstOrDefaultAsync(n => n.Id == noteId && (n.UserId == currentUserId || n.Shares.Any(s => s.UserId == currentUserId)), ct);
+            .FirstOrDefaultAsync(n => n.Id == noteId && (n.UserId == currentUserId || n.Shares.Any(s => s.UserId == currentUserId) || (n.LibraryId.HasValue && accessibleLibIds.Contains(n.LibraryId.Value))), ct);
 
         if (note is null)
             return null;

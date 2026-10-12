@@ -103,6 +103,12 @@
 
       <div class="note-form__meta-grid">
         @if (form.controls.level.value === 'Journal') {
+          @if (isCollaborator()) {
+            <div class="note-form__type-lock-notice">
+              <mat-icon>lock</mat-icon>
+              <span>Type defined by @{{ originatingOwnerName() || 'owner' }}. Collaborators cannot change the type.</span>
+            </div>
+          }
           @if (typeDefinitions().length > 0) {
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="note-form__field">
               <mat-label>Journal Type Definition</mat-label>
@@ -111,6 +117,9 @@
                   <mat-option [value]="type.id">{{ type.name }}</mat-option>
                 }
               </mat-select>
+              @if (isCollaborator()) {
+                <mat-hint>Locked for collaborators (defined by @{{ originatingOwnerName() || 'owner' }})</mat-hint>
+              }
             </mat-form-field>
           } @else {
             <div class="note-form__type-notice">
@@ -128,7 +137,9 @@
           <mat-select formControlName="libraryId" aria-label="Select library">
             <mat-option [value]="null">Unfiled (No Library)</mat-option>
             @for (lib of libraries(); track lib.id) {
-              <mat-option [value]="lib.id">{{ lib.name }}</mat-option>
+              <mat-option [value]="lib.id">
+                {{ lib.name }}{{ lib.isShared && lib.ownerUserName ? ' (@' + lib.ownerUserName + ')' : '' }}
+              </mat-option>
             }
           </mat-select>
         </mat-form-field>

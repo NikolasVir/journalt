@@ -19,8 +19,11 @@ export class TypeDefinitionService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/types';
 
-  public list(includeInactive = false): Observable<TypeDefinitionResponse[]> {
-    const params = new HttpParams().set('includeInactive', includeInactive.toString());
+  public list(includeInactive = false, libraryId?: string | null): Observable<TypeDefinitionResponse[]> {
+    let params = new HttpParams().set('includeInactive', includeInactive.toString());
+    if (libraryId) {
+      params = params.set('libraryId', libraryId);
+    }
     return this.http.get<TypeDefinitionResponse[]>(this.baseUrl, { params });
   }
 

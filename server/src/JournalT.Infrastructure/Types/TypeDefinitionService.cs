@@ -191,19 +191,46 @@ public class TypeDefinitionService(
 
     public async Task<TypeDefinitionResponse?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
+        var currentUserId = _currentUser.UserId;
         var typeDef = await _db.TypeDefinitions
             .AsNoTracking()
             .Include(t => t.Notes)
-            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == _currentUser.UserId, ct);
+            .FirstOrDefaultAsync(t => t.Id == id, ct);
 
-        return typeDef is not null ? MapToResponse(typeDef) : null;
+        if (typeDef is null) return null;
+
+        if (typeDef.UserId == currentUserId)
+            return MapToResponse(typeDef);
+
+        var hasSharedNote = await _db.Notes
+            .AnyAsync(n => n.TypeId == id && (n.Shares.Any(s => s.UserId == currentUserId) || n.UserId == currentUserId), ct);
+        if (hasSharedNote)
+            return MapToResponse(typeDef);
+
+        var hasSharedLibrary = await _db.LibraryShares
+            .AnyAsync(ls => ls.UserId == currentUserId && ls.Library.UserId == typeDef.UserId, ct);
+        if (hasSharedLibrary)
+            return MapToResponse(typeDef);
+
+        return null;
     }
 
-    public async Task<IReadOnlyList<TypeDefinitionResponse>> ListAsync(bool includeInactive = false, CancellationToken ct = default)
+    public async Task<IReadOnlyList<TypeDefinitionResponse>> ListAsync(bool includeInactive = false, Guid? libraryId = null, CancellationToken ct = default)
     {
+        var targetUserId = _currentUser.UserId;
+        if (libraryId.HasValue)
+        {
+            var libOwner = await _db.Libraries
+                .Where(l => l.Id == libraryId.Value)
+                .Select(l => l.UserId)
+                .FirstOrDefaultAsync(ct);
+            if (libOwner != Guid.Empty)
+                targetUserId = libOwner;
+        }
+
         var query = _db.TypeDefinitions
             .AsNoTracking()
-            .Where(t => t.UserId == _currentUser.UserId);
+            .Where(t => t.UserId == targetUserId);
 
         if (!includeInactive)
             query = query.Where(t => t.IsActive);

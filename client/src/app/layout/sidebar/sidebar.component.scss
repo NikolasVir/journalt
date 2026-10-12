@@ -156,6 +156,17 @@
     transition: padding-left var(--transition-fast);
   }
 
+  &__library-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 1px 5px;
+    border-radius: var(--radius-pill, 9999px);
+    background-color: var(--color-bg-surface-hover);
+    color: var(--color-text-secondary);
+    margin-left: var(--spacing-xs);
+    vertical-align: middle;
+  }
+
   &__divider {
     margin: var(--spacing-xs) var(--spacing-md-sm);
   }

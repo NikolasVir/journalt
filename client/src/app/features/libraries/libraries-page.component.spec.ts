@@ -12,6 +12,7 @@ describe('LibrariesPageComponent', () => {
   let fixture: ComponentFixture<LibrariesPageComponent>;
   let mockLibraryService: {
     getTree: ReturnType<typeof vi.fn>;
+    getSharedTree: ReturnType<typeof vi.fn>;
     list: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     rename: ReturnType<typeof vi.fn>;
@@ -61,6 +62,7 @@ describe('LibrariesPageComponent', () => {
   beforeEach(async () => {
     mockLibraryService = {
       getTree: vi.fn().mockReturnValue(of(sampleTree)),
+      getSharedTree: vi.fn().mockReturnValue(of([])),
       list: vi.fn().mockReturnValue(of([])),
       create: vi.fn().mockReturnValue(of({ id: 'new-id', name: 'New Lib' })),
       rename: vi.fn().mockReturnValue(of({ id: 'lib-1', name: 'Renamed Lib' })),
@@ -145,5 +147,9 @@ describe('LibrariesPageComponent', () => {
     expect(mockNotification.showError).toHaveBeenCalledWith(
       'Libraries that contain notes cannot be deleted.'
     );
+  });
+
+  it('loads shared tree on init', () => {
+    expect(mockLibraryService.getSharedTree).toHaveBeenCalled();
   });
 });

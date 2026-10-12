@@ -22,6 +22,7 @@ public class JournalTDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, 
     public DbSet<NoteRelation> NoteRelations => Set<NoteRelation>();
     public DbSet<NoteSource> NoteSources => Set<NoteSource>();
     public DbSet<NoteShare> NoteShares => Set<NoteShare>();
+    public DbSet<LibraryShare> LibraryShares => Set<LibraryShare>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)

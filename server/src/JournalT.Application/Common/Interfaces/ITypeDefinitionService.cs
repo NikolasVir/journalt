@@ -9,7 +9,7 @@ public interface ITypeDefinitionService
     Task<TypeDefinitionResult> CreateNewVersionAsync(Guid id, CreateTypeVersionRequest request, CancellationToken ct = default);
     Task<TypeDefinitionResult> CloneAsync(Guid id, CloneTypeRequest request, CancellationToken ct = default);
     Task<TypeDefinitionResponse?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<TypeDefinitionResponse>> ListAsync(bool includeInactive = false, CancellationToken ct = default);
+    Task<IReadOnlyList<TypeDefinitionResponse>> ListAsync(bool includeInactive = false, Guid? libraryId = null, CancellationToken ct = default);
     Task<bool> ToggleActiveAsync(Guid id, CancellationToken ct = default);
     Task<TypeDefinitionResult> DeleteAsync(Guid id, CancellationToken ct = default);
 

@@ -1,10 +1,12 @@
 namespace JournalT.UnitTests.Notes;
 
 using JournalT.Application.Common.Interfaces;
+using JournalT.Application.Libraries.DTOs;
 using JournalT.Application.Notes.DTOs;
 using JournalT.Domain.Entities;
 using JournalT.Domain.Enums;
 using JournalT.Infrastructure.Identity;
+using JournalT.Infrastructure.Libraries;
 using JournalT.Infrastructure.Markdown;
 using JournalT.Infrastructure.Notes;
 using JournalT.Infrastructure.Persistence;
@@ -668,6 +670,69 @@ public class NoteServiceTests : IDisposable
 
         var otherList = await otherSut.ListAsync(new NoteFilterParams());
         Assert.DoesNotContain(otherList.Items, n => n.Id == created.Id);
+    }
+
+    [Fact]
+    public async Task NoteInSharedLibrary_CanBeAccessedByCollaborator_AndResolvesOriginatingType()
+    {
+        // 1. Owner creates a library
+        var lib = new Library { Id = Guid.NewGuid(), UserId = _userId, Name = "Team Notes" };
+        _db.Libraries.Add(lib);
+
+        // 2. Owner creates a TypeDefinition
+        var typeDef = new TypeDefinition
+        {
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            Name = "MeetingNote",
+            SchemaJson = "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"attendees\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"attendees\"]}",
+            SectionsJson = "[]"
+        };
+        _db.TypeDefinitions.Add(typeDef);
+        await _db.SaveChangesAsync();
+
+        // 3. Owner creates a note inside this library
+        var libServiceOwner = new LibraryService(_db, new TestCurrentUser(_userId));
+        var ownerNoteSut = new NoteService(_db, new TestCurrentUser(_userId), new MarkdownService(), new TypeValidationService(), libServiceOwner);
+
+        var created = (await ownerNoteSut.CreateAsync(new CreateNoteRequest(
+            "Sprint Planning",
+            NoteLevel.Journal,
+            LibraryId: lib.Id,
+            TypeId: typeDef.Id,
+            TypedMetadataJson: "{\"attendees\":[\"Nikolas\",\"AnnaMaria\"]}"
+        ))).Note!;
+
+        // 4. Owner shares library with other user
+        await libServiceOwner.ShareLibraryAsync(lib.Id, new ShareLibraryRequest(UserId: _otherUserId));
+
+        // 5. Other user accesses note
+        var libServiceOther = new LibraryService(_db, new TestCurrentUser(_otherUserId));
+        var otherNoteSut = new NoteService(_db, new TestCurrentUser(_otherUserId), new MarkdownService(), new TypeValidationService(), libServiceOther);
+
+        var fetched = await otherNoteSut.GetByIdAsync(created.Id);
+        Assert.NotNull(fetched);
+        Assert.False(fetched.IsOwner);
+        Assert.True(fetched.IsShared);
+        Assert.Equal(typeDef.Id, fetched.TypeId);
+
+        // 6. Other user updates note within schema
+        var updateResult = await otherNoteSut.UpdateAsync(created.Id, new UpdateNoteRequest(
+            "Sprint Planning - Updated",
+            "## Meeting Notes",
+            LibraryId: lib.Id,
+            TypedMetadataJson: "{\"attendees\":[\"Nikolas\",\"AnnaMaria\",\"Guest\"]}"
+        ));
+        Assert.True(updateResult.Succeeded);
+
+        // 7. Other user tries invalid schema update (missing required attendees)
+        var invalidUpdate = await otherNoteSut.UpdateAsync(created.Id, new UpdateNoteRequest(
+            "Sprint Planning - Broken",
+            "content",
+            LibraryId: lib.Id,
+            TypedMetadataJson: "{}"
+        ));
+        Assert.False(invalidUpdate.Succeeded);
     }
 
     private sealed class TestCurrentUser(Guid userId) : ICurrentUser

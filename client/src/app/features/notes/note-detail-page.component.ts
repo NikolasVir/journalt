@@ -135,6 +135,22 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
       .filter((tag) => !query || tag.toLowerCase().includes(query));
   });
 
+  protected readonly isCollaborator = computed(() => {
+    const note = this.currentNote();
+    return !!note && note.isOwner === false;
+  });
+
+  protected readonly originatingOwnerName = computed(() => {
+    const note = this.currentNote();
+    if (note && note.ownerUserName) return note.ownerUserName;
+    const libId = this.form.controls.libraryId.value;
+    if (libId) {
+      const lib = this.libraries().find((l) => l.id === libId);
+      if (lib && lib.ownerUserName && !lib.isOwner) return lib.ownerUserName;
+    }
+    return null;
+  });
+
   protected readonly form = new FormGroup<NoteForm>({
     title: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     bodyMarkdown: new FormControl('', { nonNullable: true }),
@@ -171,7 +187,7 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
       error: () => this.tagSuggestions.set([]),
     });
 
-    this.typeService.list(false).subscribe({
+    this.typeService.list(false, requestedLibraryId).subscribe({
       next: (types) => {
         this.typeDefinitions.set(types);
         if (
@@ -182,6 +198,21 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
           this.form.controls.typeId.setValue(types[0].id);
         }
       },
+    });
+
+    this.form.controls.libraryId.valueChanges.subscribe((libId) => {
+      if (this.isCollaborator()) return;
+      this.typeService.list(false, libId).subscribe({
+        next: (types) => {
+          this.typeDefinitions.set(types);
+          if (this.form.controls.level.value === 'Journal' && types.length > 0) {
+            const currentTypeId = this.form.controls.typeId.value;
+            if (!currentTypeId || !types.some((t) => t.id === currentTypeId)) {
+              this.form.controls.typeId.setValue(types[0].id);
+            }
+          }
+        }
+      });
     });
 
     this.form.controls.level.valueChanges.subscribe((lvl) => {
@@ -277,6 +308,23 @@ export class NoteDetailPageComponent implements OnInit, AfterViewInit {
           isTodo: note.isTodo,
           typedTags,
         });
+
+        if (note.isOwner === false) {
+          this.form.controls.typeId.disable();
+          if (note.typeId) {
+            this.typeService.getById(note.typeId).subscribe({
+              next: (td) => {
+                this.typeDefinitions.update((list) => {
+                  if (!list.some((item) => item.id === td.id)) {
+                    return [td, ...list];
+                  }
+                  return list;
+                });
+              },
+              error: () => {}
+            });
+          }
+        }
 
         if (note.level === 'Note' && !isPromotingToJournal) {
           this.freeFormTags.set(

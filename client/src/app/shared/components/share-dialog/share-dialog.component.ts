@@ -13,18 +13,38 @@ import { UserService } from '@core/services/user.service';
 import { AuthService } from '@core/services/auth.service';
 import { NotificationService } from '@core/services/notification.service';
 import { NoteSharesResponse, NoteShareUserDto } from '@core/models/note.model';
+import { LibraryService } from '@core/services/library.service';
 import { UserSummaryResponse } from '@core/models/auth.model';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 
 export interface ShareDialogData {
-  noteId: string;
-  noteTitle: string;
+  noteId?: string;
+  noteTitle?: string;
+  libraryId?: string;
+  libraryName?: string;
 }
 
 export interface ShareDialogResult {
   updated?: boolean;
   leftNote?: boolean;
+  leftLibrary?: boolean;
+}
+
+export interface GenericShareItem {
+  userId: string;
+  userName: string;
+  sharedAtUtc?: string;
+}
+
+export interface GenericSharesData {
+  noteId?: string;
+  libraryId?: string;
+  ownerId: string;
+  ownerUserName: string;
+  isOwner: boolean;
+  shares: GenericShareItem[];
 }
 
 @Component({
@@ -49,14 +69,19 @@ export class ShareDialogComponent implements OnInit {
   private readonly data: ShareDialogData = inject(MAT_DIALOG_DATA);
   public readonly dialogRef = inject(MatDialogRef<ShareDialogComponent, ShareDialogResult>);
   private readonly noteService = inject(NoteService);
+  private readonly libraryService = inject(LibraryService);
   private readonly userService = inject(UserService);
   private readonly authService = inject(AuthService);
   private readonly notification = inject(NotificationService);
 
-  public readonly noteTitle = signal<string>(this.data.noteTitle || 'Untitled Note');
+  public readonly isLibrary = signal<boolean>(!!this.data.libraryId);
+  public readonly dialogTitle = signal<string>(this.data.libraryId ? 'Share Library' : 'Share Note');
+  public readonly itemTitle = signal<string>(
+    this.data.libraryName || this.data.noteTitle || (this.data.libraryId ? 'Untitled Library' : 'Untitled Note')
+  );
   public readonly isLoading = signal<boolean>(true);
   public readonly isSubmitting = signal<boolean>(false);
-  public readonly sharesData = signal<NoteSharesResponse | null>(null);
+  public readonly sharesData = signal<GenericSharesData | null>(null);
   public readonly error = signal<string | null>(null);
 
   public readonly userSearchControl = new FormControl<string | UserSummaryResponse>('');
@@ -87,12 +112,16 @@ export class ShareDialogComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
 
-    this.noteService.getShares(this.data.noteId).subscribe({
-      next: (res) => {
+    const fetch$: Observable<GenericSharesData> = this.data.libraryId
+      ? this.libraryService.getShares(this.data.libraryId)
+      : this.noteService.getShares(this.data.noteId!);
+
+    fetch$.subscribe({
+      next: (res: GenericSharesData) => {
         this.sharesData.set(res);
         this.isLoading.set(false);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isLoading.set(false);
         const detail = err.error?.detail || err.message || 'Failed to load sharing information.';
         this.error.set(detail);
@@ -151,34 +180,40 @@ export class ShareDialogComponent implements OnInit {
     this.isSubmitting.set(true);
     this.error.set(null);
 
-    this.noteService
-      .share(this.data.noteId, {
-        userId: targetUserId,
-        userName: targetUserName,
-      })
-      .subscribe({
-        next: (updatedShares) => {
-          this.isSubmitting.set(false);
-          this.hasModifiedShares = true;
-          this.sharesData.set(updatedShares);
-          this.userSearchControl.reset('');
-          this.userSuggestions.set([]);
-          this.notification.showSuccess(`Shared note with ${targetUserName}`);
-        },
-        error: (err) => {
-          this.isSubmitting.set(false);
-          const detail = err.error?.detail || err.message || 'Failed to share note.';
-          this.error.set(detail);
-          this.notification.showError(detail);
-        },
-      });
+    const isLib = !!this.data.libraryId;
+    const req = { userId: targetUserId, userName: targetUserName };
+    const share$: Observable<GenericSharesData> = isLib
+      ? this.libraryService.share(this.data.libraryId!, req)
+      : this.noteService.share(this.data.noteId!, req);
+
+    share$.subscribe({
+      next: (updatedShares: GenericSharesData) => {
+        this.isSubmitting.set(false);
+        this.hasModifiedShares = true;
+        this.sharesData.set(updatedShares);
+        this.userSearchControl.reset('');
+        this.userSuggestions.set([]);
+        this.notification.showSuccess(`Shared ${isLib ? 'library' : 'note'} with ${targetUserName}`);
+      },
+      error: (err: any) => {
+        this.isSubmitting.set(false);
+        const detail = err.error?.detail || err.message || `Failed to share ${isLib ? 'library' : 'note'}.`;
+        this.error.set(detail);
+        this.notification.showError(detail);
+      },
+    });
   }
 
-  public removeShare(share: NoteShareUserDto): void {
+  public removeShare(share: GenericShareItem): void {
     this.isSubmitting.set(true);
     this.error.set(null);
 
-    this.noteService.removeShare(this.data.noteId, share.userId).subscribe({
+    const isLib = !!this.data.libraryId;
+    const remove$ = isLib
+      ? this.libraryService.removeShare(this.data.libraryId!, share.userId)
+      : this.noteService.removeShare(this.data.noteId!, share.userId);
+
+    remove$.subscribe({
       next: () => {
         this.isSubmitting.set(false);
         this.hasModifiedShares = true;
@@ -200,7 +235,7 @@ export class ShareDialogComponent implements OnInit {
     });
   }
 
-  public leaveNote(): void {
+  public leaveItem(): void {
     const current = this.sharesData();
     const currentUserId = this.authService.currentUser()?.id;
     if (!current || !currentUserId) return;
@@ -208,19 +243,30 @@ export class ShareDialogComponent implements OnInit {
     this.isSubmitting.set(true);
     this.error.set(null);
 
-    this.noteService.removeShare(this.data.noteId, currentUserId).subscribe({
+    const isLib = !!this.data.libraryId;
+    const leave$ = isLib
+      ? this.libraryService.removeShare(this.data.libraryId!, currentUserId)
+      : this.noteService.removeShare(this.data.noteId!, currentUserId);
+
+    leave$.subscribe({
       next: () => {
         this.isSubmitting.set(false);
-        this.notification.showInfo('You have left this note.');
-        this.dialogRef.close({ updated: true, leftNote: true });
+        const itemType = isLib ? 'library' : 'note';
+        this.notification.showInfo(`You have left this ${itemType}.`);
+        this.dialogRef.close({ updated: true, [isLib ? 'leftLibrary' : 'leftNote']: true });
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        const detail = err.error?.detail || err.message || 'Failed to leave note.';
+        const itemType = isLib ? 'library' : 'note';
+        const detail = err.error?.detail || err.message || `Failed to leave ${itemType}.`;
         this.error.set(detail);
         this.notification.showError(detail);
       },
     });
+  }
+
+  public leaveNote(): void {
+    this.leaveItem();
   }
 
   public onClose(): void {

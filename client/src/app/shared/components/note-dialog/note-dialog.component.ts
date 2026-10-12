@@ -135,7 +135,8 @@ export class NoteDialogComponent {
     const libId = this.editLibraryId();
     if (!libId) return 'Unfiled';
     const found = this.libraries().find((l) => l.id === libId);
-    return found ? found.name : 'Unfiled';
+    if (!found) return 'Unfiled';
+    return found.name + (found.isShared && found.ownerUserName ? ` (@${found.ownerUserName})` : '');
   });
   protected readonly sources = signal<NoteSourceResponse[]>([]);
   protected readonly isSourcesExpanded = signal<boolean>(false);

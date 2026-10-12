@@ -22,9 +22,9 @@ public class TypesController(ITypeDefinitionService typeDefinitionService) : Con
     }
 
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] bool includeInactive = false, CancellationToken ct = default)
+    public async Task<IActionResult> List([FromQuery] bool includeInactive = false, [FromQuery] Guid? libraryId = null, CancellationToken ct = default)
     {
-        var list = await _typeService.ListAsync(includeInactive, ct);
+        var list = await _typeService.ListAsync(includeInactive, libraryId, ct);
         return Ok(list);
     }
 

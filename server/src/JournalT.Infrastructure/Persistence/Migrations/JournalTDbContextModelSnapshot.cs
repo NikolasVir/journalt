@@ -103,6 +103,34 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                     b.ToTable("Libraries", (string)null);
                 });
 
+            modelBuilder.Entity("JournalT.Domain.Entities.LibraryShare", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("LibraryId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("LibraryId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("LibraryShares", (string)null);
+                });
+
             modelBuilder.Entity("JournalT.Domain.Entities.Note", b =>
                 {
                     b.Property<Guid>("Id")
@@ -619,6 +647,23 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                     b.Navigation("ParentLibrary");
                 });
 
+            modelBuilder.Entity("JournalT.Domain.Entities.LibraryShare", b =>
+                {
+                    b.HasOne("JournalT.Domain.Entities.Library", "Library")
+                        .WithMany("Shares")
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("JournalT.Infrastructure.Identity.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Library");
+                });
+
             modelBuilder.Entity("JournalT.Domain.Entities.Note", b =>
                 {
                     b.HasOne("JournalT.Domain.Entities.Library", "Library")
@@ -748,6 +793,8 @@ namespace JournalT.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("JournalT.Domain.Entities.Library", b =>
                 {
                     b.Navigation("Notes");
+
+                    b.Navigation("Shares");
 
                     b.Navigation("SubLibraries");
                 });

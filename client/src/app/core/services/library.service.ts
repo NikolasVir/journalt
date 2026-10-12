@@ -4,9 +4,11 @@ import { Observable, tap } from 'rxjs';
 import {
   CreateLibraryRequest,
   LibraryResponse,
+  LibrarySharesResponse,
   LibraryTreeResponse,
   MoveLibraryRequest,
-  RenameLibraryRequest
+  RenameLibraryRequest,
+  ShareLibraryRequest
 } from '../models/library.model';
 
 export interface NavLibraryItem {
@@ -15,6 +17,10 @@ export interface NavLibraryItem {
   parentId?: string | null;
   depth: number;
   hasChildren: boolean;
+  isOwner?: boolean;
+  isShared?: boolean;
+  ownerUserName?: string;
+  notesCount?: number;
 }
 
 function flattenTree(nodes: LibraryTreeResponse[], depth = 0, parentId: string | null = null): NavLibraryItem[] {
@@ -26,7 +32,11 @@ function flattenTree(nodes: LibraryTreeResponse[], depth = 0, parentId: string |
       name: node.name,
       parentId,
       depth,
-      hasChildren
+      hasChildren,
+      isOwner: node.isOwner,
+      isShared: node.isShared,
+      ownerUserName: node.ownerUserName,
+      notesCount: node.notesCount
     });
     if (hasChildren) {
       result.push(...flattenTree(node.children, depth + 1, node.id));
@@ -44,6 +54,8 @@ export class LibraryService {
 
   public readonly libraryTree = signal<LibraryTreeResponse[]>([]);
   public readonly navLibraries = signal<NavLibraryItem[]>([]);
+  public readonly sharedLibraryTree = signal<LibraryTreeResponse[]>([]);
+  public readonly sharedNavLibraries = signal<NavLibraryItem[]>([]);
   public readonly libraryMap = signal<Map<string, string>>(new Map());
 
   public loadLibraries(): void {
@@ -52,15 +64,33 @@ export class LibraryService {
         this.libraryTree.set(tree);
         const flattened = flattenTree(tree);
         this.navLibraries.set(flattened);
-        const map = new Map<string, string>();
-        for (const item of flattened) {
-          map.set(item.id, item.name);
-        }
-        this.libraryMap.set(map);
+        this.updateLibraryMap(flattened);
       },
       error: () => {
         // gracefully handle nav load error
       }
+    });
+
+    this.getSharedTree().subscribe({
+      next: (sharedTree) => {
+        this.sharedLibraryTree.set(sharedTree);
+        const flattened = flattenTree(sharedTree);
+        this.sharedNavLibraries.set(flattened);
+        this.updateLibraryMap(flattened);
+      },
+      error: () => {
+        // gracefully handle shared nav load error
+      }
+    });
+  }
+
+  private updateLibraryMap(items: NavLibraryItem[]): void {
+    this.libraryMap.update((map) => {
+      const next = new Map(map);
+      for (const item of items) {
+        next.set(item.id, item.name);
+      }
+      return next;
     });
   }
 
@@ -74,6 +104,26 @@ export class LibraryService {
 
   public getTree(): Observable<LibraryTreeResponse[]> {
     return this.http.get<LibraryTreeResponse[]>(this.baseUrl);
+  }
+
+  public getSharedTree(): Observable<LibraryTreeResponse[]> {
+    return this.http.get<LibraryTreeResponse[]>(`${this.baseUrl}/shared`);
+  }
+
+  public getShares(id: string): Observable<LibrarySharesResponse> {
+    return this.http.get<LibrarySharesResponse>(`${this.baseUrl}/${id}/shares`);
+  }
+
+  public share(id: string, request: ShareLibraryRequest): Observable<LibrarySharesResponse> {
+    return this.http.post<LibrarySharesResponse>(`${this.baseUrl}/${id}/shares`, request).pipe(
+      tap(() => this.loadLibraries())
+    );
+  }
+
+  public removeShare(id: string, userId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}/shares/${userId}`).pipe(
+      tap(() => this.loadLibraries())
+    );
   }
 
   public create(request: CreateLibraryRequest): Observable<LibraryResponse> {
