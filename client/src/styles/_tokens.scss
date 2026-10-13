@@ -28,6 +28,11 @@
   --color-primary-light: #e8f0fe;
   --color-primary-contrast: #ffffff;
 
+  /* ── Accent Seed (user-selectable; default preserves the classic blue) ── */
+  --accent-seed: #1a73e8;
+  --accent-on-light: #ffffff;
+  --accent-on-dark: #202124;
+
   /* ── JournalT Lifecycle Badges ───────────────────────────────────────── */
   --color-level-inbox: #b45309;
   --color-level-inbox-bg: #fef3c7;
@@ -175,4 +180,50 @@ html.dark-theme {
   --shadow-card-hover: 0 1px 3px 0 rgba(0, 0, 0, 0.6), 0 4px 8px 3px rgba(0, 0, 0, 0.3);
   --shadow-search: 0 1px 2px 0 rgba(0, 0, 0, 0.6), 0 2px 6px 2px rgba(0, 0, 0, 0.3);
   --shadow-dropdown: 0 1px 2px 0 rgba(0, 0, 0, 0.6), 0 2px 6px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* ── User-selectable Accent ───────────────────────────────────────────────
+   The exact palette above is the default. Once a user picks a colour (preset
+   or custom), `data-accent` is set on <html> and the accent tokens are derived
+   from a single `--accent-seed` seed. `--accent-on-light` / `--accent-on-dark`
+   are computed in JS from the seed's luminance so filled surfaces stay legible. */
+
+/* Maps Angular Material's system tokens onto the active accent tokens. Emitted
+   in both light and dark blocks so it out-specifies the `mat.theme()` output in
+   styles.scss (which otherwise re-asserts the palette in dark mode). */
+@mixin accent-material-tokens {
+  --mat-sys-primary: var(--color-primary);
+  --mat-sys-on-primary: var(--color-primary-contrast);
+  --mat-sys-primary-container: var(--color-primary-light);
+  --mat-sys-on-primary-container: var(--color-primary-hover);
+  --mat-sys-secondary: var(--color-primary);
+  --mat-sys-on-secondary: var(--color-primary-contrast);
+  --mat-sys-secondary-container: var(--color-primary-light);
+  --mat-sys-on-secondary-container: var(--color-primary-hover);
+  --mat-sys-tertiary: var(--color-primary);
+  --mat-sys-on-tertiary: var(--color-primary-contrast);
+  --mat-sys-surface-tint: var(--color-primary);
+  --mat-sys-inverse-primary: var(--color-primary);
+}
+
+html[data-accent] {
+  --color-primary: var(--accent-seed);
+  --color-primary-hover: color-mix(in srgb, var(--accent-seed) 78%, #000000);
+  --color-primary-light: color-mix(in srgb, var(--accent-seed) 10%, #ffffff);
+  --color-primary-contrast: var(--accent-on-light);
+  --color-border-focus: var(--accent-seed);
+  --color-bg-nav-active: color-mix(in srgb, var(--accent-seed) 12%, #ffffff);
+
+  @include accent-material-tokens;
+}
+
+html.dark-theme[data-accent] {
+  --color-primary: color-mix(in srgb, var(--accent-seed) 55%, #ffffff);
+  --color-primary-hover: color-mix(in srgb, var(--accent-seed) 75%, #ffffff);
+  --color-primary-light: color-mix(in srgb, var(--accent-seed) 22%, #202124);
+  --color-primary-contrast: var(--accent-on-dark);
+  --color-border-focus: color-mix(in srgb, var(--accent-seed) 55%, #ffffff);
+  --color-bg-nav-active: color-mix(in srgb, var(--accent-seed) 22%, #202124);
+
+  @include accent-material-tokens;
 }
