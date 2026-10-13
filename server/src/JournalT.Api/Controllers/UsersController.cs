@@ -1,5 +1,6 @@
 namespace JournalT.Api.Controllers;
 
+using System.Text.RegularExpressions;
 using JournalT.Application.Auth.DTOs;
 using JournalT.Application.Common.Interfaces;
 using JournalT.Infrastructure.Persistence;
@@ -66,6 +67,34 @@ public class UsersController(JournalTDbContext db, ICurrentUser currentUser) : C
 
         await _db.SaveChangesAsync(ct);
 
-        return Ok(new UserResponse(user.Id, user.UserName!, user.AvatarUrl));
+        return Ok(new UserResponse(user.Id, user.UserName!, user.AvatarUrl, user.AccentColor));
+    }
+
+    [HttpPut("me/accent")]
+    public async Task<IActionResult> UpdateAccent([FromBody] UpdateAccentRequest request, CancellationToken ct)
+    {
+        var currentUserId = _currentUser.UserId;
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == currentUserId, ct);
+        if (user is null || !user.IsActive)
+            return Unauthorized();
+
+        var color = request.AccentColor?.Trim();
+        if (string.IsNullOrWhiteSpace(color))
+        {
+            user.AccentColor = null;
+        }
+        else
+        {
+            if (!Regex.IsMatch(color, "^#[0-9a-fA-F]{6}$"))
+                return BadRequest(new { message = "Invalid accent color. Must be a #rrggbb hex value." });
+
+            user.AccentColor = color.ToLowerInvariant();
+        }
+
+        user.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new UserResponse(user.Id, user.UserName!, user.AvatarUrl, user.AccentColor));
     }
 }

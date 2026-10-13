@@ -541,6 +541,9 @@ namespace JournalT.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("AccentColor")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("INTEGER");
 

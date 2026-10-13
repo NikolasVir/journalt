@@ -30,7 +30,7 @@ public class AuthService(
 
         await _signInManager.SignInAsync(user, isPersistent: false);
 
-        return AuthResult.Success(new UserResponse(user.Id, user.UserName!, user.AvatarUrl));
+        return AuthResult.Success(new UserResponse(user.Id, user.UserName!, user.AvatarUrl, user.AccentColor));
     }
 
     public async Task<AuthResult> LoginAsync(LoginRequest request, CancellationToken ct = default)
@@ -50,7 +50,7 @@ public class AuthService(
         if (!result.Succeeded)
             return AuthResult.Failure("Invalid username or password.");
 
-        return AuthResult.Success(new UserResponse(user.Id, user.UserName!, user.AvatarUrl));
+        return AuthResult.Success(new UserResponse(user.Id, user.UserName!, user.AvatarUrl, user.AccentColor));
     }
 
     public async Task LogoutAsync()
@@ -65,7 +65,7 @@ public class AuthService(
         if (user is null || !user.IsActive)
             return null;
 
-        return new UserResponse(user.Id, user.UserName!, user.AvatarUrl);
+        return new UserResponse(user.Id, user.UserName!, user.AvatarUrl, user.AccentColor);
     }
 
     public async Task<AuthResult> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken ct = default)
@@ -79,6 +79,6 @@ public class AuthService(
             return AuthResult.Failure(result.Errors.Select(e => e.Description).ToArray());
 
         await _signInManager.RefreshSignInAsync(user);
-        return AuthResult.Success(new UserResponse(user.Id, user.UserName!, user.AvatarUrl));
+        return AuthResult.Success(new UserResponse(user.Id, user.UserName!, user.AvatarUrl, user.AccentColor));
     }
 }
