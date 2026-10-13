@@ -16,6 +16,8 @@ export class MarkdownEnhancerService {
   public async enhance(container: HTMLElement): Promise<void> {
     if (!container) return;
 
+    this.normalizeExternalLinks(container);
+
     const hasCode = container.querySelector('code[class*="language-"], pre code') !== null;
     const hasMath = container.querySelector('.math') !== null;
 
@@ -26,6 +28,23 @@ export class MarkdownEnhancerService {
     if (hasMath) {
       await this.renderMath(container);
     }
+  }
+
+  /**
+   * External links inside rendered markdown always open in a new tab.
+   * Runs at render time so hover state, middle-click, and attribute
+   * assertions see the final markup even before the global click handler.
+   */
+  private normalizeExternalLinks(container: HTMLElement): void {
+    container.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((anchor) => {
+      const href = (anchor.getAttribute('href') ?? '').trim();
+      if (!/^https?:\/\//i.test(href)) return;
+      anchor.setAttribute('target', '_blank');
+      const rel = (anchor.getAttribute('rel') ?? '').split(/\s+/).filter(Boolean);
+      if (!rel.includes('noopener')) rel.push('noopener');
+      if (!rel.includes('noreferrer')) rel.push('noreferrer');
+      anchor.setAttribute('rel', rel.join(' '));
+    });
   }
 
   private async highlightCode(container: HTMLElement): Promise<void> {
