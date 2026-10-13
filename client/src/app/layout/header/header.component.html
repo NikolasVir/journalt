@@ -43,29 +43,31 @@
       </a>
     </div>
 
-    <div class="header-toolbar__search">
-      <div class="search-box">
-        <mat-icon class="search-box__icon">search</mat-icon>
-        <input
-          type="text"
-          class="search-box__input"
-          placeholder="Search"
-          [value]="layoutService.searchQuery()"
-          (input)="onSearchInput($event)"
-          aria-label="Search"
-        />
-        @if (layoutService.searchQuery().length > 0) {
-          <button
-            mat-icon-button
-            class="search-box__clear-btn"
-            (click)="clearSearch()"
-            aria-label="Clear search"
-          >
-            <mat-icon>close</mat-icon>
-          </button>
-        }
+    @if (!layoutService.isHandset()) {
+      <div class="header-toolbar__search">
+        <div class="search-box">
+          <mat-icon class="search-box__icon">search</mat-icon>
+          <input
+            type="text"
+            class="search-box__input"
+            placeholder="Search"
+            [value]="layoutService.searchQuery()"
+            (input)="onSearchInput($event)"
+            aria-label="Search"
+          />
+          @if (layoutService.searchQuery().length > 0) {
+            <button
+              mat-icon-button
+              class="search-box__clear-btn"
+              (click)="clearSearch()"
+              aria-label="Clear search"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
       </div>
-    </div>
+    }
 
     <div class="header-toolbar__right">
       @if (layoutService.isHandset()) {
