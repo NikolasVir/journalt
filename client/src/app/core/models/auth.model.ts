@@ -14,6 +14,7 @@ export interface UserResponse {
   id: string;
   userName: string;
   avatarUrl?: string | null;
+  accentColor?: string | null;
   registrationEnabled?: boolean;
 }
 

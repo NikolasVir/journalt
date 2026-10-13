@@ -2,12 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal, Signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ChangePasswordRequest, LoginRequest, RegisterRequest, UserResponse } from '../models/auth.model';
+import { ThemeService } from './theme.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly themeService = inject(ThemeService);
   private readonly baseUrl = '/api/auth';
 
   private readonly userState = signal<UserResponse | null>(null);
@@ -27,6 +29,7 @@ export class AuthService {
       tap({
         next: (user: UserResponse) => {
           this.userState.set(user);
+          this.applyAccent(user);
           this.loadingState.set(false);
         },
         error: () => {
@@ -43,6 +46,7 @@ export class AuthService {
       tap({
         next: (user: UserResponse) => {
           this.userState.set(user);
+          this.applyAccent(user);
           this.loadingState.set(false);
         },
         error: () => this.loadingState.set(false)
@@ -56,6 +60,7 @@ export class AuthService {
       tap({
         next: (user: UserResponse) => {
           this.userState.set(user);
+          this.applyAccent(user);
           this.loadingState.set(false);
         },
         error: () => this.loadingState.set(false)
@@ -74,6 +79,14 @@ export class AuthService {
   }
 
   public updateCurrentUser(user: UserResponse): void {
+    // Only refreshes the cached user (e.g. after an avatar change). The accent
+    // stays under ThemeService's control so a lagging save response can never
+    // revert a newer local colour choice.
     this.userState.set(user);
+  }
+
+  /** Applies the account's saved accent colour app-wide. */
+  private applyAccent(user: UserResponse): void {
+    this.themeService.setAccent(user.accentColor ?? null);
   }
 }

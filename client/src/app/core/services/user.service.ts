@@ -21,4 +21,8 @@ export class UserService {
   public updateAvatar(avatarUrl: string | null): Observable<UserResponse> {
     return this.http.put<UserResponse>(`${this.baseUrl}/me/avatar`, { avatarUrl });
   }
+
+  public updateAccent(accentColor: string | null): Observable<UserResponse> {
+    return this.http.put<UserResponse>(`${this.baseUrl}/me/accent`, { accentColor });
+  }
 }
