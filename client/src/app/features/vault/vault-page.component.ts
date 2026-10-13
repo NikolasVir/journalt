@@ -3,12 +3,12 @@ import {
   Component,
   computed,
   inject,
+  OnDestroy,
   signal
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -72,7 +72,6 @@ export function toVaultNoteResponse(note: DecryptedVaultNote): NoteResponse {
     FormsModule,
     MatButtonModule,
     MatCardModule,
-    MatCheckboxModule,
     MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
@@ -86,7 +85,7 @@ export function toVaultNoteResponse(note: DecryptedVaultNote): NoteResponse {
   styleUrl: './vault-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class VaultPageComponent {
+export class VaultPageComponent implements OnDestroy {
   protected readonly vaultService = inject(VaultService);
   protected readonly layoutService = inject(LayoutService);
   private readonly dialog = inject(MatDialog);
@@ -95,8 +94,6 @@ export class VaultPageComponent {
   // Locked View State
   public readonly passphrase = signal<string>('');
   public readonly showPassword = signal<boolean>(false);
-  public readonly needsInit = signal<boolean>(false);
-  public readonly seedNotes = signal<boolean>(true);
   public readonly errorMessage = signal<string | null>(null);
 
   // Unlocked View State: single page with everything, no tabs, no trash.
@@ -239,37 +236,43 @@ export class VaultPageComponent {
     if (!pass) return;
 
     const result = await this.vaultService.unlock(pass);
+
+    // No vault exists for this passphrase: create one silently (seeded with
+    // realistic notes) and open it. The lack of a confirmation step is
+    // intentional: it preserves plausible deniability for decoy vaults, so an
+    // observer cannot tell whether the vault already existed.
     if (result.needsInit) {
-      this.needsInit.set(true);
-    } else if (!result.success) {
-      this.errorMessage.set(result.error ?? 'Invalid passphrase.');
-    } else {
-      this.needsInit.set(false);
+      const initResult = await this.vaultService.initializeVault(pass);
+      if (!initResult.success) {
+        this.errorMessage.set(initResult.error ?? 'Failed to initialize vault.');
+        return;
+      }
       this.passphrase.set('');
+      return;
     }
-  }
 
-  public async onInitialize(): Promise<void> {
-    this.errorMessage.set(null);
-    const pass = this.passphrase().trim();
-    if (!pass) return;
-
-    const result = await this.vaultService.initializeVault(pass, this.seedNotes());
     if (!result.success) {
-      this.errorMessage.set(result.error ?? 'Failed to initialize vault.');
-    } else {
-      this.needsInit.set(false);
-      this.passphrase.set('');
+      this.errorMessage.set(result.error ?? 'Invalid passphrase.');
+      return;
     }
+
+    this.passphrase.set('');
   }
 
   public onLock(): void {
     this.vaultService.lock();
     this.passphrase.set('');
-    this.needsInit.set(false);
     this.errorMessage.set(null);
     this.searchQuery.set('');
     this.activeTag.set(null);
+  }
+
+  /**
+   * Leaving the vault page counts as exiting the vault: lock immediately so the
+   * keys are wiped and an auto-created, unused vault is discarded.
+   */
+  public ngOnDestroy(): void {
+    this.vaultService.lock();
   }
 
   public openCreateDialog(): void {

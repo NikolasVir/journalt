@@ -19,98 +19,46 @@
           </div>
         }
 
-        <div class="vault-locked__hint">
-          <mat-icon class="vault-locked__hint-icon">lightbulb</mat-icon>
-          <div class="vault-locked__hint-text">
-            <strong>First time?</strong> Enter any passphrase to create your vault. Or enter an existing passphrase to unlock.
-          </div>
-        </div>
-
-        @if (!needsInit()) {
-          <form class="vault-locked__form" (ngSubmit)="onUnlock()">
-            <mat-form-field appearance="outline" class="vault-locked__input">
-              <mat-label>Vault Passphrase</mat-label>
-              <input
-                matInput
-                [type]="showPassword() ? 'text' : 'password'"
-                [ngModel]="passphrase()"
-                (ngModelChange)="passphrase.set($event)"
-                name="passphrase"
-                placeholder="Enter passphrase"
-                autocomplete="off"
-                cdkFocusInitial
-                required
-              />
-              <button
-                mat-icon-button
-                matSuffix
-                type="button"
-                (click)="togglePasswordVisibility()"
-                [attr.aria-label]="showPassword() ? 'Hide passphrase' : 'Show passphrase'"
-              >
-                <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-              </button>
-            </mat-form-field>
-
+        <form class="vault-locked__form" (ngSubmit)="onUnlock()">
+          <mat-form-field appearance="outline" class="vault-locked__input">
+            <mat-label>Vault Passphrase</mat-label>
+            <input
+              matInput
+              [type]="showPassword() ? 'text' : 'password'"
+              [ngModel]="passphrase()"
+              (ngModelChange)="passphrase.set($event)"
+              name="passphrase"
+              placeholder="Enter passphrase"
+              autocomplete="off"
+              cdkFocusInitial
+              required
+            />
             <button
-              mat-flat-button
-              color="primary"
-              type="submit"
-              class="vault-locked__submit-btn"
-              [disabled]="!passphrase().trim() || vaultService.isLoading()"
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword() ? 'Hide passphrase' : 'Show passphrase'"
             >
-              @if (vaultService.isLoading()) {
-                <mat-spinner diameter="20" class="vault-locked__spinner"></mat-spinner>
-                <span>Deriving Key...</span>
-              } @else {
-                <span>Unlock Vault</span>
-              }
+              <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
-          </form>
-        } @else {
-          <!-- INITIALIZE NEW VAULT VIEW -->
-          <div class="vault-locked__init-box">
-            <div class="vault-locked__init-info">
-              <mat-icon class="vault-locked__init-icon">info</mat-icon>
-              <p>
-                No vault matches this passphrase. Would you like to initialize a new encrypted vault namespace?
-              </p>
-            </div>
+          </mat-form-field>
 
-            <mat-checkbox
-              class="vault-locked__seed-checkbox"
-              [ngModel]="seedNotes()"
-              (ngModelChange)="seedNotes.set($event)"
-            >
-              Seed realistic starter notes (Recommended for decoy vaults)
-            </mat-checkbox>
-
-            <div class="vault-locked__init-actions">
-              <button
-                mat-button
-                type="button"
-                (click)="needsInit.set(false)"
-                [disabled]="vaultService.isLoading()"
-              >
-                Back
-              </button>
-              <button
-                mat-flat-button
-                color="primary"
-                type="button"
-                (click)="onInitialize()"
-                [disabled]="vaultService.isLoading()"
-              >
-                @if (vaultService.isLoading()) {
-                  <mat-spinner diameter="20" class="vault-locked__spinner"></mat-spinner>
-                  <span>Creating Vault...</span>
-                } @else {
-                  <span>Initialize Vault</span>
-                }
-              </button>
-            </div>
-          </div>
-        }
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            class="vault-locked__submit-btn"
+            [disabled]="!passphrase().trim() || vaultService.isLoading()"
+          >
+            @if (vaultService.isLoading()) {
+              <mat-spinner diameter="20" class="vault-locked__spinner"></mat-spinner>
+              <span>Deriving Key...</span>
+            } @else {
+              <span>Unlock Vault</span>
+            }
+          </button>
+        </form>
       </mat-card>
     </div>
   } @else {

@@ -52,37 +52,6 @@
     color: var(--mat-sys-outline, #74777f);
   }
 
-  &__hint {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    background-color: var(--mat-sys-surface-container, #f3edf7);
-    color: var(--mat-sys-on-surface-variant, #49454f);
-    padding: 12px 16px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    text-align: left;
-    border: 1px solid var(--mat-sys-outline-variant, #cac4d0);
-
-    &-icon {
-      color: var(--mat-sys-primary, #005fb0);
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    &-text {
-      font-size: 0.8125rem;
-      line-height: 1.45;
-
-      strong {
-        color: var(--mat-sys-on-surface, #1d1b20);
-      }
-    }
-  }
-
   &__error {
     display: flex;
     align-items: center;
@@ -118,43 +87,6 @@
 
   &__spinner {
     display: inline-block;
-  }
-
-  &__init-box {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    text-align: left;
-  }
-
-  &__init-info {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    padding: 12px;
-    border-radius: 8px;
-    background-color: var(--mat-sys-surface-container, #f3edf7);
-
-    p {
-      margin: 0;
-      font-size: 0.875rem;
-      line-height: 1.4;
-    }
-  }
-
-  &__init-icon {
-    color: var(--mat-sys-primary, #005fb0);
-  }
-
-  &__seed-checkbox {
-    margin-top: 4px;
-  }
-
-  &__init-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 8px;
   }
 }
 

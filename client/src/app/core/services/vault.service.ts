@@ -47,6 +47,12 @@ export class VaultService {
   private lastActivityReset = 0;
   private sessionTimeoutSeconds = AUTO_LOCK_DEFAULT_SECONDS;
 
+  // True when the currently unlocked vault was auto-created on this unlock
+  // (no canary existed for the passphrase). Such a vault is discarded on lock
+  // unless the user made a real change, so a mistyped passphrase leaves no trace.
+  private ephemeralVault = false;
+  private vaultDirty = false;
+
   // Public reactive state
   public readonly isUnlocked = signal<boolean>(false);
   public readonly isLoading = signal<boolean>(false);
@@ -116,12 +122,12 @@ export class VaultService {
   }
 
   /**
-   * Initializes a brand-new vault for the given passphrase.
+   * Initializes a brand-new vault for the given passphrase and seeds it with
+   * realistic starter notes so a freshly created (decoy) vault looks lived-in.
+   * The vault is flagged as ephemeral: if the user leaves without making any
+   * real change it is discarded, so mistyped passphrases leave no residue.
    */
-  public async initializeVault(
-    passphrase: string,
-    seedSampleNotes = false
-  ): Promise<{ success: boolean; error?: string }> {
+  public async initializeVault(passphrase: string): Promise<{ success: boolean; error?: string }> {
     if (!passphrase || !passphrase.trim()) {
       return { success: false, error: 'Passphrase cannot be empty.' };
     }
@@ -146,9 +152,11 @@ export class VaultService {
       this.isUnlocked.set(true);
       this.resetAutoLockTimer();
 
-      if (seedSampleNotes) {
-        await this.seedDecoyNotes();
-      }
+      await this.seedDecoyNotes();
+
+      // Seeding does not count as a user change: only real edits keep the vault.
+      this.ephemeralVault = true;
+      this.vaultDirty = false;
 
       await this.loadNotes();
       this.isLoading.set(false);
@@ -160,15 +168,37 @@ export class VaultService {
   }
 
   /**
-   * Locks the vault immediately, wiping keys from memory.
+   * Locks the vault immediately, wiping keys from memory. If the vault was
+   * auto-created on this unlock and the user never changed anything, it is
+   * deleted server-side so an accidental/mistyped passphrase leaves no trace.
    */
   public lock(): void {
+    const partitionToken = this.currentPartitionToken();
+    const shouldDiscard = this.ephemeralVault && !this.vaultDirty && !!partitionToken;
+
     this.activeAesKey = null;
     this.currentPartitionToken.set(null);
     this.notes.set([]);
     this.isUnlocked.set(false);
     this.sessionTimeoutSeconds = AUTO_LOCK_DEFAULT_SECONDS;
     this.clearAutoLockTimer();
+    this.ephemeralVault = false;
+    this.vaultDirty = false;
+
+    if (shouldDiscard && partitionToken) {
+      void this.discardVault(partitionToken);
+    }
+  }
+
+  /** Best-effort removal of an auto-created vault the user never modified. */
+  private async discardVault(partitionToken: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.delete(`/api/vault?partitionToken=${partitionToken}`)
+      );
+    } catch (err) {
+      console.error('Failed to discard unused vault:', err);
+    }
   }
 
   /**
@@ -203,6 +233,7 @@ export class VaultService {
   public async createNote(input: VaultNoteInput): Promise<DecryptedVaultNote> {
     const { partitionToken, aesKey } = this.requireUnlocked();
     this.resetAutoLockTimer();
+    this.vaultDirty = true;
 
     const content = this.buildContent(input);
     const encrypted = await encryptPayload(aesKey, JSON.stringify(content));
@@ -233,6 +264,7 @@ export class VaultService {
     const existing = this.notes().find((n) => n.id === id);
     if (!existing) throw new Error('Note not found.');
     this.resetAutoLockTimer();
+    this.vaultDirty = true;
 
     const content = this.buildContent({ ...existing, ...patch });
     const encrypted = await encryptPayload(aesKey, JSON.stringify(content));
@@ -319,6 +351,7 @@ export class VaultService {
     if (!partitionToken) throw new Error('Vault is locked.');
 
     this.resetAutoLockTimer();
+    this.vaultDirty = true;
 
     await firstValueFrom(
       this.http.delete(`/api/vault/notes/${id}?partitionToken=${partitionToken}`)
@@ -335,6 +368,7 @@ export class VaultService {
     if (!partitionToken) throw new Error('Vault is locked.');
 
     this.resetAutoLockTimer();
+    this.vaultDirty = true;
 
     const updatedDto = await firstValueFrom(
       this.http.patch<VaultNoteDto>(`/api/vault/notes/${id}/pin?partitionToken=${partitionToken}`, {})
@@ -399,6 +433,7 @@ export class VaultService {
       this.activeAesKey = newAesKey;
       this.currentPartitionToken.set(newPartitionToken);
       this.resetAutoLockTimer();
+      this.vaultDirty = true;
       await this.loadNotes();
       this.isLoading.set(false);
       return { success: true };

@@ -1,5 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { VaultService } from './vault.service';
@@ -7,6 +7,7 @@ import { VaultService } from './vault.service';
 describe('VaultService', () => {
   let service: VaultService;
   let router: Router;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -20,6 +21,7 @@ describe('VaultService', () => {
 
     service = TestBed.inject(VaultService);
     router = TestBed.inject(Router);
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => {
@@ -116,5 +118,46 @@ describe('VaultService', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
 
     expect(service.autoLockSecondsRemaining()).toBe(150);
+  });
+
+  it('should discard an auto-created vault on lock when nothing changed', () => {
+    (service as any).ephemeralVault = true;
+    (service as any).vaultDirty = false;
+    service.isUnlocked.set(true);
+    service.currentPartitionToken.set('token-unused');
+
+    service.lock();
+
+    const req = httpMock.expectOne(
+      (r) => r.method === 'DELETE' && r.urlWithParams.startsWith('/api/vault?')
+    );
+    expect(req.request.urlWithParams).toContain('partitionToken=token-unused');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+
+    expect(service.isUnlocked()).toBe(false);
+    expect(service.currentPartitionToken()).toBeNull();
+  });
+
+  it('should keep an auto-created vault on lock once the user changed something', () => {
+    (service as any).ephemeralVault = true;
+    (service as any).vaultDirty = true;
+    service.isUnlocked.set(true);
+    service.currentPartitionToken.set('token-used');
+
+    service.lock();
+
+    httpMock.expectNone((r) => r.method === 'DELETE' && r.urlWithParams.startsWith('/api/vault?'));
+    expect(service.isUnlocked()).toBe(false);
+  });
+
+  it('should not discard a pre-existing vault on lock', () => {
+    (service as any).ephemeralVault = false;
+    (service as any).vaultDirty = false;
+    service.isUnlocked.set(true);
+    service.currentPartitionToken.set('token-existing');
+
+    service.lock();
+
+    httpMock.expectNone((r) => r.method === 'DELETE' && r.urlWithParams.startsWith('/api/vault?'));
   });
 });
