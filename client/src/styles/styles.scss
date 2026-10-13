@@ -60,6 +60,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Form controls do not inherit the typeface by default, which left inputs and
+   buttons rendering in the OS default (Arial) instead of the app stack. */
+button,
+input,
+select,
+textarea,
+optgroup {
+  font-family: inherit;
+}
+
 a {
   color: var(--color-primary);
   text-decoration: none;
