@@ -201,11 +201,6 @@
       background-color: var(--color-primary-light);
       color: var(--color-primary);
       font-weight: var(--font-weight-semibold);
-
-      :host-context(html.dark-theme) & {
-        background-color: rgba(26, 115, 232, 0.25);
-        color: #8ab4f8;
-      }
     }
 
     &__icon {
@@ -278,11 +273,6 @@
       &--active {
         background-color: var(--color-primary-light);
         color: var(--color-primary);
-
-        :host-context(html.dark-theme) & {
-          background-color: rgba(26, 115, 232, 0.25);
-          color: #8ab4f8;
-        }
       }
 
       mat-icon {
@@ -430,11 +420,6 @@
       border-radius: var(--radius-sm);
       background-color: var(--color-primary-light);
       color: var(--color-primary);
-
-      :host-context(html.dark-theme) & {
-        background-color: rgba(26, 115, 232, 0.2);
-        color: #8ab4f8;
-      }
     }
 
     &__count {

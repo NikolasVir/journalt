@@ -193,8 +193,8 @@
     background-color: var(--color-bg-surface-elevated, var(--color-bg-surface-hover));
 
     &--journal {
-      color: var(--color-accent-purple, #8b5cf6);
-      background-color: color-mix(in srgb, var(--color-accent-purple, #8b5cf6) 12%, transparent);
+      color: var(--color-level-journal);
+      background-color: var(--color-level-journal-bg);
     }
 
     &--note {

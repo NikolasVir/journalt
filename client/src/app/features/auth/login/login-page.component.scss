@@ -53,12 +53,12 @@
     margin-top: var(--spacing-sm);
 
     a {
-      color: #1557b0;
+      color: var(--color-primary);
       font-weight: var(--font-weight-medium);
       text-decoration: underline;
 
       &:hover {
-        color: #174ea6;
+        color: var(--color-primary-hover);
       }
     }
   }
