@@ -81,6 +81,7 @@
   cursor: pointer;
   gap: var(--spacing-xs);
   padding: var(--spacing-2xs) var(--spacing-sm);
+  min-height: 24px;
   border-radius: var(--radius-pill);
   font-size: 12px;
   color: var(--color-text-secondary);

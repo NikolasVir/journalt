@@ -28,6 +28,12 @@
   gap: var(--spacing-xs);
 }
 
+/* The action row (Active toggle + Edit/Duplicate/Delete) is wider than a
+   small-phone card; wrap instead of clipping the trailing buttons. */
+.type-card__actions {
+  flex-wrap: wrap;
+}
+
 .help-card__title,
 .type-card__name {
   font-size: 16px;

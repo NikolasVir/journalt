@@ -237,3 +237,19 @@
     gap: var(--spacing-sm);
   }
 }
+
+/* The header controls (library + format + level) are a fixed-width row that
+   overflowed the panel on phones. Let them wrap under the title. */
+@media (max-width: 480px) {
+  .capture-dialog__header {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .capture-dialog__header-controls {
+    width: 100%;
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
