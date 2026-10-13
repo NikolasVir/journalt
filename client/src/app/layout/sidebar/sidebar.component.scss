@@ -74,12 +74,22 @@
       }
 
       &[activated='true'],
-      &.mat-mdc-list-item-activated {
+      &.mat-mdc-list-item-activated,
+      &.mdc-list-item--activated {
         background-color: var(--color-bg-nav-active) !important;
         --mat-list-item-leading-icon-color: var(--color-primary);
         --mat-list-item-label-text-color: var(--color-primary);
+        --mdc-list-list-item-leading-icon-color: var(--color-primary);
+        --mdc-list-list-item-label-text-color: var(--color-primary);
 
-        .mat-icon {
+        .mat-icon,
+        .mat-mdc-list-item-icon {
+          color: var(--color-primary) !important;
+        }
+
+        .mdc-list-item__primary-text,
+        .mat-mdc-list-item-title,
+        [matlistitemtitle] {
           color: var(--color-primary) !important;
         }
       }
