@@ -13,4 +13,5 @@ public interface IVaultService
     Task<bool> DeleteNoteAsync(Guid id, string partitionToken, CancellationToken ct = default);
     Task<VaultNoteDto?> TogglePinAsync(Guid id, string partitionToken, CancellationToken ct = default);
     Task<bool> ChangePassphraseAsync(ChangeVaultPassphraseRequest request, CancellationToken ct = default);
+    Task<bool> DeleteVaultAsync(string partitionToken, CancellationToken ct = default);
 }

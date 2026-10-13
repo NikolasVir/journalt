@@ -118,4 +118,14 @@ public class VaultController(IVaultService vaultService) : ControllerBase
         var success = await _vaultService.ChangePassphraseAsync(request, ct);
         return success ? Ok(new { success = true }) : BadRequest("Failed to update vault passphrase.");
     }
+
+    [HttpDelete]
+    public async Task<IActionResult> DeleteVault([FromQuery] string partitionToken, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(partitionToken))
+            return BadRequest("partitionToken is required.");
+
+        var success = await _vaultService.DeleteVaultAsync(partitionToken, ct);
+        return success ? NoContent() : NotFound();
+    }
 }

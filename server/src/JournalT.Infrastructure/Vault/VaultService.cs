@@ -257,4 +257,36 @@ public sealed class VaultService(
             throw;
         }
     }
+
+    public async Task<bool> DeleteVaultAsync(string partitionToken, CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId;
+
+        var canary = await _db.VaultCanaries
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.PartitionToken == partitionToken, ct);
+
+        if (canary is null)
+        {
+            return false;
+        }
+
+        var notes = await _db.VaultNotes
+            .Where(n => n.UserId == userId && n.PartitionToken == partitionToken)
+            .ToListAsync(ct);
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            _db.VaultNotes.RemoveRange(notes);
+            _db.VaultCanaries.Remove(canary);
+            await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
+    }
 }
