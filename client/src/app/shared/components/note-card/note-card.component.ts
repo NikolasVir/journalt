@@ -9,6 +9,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { formatTag, NoteLevel, NoteResponse, TagDto } from '@core/models/note.model';
 import { markdownToChecklist, ChecklistItem } from '@shared/components/checklist-editor/checklist-editor.component';
 import { ShareDialogComponent } from '@shared/components/share-dialog/share-dialog.component';
+import { MarkdownTaskListPipe } from '@shared/pipes/markdown-task-list.pipe';
 
 @Component({
   selector: 'app-note-card',
@@ -21,6 +22,7 @@ import { ShareDialogComponent } from '@shared/components/share-dialog/share-dial
     MatMenuModule,
     MatTooltipModule,
     MatDialogModule,
+    MarkdownTaskListPipe,
   ],
   templateUrl: './note-card.component.html',
   styleUrl: './note-card.component.scss',

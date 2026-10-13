@@ -92,6 +92,41 @@
       cursor: default;
       accent-color: var(--color-primary);
     }
+
+    /* Custom checkbox rendered by the mdTaskList pipe (inputs are sanitized away). */
+    .md-task-checkbox {
+      flex: 0 0 auto;
+      position: relative;
+      top: 3px;
+      width: 14px;
+      height: 14px;
+      border: 1.5px solid var(--color-text-muted);
+      border-radius: 3px;
+      background-color: transparent;
+      box-sizing: border-box;
+
+      &--checked {
+        border-color: var(--color-primary);
+        background-color: var(--color-primary);
+
+        &::after {
+          content: '';
+          position: absolute;
+          left: 3px;
+          top: 0;
+          width: 4px;
+          height: 8px;
+          border: solid var(--color-primary-contrast);
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+      }
+    }
+
+    &:has(.md-task-checkbox--checked) {
+      color: var(--color-text-secondary);
+      text-decoration: line-through;
+    }
   }
 
   /* Blockquotes */

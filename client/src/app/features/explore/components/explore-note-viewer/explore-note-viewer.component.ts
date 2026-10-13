@@ -22,6 +22,7 @@ import { LayoutService } from '@layout/layout.service';
 import { NoteEditButtonComponent } from '@shared/components/note-edit-button/note-edit-button.component';
 import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
 import { ExplorePaneResizerComponent } from '../explore-pane-resizer/explore-pane-resizer.component';
+import { MarkdownTaskListPipe } from '@shared/pipes/markdown-task-list.pipe';
 
 /**
  * Right pane of Explore. Renders a note read-only and intercepts wiki-links so
@@ -37,6 +38,7 @@ import { ExplorePaneResizerComponent } from '../explore-pane-resizer/explore-pan
     NoteEditButtonComponent,
     NoteMetadataViewComponent,
     ExplorePaneResizerComponent,
+    MarkdownTaskListPipe,
   ],
   templateUrl: './explore-note-viewer.component.html',
   styleUrl: './explore-note-viewer.component.scss',

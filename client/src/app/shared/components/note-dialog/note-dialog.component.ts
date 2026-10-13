@@ -41,6 +41,7 @@ import { NoteEditButtonComponent } from '@shared/components/note-edit-button/not
 import { NoteMetadataViewComponent } from '@shared/components/note-metadata-view/note-metadata-view.component';
 import { ChecklistEditorComponent } from '@shared/components/checklist-editor/checklist-editor.component';
 import { ShareDialogComponent } from '@shared/components/share-dialog/share-dialog.component';
+import { MarkdownTaskListPipe } from '@shared/pipes/markdown-task-list.pipe';
 
 export interface NoteDialogSavePayload {
   id: string;
@@ -68,6 +69,7 @@ export interface NoteDialogSavePayload {
     NoteEditButtonComponent,
     NoteMetadataViewComponent,
     ChecklistEditorComponent,
+    MarkdownTaskListPipe,
   ],
   templateUrl: './note-dialog.component.html',
   styleUrl: './note-dialog.component.scss',

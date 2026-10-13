@@ -74,7 +74,7 @@
         }
       </div>
     } @else if (note().renderedHtml) {
-      <div class="note-card__body" [innerHTML]="note().renderedHtml"></div>
+      <div class="note-card__body markdown-body" [innerHTML]="note().renderedHtml | mdTaskList"></div>
     } @else if (note().bodyMarkdown) {
       <p class="note-card__body-text">{{ note().bodyMarkdown }}</p>
     }

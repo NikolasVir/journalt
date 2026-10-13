@@ -128,7 +128,7 @@
           <div
             #renderedContainer
             class="dialog-panel__rendered-content markdown-body"
-            [innerHTML]="renderedHtml()"
+            [innerHTML]="renderedHtml() | mdTaskList"
             (click)="onRenderedContentClick($event)"
           ></div>
         } @else {
