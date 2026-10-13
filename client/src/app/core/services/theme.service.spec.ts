@@ -11,6 +11,8 @@ describe('ThemeService', () => {
     root.style.removeProperty('--accent-seed');
     root.style.removeProperty('--accent-on-light');
     root.style.removeProperty('--accent-on-dark');
+    document.getElementById('app-favicon')?.remove();
+    document.querySelector('meta[name="theme-color"]')?.remove();
   }
 
   beforeEach(() => {
@@ -95,5 +97,27 @@ describe('ThemeService', () => {
 
     expect(restored.accentSeed()).toBe('#00838f');
     expect(document.documentElement.getAttribute('data-accent')).toBe('');
+  });
+
+  it('should tint the favicon and theme-color with the accent', () => {
+    service.setAccent('#7b1fa2');
+
+    const icons = document.querySelectorAll('link[rel="icon"]');
+    expect(icons.length).toBe(1);
+    const link = icons[0] as HTMLLinkElement;
+    expect(decodeURIComponent(link.getAttribute('href') || '')).toContain('fill="#7b1fa2"');
+
+    const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement;
+    expect(meta.getAttribute('content')).toBe('#7b1fa2');
+  });
+
+  it('should lighten the favicon accent in dark mode', () => {
+    service.setAccent('#7b1fa2');
+    service.setTheme(true);
+
+    const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement;
+    const content = meta.getAttribute('content');
+    expect(content).not.toBe('#7b1fa2');
+    expect(content).toMatch(/^#[0-9a-f]{6}$/);
   });
 });

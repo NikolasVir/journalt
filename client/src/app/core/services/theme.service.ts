@@ -1,6 +1,7 @@
 import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { mixHex, normalizeHex, onColorFor } from '@core/utils/color.util';
+import { FaviconService } from './favicon.service';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -12,6 +13,7 @@ export const DEFAULT_ACCENT = '#1a73e8';
 })
 export class ThemeService {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly favicon = inject(FaviconService);
   private readonly themeStorageKey = 'journalt-theme';
   private readonly accentStorageKey = 'journalt-accent';
 
@@ -67,10 +69,12 @@ export class ThemeService {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem(this.themeStorageKey, dark ? 'dark' : 'light');
       document.documentElement.classList.toggle('dark-theme', dark);
+      this.favicon.update(this.accentSeed(), dark);
     }
   }
 
   private applyAccent(hex: string): void {
+    this.favicon.update(hex, this.isDarkMode());
     const root = document.documentElement;
 
     // The default keeps the hand-tuned palette exactly as designed.

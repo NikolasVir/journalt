@@ -78,6 +78,43 @@ async function run() {
     });
     assert(deleteBtn === 'rgb(197, 34, 31)', `Semantic danger colour stays distinct (${deleteBtn})`);
 
+    const favicon = await page.evaluate(() => {
+      const links = Array.from(document.querySelectorAll('link[rel="icon"]'));
+      const link = links.find((l) => l.getAttribute('type') === 'image/svg+xml');
+      return {
+        count: links.length,
+        type: link ? link.getAttribute('type') : '',
+        href: link ? decodeURIComponent(link.getAttribute('href') || '') : '',
+      };
+    });
+    assert(favicon.count === 1, `Static icon links are replaced by one dynamic icon (${favicon.count})`);
+    assert(
+      favicon.type === 'image/svg+xml' && favicon.href.includes('fill="#2e7d32"'),
+      'Favicon badge follows the accent'
+    );
+
+    const faviconRenders = await page.evaluate(async () => {
+      const link = document.querySelector('link[rel="icon"][type="image/svg+xml"]');
+      const href = link ? link.getAttribute('href') : '';
+      if (!href) return { ok: false, width: 0 };
+      try {
+        const img = new Image();
+        img.src = href;
+        await img.decode();
+        return { ok: true, width: img.naturalWidth };
+      } catch {
+        return { ok: false, width: 0 };
+      }
+    });
+    assert(
+      faviconRenders.ok && faviconRenders.width === 64,
+      `Dynamic favicon SVG decodes in the browser (${faviconRenders.width}px)`
+    );
+    const themeColor = await page.evaluate(
+      () => document.querySelector('meta[name="theme-color"]')?.getAttribute('content') || ''
+    );
+    assert(themeColor === GREEN, `theme-color follows the accent (${themeColor})`);
+
     console.log('\n--- Step 3: Accent applies to the sidebar and persists ---');
     await page.waitForTimeout(600); // allow the save request to settle
     await page.goto(`${BASE_URL}/dashboard`);
