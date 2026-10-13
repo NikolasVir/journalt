@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.3.0](https://github.com/NikolasVir/journalt/compare/v1.2.0...v1.3.0) (2026-10-13)
+
+
+### Features
+
+* **account:** load and save per-user accent ([a2634bb](https://github.com/NikolasVir/journalt/commit/a2634bb8bbd16c983c2d9967ab0e16abba04c206))
+* **client:** add global link handler service ([e85fa72](https://github.com/NikolasVir/journalt/commit/e85fa72c21b0b3f135f9d8aab1f3e236b3b48019))
+* **client:** add jt brand favicon assets ([5e6a068](https://github.com/NikolasVir/journalt/commit/5e6a06865af637a078ba5d6c83c45ad10540bc24))
+* **client:** normalize external links on render ([0a79c0e](https://github.com/NikolasVir/journalt/commit/0a79c0e90ec1ce679f1f02d12d8554b8cb4d9d70))
+* **client:** render markdown task checkboxes ([6e9e337](https://github.com/NikolasVir/journalt/commit/6e9e337a48a6e802f1642d033391718e77d0e424))
+* **client:** tint favicon with the accent ([412c52b](https://github.com/NikolasVir/journalt/commit/412c52b21897e8f39ebdc5db08c408e185826d37))
+* **settings:** add accent colour picker wheel ([bb01e6a](https://github.com/NikolasVir/journalt/commit/bb01e6aca3761f3f3f636c8a4d3d58e27b17f44c))
+* **theme:** add user-selectable accent tokens ([6843dac](https://github.com/NikolasVir/journalt/commit/6843dac6acb86e688f8f4a93b27f4aaf2186fd27))
+* **users:** store per-user accent colour ([f96814a](https://github.com/NikolasVir/journalt/commit/f96814a11d7d3baf4a2892c2fbc4a7492bd764ec))
+* **vault:** add api to delete a vault ([31a717e](https://github.com/NikolasVir/journalt/commit/31a717e2ef1de5008c648ac60a8bfbae7e0d6683))
+* **vault:** auto-create, seed, discard vaults ([32b8bf0](https://github.com/NikolasVir/journalt/commit/32b8bf0ef9074bca7ab1573b33324a00d3d65709))
+
+
+### Bug Fixes
+
+* **client:** dedupe header search affordances ([692f890](https://github.com/NikolasVir/journalt/commit/692f8908e5ffa74de16e797f50882f40d4a31c11))
+* **client:** fit small-screen controls and taps ([0d15025](https://github.com/NikolasVir/journalt/commit/0d15025f5d4cf3bb6ad27078143b64db647fd9e3))
+* **client:** inherit app font in form controls ([b67954d](https://github.com/NikolasVir/journalt/commit/b67954d404e0ff2411985953d09068701841328b))
+* **client:** keep vault internal links same-tab ([39435f6](https://github.com/NikolasVir/journalt/commit/39435f6b2fe75bb8a907e78d27583a4716741216))
+* **client:** raise vault subtitle contrast ([a9a63c8](https://github.com/NikolasVir/journalt/commit/a9a63c846cfa705846dc8fed12b3e496aaba8e8c))
+* **sidebar:** follow accent on active nav item ([199e46a](https://github.com/NikolasVir/journalt/commit/199e46a232c38478d8381e9f7b29ccb18008ee0f))
+
 ## [1.2.0](https://github.com/NikolasVir/journalt/compare/v1.1.0...v1.2.0) (2026-10-12)
 
 
