@@ -107,8 +107,11 @@ function formatInline(text: string): string {
   // Italic: *text*
   safe = safe.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
-  // Links: [text](url) - only http/https/relative URLs allowed
-  safe = safe.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  // Links: [text](url) - only http/https/relative URLs allowed.
+  // External links open in a new tab; internal app routes stay in the SPA
+  // (the global LinkHandlerService enforces the same policy at click time).
+  safe = safe.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  safe = safe.replace(/\[([^\]]+)\]\((\/[^\s)]+)\)/g, '<a href="$2">$1</a>');
 
   return safe;
 }
