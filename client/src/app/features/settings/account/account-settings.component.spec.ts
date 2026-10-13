@@ -34,6 +34,7 @@ describe('AccountSettingsComponent', () => {
 
     userServiceMock = {
       updateAvatar: vi.fn().mockReturnValue(of({ ...mockUser, avatarUrl: 'https://example.com/avatar.png' })),
+      updateAccent: vi.fn().mockReturnValue(of({ ...mockUser, accentColor: '#7b1fa2' })),
       search: vi.fn().mockReturnValue(of([]))
     };
 
@@ -118,5 +119,20 @@ describe('AccountSettingsComponent', () => {
     expect(userServiceMock.updateAvatar).toHaveBeenCalledWith(null);
     expect(authServiceMock.updateCurrentUser).toHaveBeenCalled();
     expect(notificationMock.showSuccess).toHaveBeenCalledWith('Avatar removed.');
+  });
+
+  it('applies a selected accent and persists it', () => {
+    component.selectAccent('#7b1fa2');
+
+    expect((component as any).themeService.accentSeed()).toBe('#7b1fa2');
+    expect(userServiceMock.updateAccent).toHaveBeenCalledWith('#7b1fa2');
+    expect(authServiceMock.updateCurrentUser).toHaveBeenCalled();
+  });
+
+  it('persists null when resetting the accent to default', () => {
+    component.resetAccent();
+
+    expect((component as any).themeService.isDefaultAccent()).toBe(true);
+    expect(userServiceMock.updateAccent).toHaveBeenCalledWith(null);
   });
 });

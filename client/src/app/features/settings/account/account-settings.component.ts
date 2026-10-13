@@ -14,7 +14,15 @@ import { ApiKeyService } from '@core/services/api-key.service';
 import { AuthService } from '@core/services/auth.service';
 import { UserService } from '@core/services/user.service';
 import { NotificationService } from '@core/services/notification.service';
+import { DEFAULT_ACCENT, ThemeService } from '@core/services/theme.service';
+import { normalizeHex } from '@core/utils/color.util';
 import { AvatarComponent } from '@shared/components/avatar/avatar.component';
+import { ColorWheelComponent } from '@shared/components/color-wheel/color-wheel.component';
+
+interface AccentPreset {
+  label: string;
+  value: string;
+}
 
 @Component({
   selector: 'app-account-settings',
@@ -29,7 +37,8 @@ import { AvatarComponent } from '@shared/components/avatar/avatar.component';
     MatFormFieldModule,
     MatDividerModule,
     MatTooltipModule,
-    AvatarComponent
+    AvatarComponent,
+    ColorWheelComponent
   ],
   template: `
     <div class="account-settings">
@@ -96,6 +105,50 @@ import { AvatarComponent } from '@shared/components/avatar/avatar.component';
                 </div>
               </div>
             }
+
+            <div class="appearance">
+              <div class="appearance__header">
+                <div>
+                  <span class="appearance__title">
+                    <mat-icon class="appearance__title-icon">palette</mat-icon>
+                    Accent color
+                  </span>
+                  <span class="appearance__hint">
+                    Personalize buttons, links, highlights and menus across the whole app.
+                  </span>
+                </div>
+              </div>
+
+              <div class="appearance__presets" role="group" aria-label="Preset accent colors">
+                @for (preset of accentPresets; track preset.value) {
+                  <button
+                    type="button"
+                    class="appearance__swatch"
+                    [class.appearance__swatch--active]="isAccentActive(preset.value)"
+                    [style.background]="preset.value"
+                    [attr.aria-label]="preset.label"
+                    [attr.aria-pressed]="isAccentActive(preset.value)"
+                    [matTooltip]="preset.label"
+                    (click)="selectAccent(preset.value)"
+                  ></button>
+                }
+                <button
+                  type="button"
+                  class="appearance__reset"
+                  mat-stroked-button
+                  [disabled]="themeService.isDefaultAccent()"
+                  (click)="resetAccent()"
+                >
+                  <mat-icon>restart_alt</mat-icon>
+                  <span>Default</span>
+                </button>
+              </div>
+
+              <app-color-wheel
+                [value]="themeService.accentSeed()"
+                (commit)="selectAccent($event)"
+              ></app-color-wheel>
+            </div>
           </mat-card-content>
 
           <mat-card-actions class="settings-card__actions">
@@ -476,6 +529,75 @@ import { AvatarComponent } from '@shared/components/avatar/avatar.component';
       }
     }
 
+    .appearance {
+      @include flex-column;
+      gap: var(--spacing-md);
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--color-border-card);
+
+      &__header {
+        @include flex-column;
+        gap: var(--spacing-2xs);
+      }
+
+      &__title {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
+
+      &__title-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: var(--color-primary);
+      }
+
+      &__hint {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+      }
+
+      &__presets {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        flex-wrap: wrap;
+      }
+
+      &__swatch {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border-radius: 50%;
+        border: 2px solid var(--color-border-card);
+        cursor: pointer;
+        transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+
+        &:hover {
+          transform: scale(1.1);
+        }
+
+        &--active {
+          border-color: var(--color-text-primary);
+          box-shadow: 0 0 0 2px var(--color-bg-surface), 0 0 0 4px var(--color-primary);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--color-border-focus);
+          outline-offset: 2px;
+        }
+      }
+
+      &__reset {
+        margin-left: var(--spacing-xs);
+      }
+    }
+
     .password-form {
       @include flex-column;
       gap: var(--spacing-md);
@@ -629,12 +751,27 @@ import { AvatarComponent } from '@shared/components/avatar/avatar.component';
 export class AccountSettingsComponent implements OnInit {
   protected readonly authService = inject(AuthService);
   protected readonly userService = inject(UserService);
+  protected readonly themeService = inject(ThemeService);
   private readonly apiKeyService = inject(ApiKeyService);
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
 
   // Avatar Management State
   protected readonly isUpdatingAvatar = signal<boolean>(false);
+
+  // Appearance / Accent State
+  protected readonly accentPresets: AccentPreset[] = [
+    { label: 'Default blue', value: DEFAULT_ACCENT },
+    { label: 'Blue', value: '#1967d2' },
+    { label: 'Violet', value: '#7b1fa2' },
+    { label: 'Magenta', value: '#c2185b' },
+    { label: 'Rose', value: '#e91e63' },
+    { label: 'Orange', value: '#ef6c00' },
+    { label: 'Green', value: '#2e7d32' },
+    { label: 'Cyan', value: '#00838f' }
+  ];
+  private readonly isSavingAccent = signal<boolean>(false);
+  private pendingAccent: string | null | undefined = undefined;
 
   // Password Management State
   protected readonly currentPassword = signal<string>('');
@@ -728,6 +865,51 @@ export class AccountSettingsComponent implements OnInit {
         this.notification.showError('Failed to remove avatar.');
       }
     });
+  }
+
+  public isAccentActive(value: string): boolean {
+    return normalizeHex(this.themeService.accentSeed()) === normalizeHex(value);
+  }
+
+  /** Applies the accent instantly for feedback, then persists it to the account. */
+  public selectAccent(hex: string): void {
+    this.themeService.setAccent(hex);
+    this.saveAccent(normalizeHex(hex));
+  }
+
+  public resetAccent(): void {
+    this.themeService.resetAccent();
+    this.saveAccent(null);
+  }
+
+  private saveAccent(hex: string | null): void {
+    // While a save is in flight, remember only the latest value so rapid wheel
+    // edits don't drop the final colour.
+    if (this.isSavingAccent()) {
+      this.pendingAccent = hex;
+      return;
+    }
+
+    this.isSavingAccent.set(true);
+    this.userService.updateAccent(hex).subscribe({
+      next: (user) => {
+        this.authService.updateCurrentUser(user);
+        this.finishAccentSave();
+      },
+      error: () => {
+        this.notification.showError('Failed to save accent color.');
+        this.finishAccentSave();
+      }
+    });
+  }
+
+  private finishAccentSave(): void {
+    this.isSavingAccent.set(false);
+    if (this.pendingAccent !== undefined) {
+      const next = this.pendingAccent;
+      this.pendingAccent = undefined;
+      this.saveAccent(next);
+    }
   }
 
   public changePassword(): void {
