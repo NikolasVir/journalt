@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
@@ -104,6 +105,10 @@ export class DashboardPageComponent implements OnInit {
   );
 
   constructor() {
+    this.noteService.noteUpdated$?.pipe(takeUntilDestroyed()).subscribe((updated) => {
+      this.notes.update((list) => list.map((n) => (n.id === updated.id ? updated : n)));
+    });
+
     effect(() => {
       const query = this.q();
       if (query !== undefined && query !== this.layoutService.searchQuery()) {

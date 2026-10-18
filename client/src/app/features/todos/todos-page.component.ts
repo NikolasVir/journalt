@@ -745,6 +745,7 @@ export class TodosPageComponent implements OnInit, OnDestroy {
 
   private readonly searchSubject = new Subject<string>();
   private searchSub?: Subscription;
+  private noteUpdatedSub?: Subscription;
 
   protected readonly pendingTodos = computed(() =>
     this.allTodos().filter((t) => !t.todoCompletedAtUtc),
@@ -763,6 +764,10 @@ export class TodosPageComponent implements OnInit, OnDestroy {
 
   public ngOnInit(): void {
     this.loadTodos();
+
+    this.noteUpdatedSub = this.noteService.noteUpdated$?.subscribe((updated) => {
+      this.allTodos.update((list) => list.map((t) => (t.id === updated.id ? updated : t)));
+    });
 
     this.searchSub = this.searchSubject
       .pipe(
@@ -807,6 +812,7 @@ export class TodosPageComponent implements OnInit, OnDestroy {
 
   public ngOnDestroy(): void {
     this.searchSub?.unsubscribe();
+    this.noteUpdatedSub?.unsubscribe();
   }
 
   public loadTodos(): void {

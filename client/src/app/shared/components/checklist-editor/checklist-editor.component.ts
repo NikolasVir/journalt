@@ -5,6 +5,7 @@ import {
   OnDestroy,
   effect,
   forwardRef,
+  inject,
   input,
   model,
   signal,
@@ -24,6 +25,7 @@ import {
 } from '@angular/cdk/drag-drop';
 import * as Y from 'yjs';
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
+import { NoteService } from '@core/services/note.service';
 
 export interface ChecklistItem {
   id: string;
@@ -121,6 +123,8 @@ export function checklistToMarkdown(items: ChecklistItem[]): string {
 export class ChecklistEditorComponent
   implements ControlValueAccessor, OnDestroy
 {
+  private readonly noteService = inject(NoteService, { optional: true });
+
   public readonly value = model<string>('');
   public readonly placeholder = input<string>('List item');
   public readonly ariaLabel = input<string>('Checklist content');
@@ -139,20 +143,26 @@ export class ChecklistEditorComponent
   private onTouched: () => void = () => undefined;
   private isDisabled = false;
 
-  // Yjs & SignalR collaboration
+  // Yjs & SignalR collaboration + auto-save state
   private ydoc: Y.Doc | null = null;
   private yitems: Y.Array<Y.Map<any>> | null = null;
   private hub: HubConnection | null = null;
   private isCollabActive = false;
   private suppressNextExternalSync = false;
+  private hasUserEdited = false;
+  private hasRemoteUpdates = false;
+  private saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingSave: { noteId: string; md: string } | null = null;
 
   constructor() {
-    // Synchronize external value -> local state if not collaborating
+    // Synchronize external value -> local state before user or remote peer edits occur
     effect(() => {
       const nextVal = this.value() ?? '';
-      if (this.isCollabActive) return;
       if (this.suppressNextExternalSync) {
         this.suppressNextExternalSync = false;
+        return;
+      }
+      if (this.hasUserEdited || this.hasRemoteUpdates) {
         return;
       }
 
@@ -162,6 +172,9 @@ export class ChecklistEditorComponent
         this.items.set([{ id: generateId(), text: '', completed: false }]);
       } else if (parsed.length > 0) {
         this.items.set(parsed);
+        if (this.isCollabActive && this.ydoc && this.yitems) {
+          this.syncItemsToYjs(parsed, 'seed');
+        }
       }
     });
 
@@ -210,9 +223,72 @@ export class ChecklistEditorComponent
     return this.items().filter(i => i.completed);
   }
 
-  // --- Mutation & Yjs Sync Helpers ---
+  // --- Mutation, Auto-Save & Yjs Sync Helpers ---
 
-  private commitChange(newItems: ChecklistItem[], syncToYjs = true): void {
+  private syncItemsToYjs(itemsToSync: ChecklistItem[], origin: 'local' | 'seed'): void {
+    if (!this.ydoc || !this.yitems) return;
+    this.ydoc.transact(() => {
+      if (!this.yitems) return;
+      this.yitems.delete(0, this.yitems.length);
+      const ymaps = itemsToSync.map(item => {
+        const map = new Y.Map<any>();
+        map.set('id', item.id);
+        map.set('text', item.text);
+        map.set('completed', item.completed);
+        return map;
+      });
+      this.yitems.insert(0, ymaps);
+    }, origin);
+  }
+
+  private schedulePersist(md: string, mode: 'immediate' | 'debounced' | 'none'): void {
+    const noteId = this.collabNoteId();
+    if (!noteId || typeof this.noteService?.updateChecklist !== 'function' || mode === 'none') {
+      return;
+    }
+
+    this.pendingSave = { noteId, md };
+
+    if (this.saveDebounceTimer !== null) {
+      clearTimeout(this.saveDebounceTimer);
+      this.saveDebounceTimer = null;
+    }
+
+    if (mode === 'immediate') {
+      this.flushPendingSave();
+    } else {
+      this.saveDebounceTimer = setTimeout(() => {
+        this.saveDebounceTimer = null;
+        this.flushPendingSave();
+      }, 300);
+    }
+  }
+
+  private flushPendingSave(): void {
+    if (this.saveDebounceTimer !== null) {
+      clearTimeout(this.saveDebounceTimer);
+      this.saveDebounceTimer = null;
+    }
+
+    const pending = this.pendingSave;
+    if (!pending || typeof this.noteService?.updateChecklist !== 'function') {
+      return;
+    }
+    this.pendingSave = null;
+
+    this.noteService.updateChecklist(pending.noteId, pending.md).subscribe({
+      error: (err) => {
+        console.error('Checklist: Failed to auto-save checklist', err);
+      },
+    });
+  }
+
+  private commitChange(
+    newItems: ChecklistItem[],
+    syncToYjs = true,
+    saveMode: 'immediate' | 'debounced' | 'none' = 'immediate',
+  ): void {
+    this.hasUserEdited = true;
     this.items.set(newItems);
     const md = checklistToMarkdown(newItems);
     this.suppressNextExternalSync = true;
@@ -221,19 +297,10 @@ export class ChecklistEditorComponent
     this.onTouched();
 
     if (syncToYjs && this.isCollabActive && this.ydoc && this.yitems) {
-      this.ydoc.transact(() => {
-        if (!this.yitems) return;
-        this.yitems.delete(0, this.yitems.length);
-        const ymaps = newItems.map(item => {
-          const map = new Y.Map<any>();
-          map.set('id', item.id);
-          map.set('text', item.text);
-          map.set('completed', item.completed);
-          return map;
-        });
-        this.yitems.insert(0, ymaps);
-      });
+      this.syncItemsToYjs(newItems, 'local');
     }
+
+    this.schedulePersist(md, saveMode);
   }
 
   // --- User Actions ---
@@ -244,7 +311,7 @@ export class ChecklistEditorComponent
     const updated = current.map(i =>
       i.id === item.id ? { ...i, completed: !i.completed } : i
     );
-    this.commitChange(updated);
+    this.commitChange(updated, true, 'immediate');
   }
 
   public updateItemText(item: ChecklistItem, text: string): void {
@@ -253,7 +320,7 @@ export class ChecklistEditorComponent
     const updated = current.map(i =>
       i.id === item.id ? { ...i, text } : i
     );
-    this.commitChange(updated);
+    this.commitChange(updated, true, 'debounced');
   }
 
   public deleteItem(item: ChecklistItem): void {
@@ -263,7 +330,7 @@ export class ChecklistEditorComponent
     if (updated.length === 0) {
       updated = [{ id: generateId(), text: '', completed: false }];
     }
-    this.commitChange(updated);
+    this.commitChange(updated, true, 'immediate');
   }
 
   public onEnter(item: ChecklistItem, event: Event): void {
@@ -280,7 +347,7 @@ export class ChecklistEditorComponent
 
     const updated = [...current];
     updated.splice(idx + 1, 0, newItem);
-    this.commitChange(updated);
+    this.commitChange(updated, true, 'none');
 
     // Focus newly created item
     this.focusItemById(newItem.id);
@@ -360,7 +427,7 @@ export class ChecklistEditorComponent
     } else {
       // If only 1 clean line
       item.text = (firstLine + suffix).trim();
-      this.commitChange([...current]);
+      this.commitChange([...current], true, 'immediate');
       return;
     }
 
@@ -374,7 +441,7 @@ export class ChecklistEditorComponent
     updated[idx] = { ...item, text: firstLine };
     updated.splice(idx + 1, 0, ...newItemsToInsert);
 
-    this.commitChange(updated);
+    this.commitChange(updated, true, 'immediate');
 
     const lastInserted = newItemsToInsert[newItemsToInsert.length - 1];
     if (lastInserted) {
@@ -394,7 +461,7 @@ export class ChecklistEditorComponent
     };
 
     const current = this.items();
-    this.commitChange([...current, newItem]);
+    this.commitChange([...current, newItem], true, 'immediate');
     this.newItemText.set('');
   }
 
@@ -405,7 +472,7 @@ export class ChecklistEditorComponent
       completed: false,
     };
     const current = this.items();
-    this.commitChange([...current, newItem]);
+    this.commitChange([...current, newItem], true, 'none');
     this.focusItemById(newItem.id);
   }
 
@@ -423,7 +490,7 @@ export class ChecklistEditorComponent
 
     // Merge active with completed
     const merged = [...active, ...this.completedItems];
-    this.commitChange(merged);
+    this.commitChange(merged, true, 'immediate');
   }
 
   public onDropCompleted(event: CdkDragDrop<ChecklistItem[]>): void {
@@ -433,7 +500,7 @@ export class ChecklistEditorComponent
     moveItemInArray(completed, event.previousIndex, event.currentIndex);
 
     const merged = [...this.activeItems, ...completed];
-    this.commitChange(merged);
+    this.commitChange(merged, true, 'immediate');
   }
 
   private focusItemById(id: string, selectEnd = false): void {
@@ -462,10 +529,11 @@ export class ChecklistEditorComponent
     const yitems = ydoc.getArray<Y.Map<any>>('checklist');
     this.ydoc = ydoc;
     this.yitems = yitems;
-    this.isCollabActive = true;
 
-    // Observe local/remote Yjs updates to reflect in Angular signals
-    yitems.observeDeep(() => {
+    // Observe remote/initial Yjs updates to reflect in Angular signals
+    yitems.observeDeep((_events, transaction) => {
+      if (transaction.origin === 'local' || transaction.origin === 'seed') return;
+
       const itemsList: ChecklistItem[] = [];
       for (let i = 0; i < yitems.length; i++) {
         const map = yitems.get(i);
@@ -493,6 +561,7 @@ export class ChecklistEditorComponent
     hub.on('ReceiveUpdate', (updateB64: string) => {
       if (!this.ydoc) return;
       try {
+        this.hasRemoteUpdates = true;
         const update = fromBase64(updateB64);
         Y.applyUpdate(this.ydoc, update, 'remote');
       } catch (err) {
@@ -512,30 +581,36 @@ export class ChecklistEditorComponent
 
     try {
       await hub.start();
+      if (this.hub !== hub || this.ydoc !== ydoc) return;
+
       const historyUpdates = await hub.invoke<string[]>('JoinNote', noteId);
+      if (this.hub !== hub || this.ydoc !== ydoc) return;
 
-      for (const u of historyUpdates) {
-        Y.applyUpdate(ydoc, fromBase64(u), 'init');
-      }
+      this.isCollabActive = true;
 
-      // If document is empty and we have existing note markdown, seed it
-      if (historyUpdates.length === 0 && yitems.length === 0) {
-        const currentMd = this.value() ?? '';
-        const initialItems = markdownToChecklist(currentMd);
-        const toSeed = initialItems.length > 0
-          ? initialItems
-          : [{ id: generateId(), text: '', completed: false }];
+      if (historyUpdates.length > 0 && !this.hasUserEdited) {
+        this.hasRemoteUpdates = true;
+        for (const u of historyUpdates) {
+          Y.applyUpdate(ydoc, fromBase64(u), 'init');
+        }
+      } else {
+        // Seed the active collaboration session from current items (or value markdown)
+        const currentItems = this.items();
+        const fallbackItems = markdownToChecklist(this.value() ?? '');
+        const nonEmptyCurrent = currentItems.filter(i => i.text.trim().length > 0);
+        const toSeed =
+          nonEmptyCurrent.length > 0
+            ? currentItems
+            : fallbackItems.length > 0
+              ? fallbackItems
+              : currentItems.length > 0
+                ? currentItems
+                : [{ id: generateId(), text: '', completed: false }];
 
-        ydoc.transact(() => {
-          const ymaps = toSeed.map(item => {
-            const map = new Y.Map<any>();
-            map.set('id', item.id);
-            map.set('text', item.text);
-            map.set('completed', item.completed);
-            return map;
-          });
-          yitems.insert(0, ymaps);
-        });
+        if (currentItems.length === 0 || (nonEmptyCurrent.length === 0 && fallbackItems.length > 0)) {
+          this.items.set(toSeed);
+        }
+        this.syncItemsToYjs(toSeed, 'seed');
       }
     } catch (err) {
       console.warn('Checklist: Realtime collaboration connection failed, fallback to local', err);
@@ -543,6 +618,8 @@ export class ChecklistEditorComponent
   }
 
   private destroyCollaboration(): void {
+    this.flushPendingSave();
+
     if (this.hub) {
       const h = this.hub;
       this.hub = null;
@@ -558,5 +635,7 @@ export class ChecklistEditorComponent
       this.yitems = null;
     }
     this.isCollabActive = false;
+    this.hasUserEdited = false;
+    this.hasRemoteUpdates = false;
   }
 }

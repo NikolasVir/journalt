@@ -184,14 +184,16 @@ export class NoteDialogComponent {
         this.newUrl.set('');
       });
 
-    // Reactively fetch full note details (typed metadata, validation warnings) for Journal notes
+    // Reactively fetch full note details (latest bodyMarkdown, typed metadata, validation warnings)
     toObservable(this.note)
       .pipe(
         switchMap((current) => {
-          if (!current || current.level !== 'Journal' || !current.typeId) {
+          if (!current) {
             return of(null);
           }
           if (
+            current.level === 'Journal' &&
+            current.typeId &&
             current.typedMetadataJson !== undefined &&
             current.typeValidationWarnings !== undefined &&
             current.typeValidationWarnings !== null
@@ -208,6 +210,19 @@ export class NoteDialogComponent {
       .subscribe((detailedNote) => {
         this.detailedNote.set(detailedNote);
         this.typeValidationWarnings.set(detailedNote?.typeValidationWarnings ?? []);
+        const current = this.note();
+        if (detailedNote && current) {
+          if (
+            this.editBody() === (current.bodyMarkdown ?? '') &&
+            detailedNote.bodyMarkdown !== undefined &&
+            detailedNote.bodyMarkdown !== current.bodyMarkdown
+          ) {
+            this.editBody.set(detailedNote.bodyMarkdown);
+          }
+          if (detailedNote.renderedHtml) {
+            this.renderedHtml.set(detailedNote.renderedHtml);
+          }
+        }
       });
 
     effect(() => {

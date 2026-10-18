@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnInit, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formatTag, NoteLevel, NoteResponse } from '@core/models/note.model';
 import { NoteService } from '@core/services/note.service';
@@ -236,6 +237,10 @@ export class NotesPageComponent implements OnInit {
   }
 
   constructor() {
+    this.noteService.noteUpdated$?.pipe(takeUntilDestroyed()).subscribe((updated) => {
+      this.notes.update((list) => list.map((n) => (n.id === updated.id ? updated : n)));
+    });
+
     effect(() => {
       // Reload notes whenever level route or libraryId changes
       const lvl = this.currentLevel();

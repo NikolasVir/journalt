@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import {
   CreateNoteRelationRequest,
   CreateNoteRequest,
@@ -50,6 +50,8 @@ function toTagDto(tag: TagDto | string): TagDto {
 export class NoteService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/notes';
+  private readonly noteUpdatedSubject = new Subject<NoteResponse>();
+  public readonly noteUpdated$ = this.noteUpdatedSubject.asObservable();
 
   public list(filter?: NoteFilterParams): Observable<PagedResult<NoteResponse>> {
     let params = new HttpParams();
@@ -104,7 +106,15 @@ export class NoteService {
             .filter((tag) => (tag.tagType === 'Typed' ? !!tag.category : !!tag.value))
         : null,
     };
-    return this.http.put<NoteResponse>(`${this.baseUrl}/${id}`, payload);
+    return this.http
+      .put<NoteResponse>(`${this.baseUrl}/${id}`, payload)
+      .pipe(tap((updated) => this.noteUpdatedSubject.next(updated)));
+  }
+
+  public updateChecklist(id: string, bodyMarkdown: string): Observable<NoteResponse> {
+    return this.http
+      .patch<NoteResponse>(`${this.baseUrl}/${id}/checklist`, { bodyMarkdown })
+      .pipe(tap((updated) => this.noteUpdatedSubject.next(updated)));
   }
 
   public trash(id: string): Observable<void> {
