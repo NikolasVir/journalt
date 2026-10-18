@@ -1,5 +1,6 @@
 namespace JournalT.Api.Controllers;
 
+using JournalT.Api.Hubs;
 using JournalT.Application.Common.Interfaces;
 using JournalT.Application.Notes.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -58,6 +59,19 @@ public class NotesController(INoteService noteService) : ControllerBase
         if (!result.Succeeded)
             return Problem(detail: string.Join("; ", result.Errors), statusCode: result.StatusCode);
 
+        CollaborationHub.ClearSessionIfIdle(id);
+        return Ok(result.Note);
+    }
+
+    [HttpPatch("{id:guid}/checklist")]
+    public async Task<IActionResult> UpdateChecklist(Guid id, [FromBody] UpdateChecklistRequest request, CancellationToken ct)
+    {
+        var result = await _noteService.UpdateChecklistAsync(id, request.BodyMarkdown ?? string.Empty, ct);
+
+        if (!result.Succeeded)
+            return Problem(detail: string.Join("; ", result.Errors), statusCode: result.StatusCode);
+
+        CollaborationHub.ClearSessionIfIdle(id);
         return Ok(result.Note);
     }
 
@@ -210,6 +224,7 @@ public class NotesController(INoteService noteService) : ControllerBase
     }
 }
 
+public record UpdateChecklistRequest(string? BodyMarkdown);
 public record RenderMarkdownRequest(string? Markdown);
 public record RenderMarkdownResponse(string RenderedHtml);
 

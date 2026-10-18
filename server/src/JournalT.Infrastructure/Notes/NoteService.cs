@@ -519,6 +519,47 @@ public sealed class NoteService(
         return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings, renderedHtml, null, isOwner, isShared, ownerUserName));
     }
 
+    public async Task<NoteResult> UpdateChecklistAsync(Guid id, string bodyMarkdown, CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId;
+        var accessibleLibIds = await _libraryService.GetAccessibleLibraryIdsAsync(userId, ct);
+        var note = await _db.Notes
+            .Include(n => n.Tags)
+            .Include(n => n.Sources)
+            .Include(n => n.Shares)
+            .Include(n => n.OutboundRelations)
+                .ThenInclude(r => r.TargetNote)
+            .FirstOrDefaultAsync(n => n.Id == id && (n.UserId == userId || n.Shares.Any(s => s.UserId == userId) || (n.LibraryId.HasValue && accessibleLibIds.Contains(n.LibraryId.Value))), ct);
+
+        if (note is null)
+            return NoteResult.NotFound();
+
+        if (note.IsTrashed)
+            return NoteResult.Failure("Cannot edit a trashed note. Restore it first.");
+
+        var body = bodyMarkdown ?? string.Empty;
+        var (renderedHtml, wikiLinks, wikiWarnings) = await RenderWithWikiLinkResolutionAsync(note.UserId, body, ct);
+
+        note.BodyMarkdown = body;
+        note.RenderedHtml = renderedHtml;
+        note.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+
+        var isOwner = note.UserId == userId;
+        var isShared = note.Shares.Any() || !isOwner;
+        string? ownerUserName = null;
+        if (!isOwner)
+        {
+            ownerUserName = await _db.Users
+                .Where(u => u.Id == note.UserId)
+                .Select(u => u.UserName)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        return NoteResult.Success(MapToResponse(note, wikiLinks, wikiWarnings, renderedHtml, null, isOwner, isShared, ownerUserName));
+    }
+
 
     public async Task<bool> TrashAsync(Guid id, CancellationToken ct = default)
     {
