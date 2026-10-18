@@ -5,9 +5,26 @@ const USER = { userName: 'collab', password: 'Password123!' };
 
 async function login(page, user) {
   await page.goto(`${BASE_URL}/auth/login`);
-  await page.waitForSelector('input[formControlName="userName"]');
-  await page.fill('input[formControlName="userName"]', user.userName);
-  await page.fill('input[formControlName="password"]', user.password);
+  await page.evaluate(async (u) => {
+    try {
+      const csrfRes = await fetch('/api/auth/csrf');
+      const { token } = await csrfRes.json();
+      await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': token },
+        body: JSON.stringify(u),
+      });
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'X-XSRF-TOKEN': token },
+      });
+    } catch {}
+  }, user);
+  await page.goto(`${BASE_URL}/auth/login`);
+  const userSelector = 'input[formcontrolname="username"], input[formControlName="userName"]';
+  await page.waitForSelector(userSelector);
+  await page.fill(userSelector, user.userName);
+  await page.fill('input[formcontrolname="password"], input[formControlName="password"]', user.password);
   await page.click('button[type="submit"]');
   await page.waitForURL((url) => !url.pathname.includes('/auth/login'), { timeout: 10000 });
 }
@@ -75,6 +92,7 @@ async function run() {
           title: 'Collaborative Shopping List',
           level: 'Note',
           format: 'List',
+          isPinned: true,
           bodyMarkdown: '- [ ] Apples\n- [ ] Milk\n- [x] Bread\n'
         })
       });
@@ -205,11 +223,10 @@ async function run() {
 
     assert(true, 'Item deletion on Page 2 reflected in real time on Page 1');
 
-    // Step 9: Database Persistence & Full Reload
-    console.log('\n--- Step 9: Saving and verifying persistence from database ---');
-    await page1.click('button[type="submit"]');
-    await page1.waitForTimeout(1500);
-
+    // Step 9: Auto-save Database Persistence & Full Reload (WITHOUT clicking Save Note!)
+    console.log('\n--- Step 9: Verifying auto-save persistence across reload WITHOUT clicking Save Note ---');
+    await page1.waitForTimeout(600);
+    await page1.goto(`${BASE_URL}/dashboard`);
     await page2.reload();
     await page2.waitForSelector('app-checklist-editor', { timeout: 10000 });
     await page2.waitForFunction(() => {
@@ -218,10 +235,109 @@ async function run() {
     }, { timeout: 5000 });
 
     const finalP2 = await getChecklistItems(page2);
-    console.log('  Final reloaded items on Page 2:', finalP2);
-    assert(finalP2.active.includes('Tomatoes'), 'Persisted note retained active item Tomatoes');
-    assert(finalP2.completed.includes('Milk'), 'Persisted note retained completed item Milk');
+    console.log('  Reloaded items on Page 2 (without Save button):', finalP2);
+    assert(finalP2.active.includes('Tomatoes'), 'Auto-saved note retained active item Tomatoes');
+    assert(finalP2.completed.includes('Milk'), 'Auto-saved note retained completed item Milk');
     assert(!finalP2.completed.includes('Bread'), 'Deleted item Bread remained deleted in SQLite');
+
+    // Close Page 2's note session so Page 1 is the sole user testing NoteDialog
+    await page2.goto(`${BASE_URL}/dashboard`);
+
+    // Step 10: NoteDialog check & uncheck persistence without clicking Close (Ψώνια bug reproduction)
+    console.log('\n--- Step 10: NoteDialog check/uncheck persistence without clicking Close ---');
+    await page1.goto(`${BASE_URL}/dashboard`);
+    await page1.waitForSelector('app-note-card', { timeout: 10000 });
+
+    // Open the note dialog by clicking the card
+    await page1.evaluate((id) => {
+      const cards = Array.from(document.querySelectorAll('app-note-card'));
+      const target = cards.find(c => c.textContent && c.textContent.includes('Collaborative Shopping List'));
+      if (target) {
+        const clickable = target.querySelector('.note-card') || target;
+        clickable.click();
+      }
+    }, noteId);
+
+    await page1.waitForSelector('app-note-dialog app-checklist-editor', { timeout: 10000 });
+    await page1.waitForFunction(() => {
+      const inputs = Array.from(document.querySelectorAll('app-note-dialog .checklist-item__input'));
+      return inputs.some(i => i.value.trim() === 'Apples');
+    }, { timeout: 5000 });
+
+    // Check 'Apples' inside the dialog
+    await page1.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('app-note-dialog .checklist-list:not(.checklist-list--completed) .checklist-item'));
+      for (const item of items) {
+        const input = item.querySelector('.checklist-item__input');
+        if (input && input.value.trim() === 'Apples') {
+          item.querySelector('.checklist-item__checkbox')?.click();
+          break;
+        }
+      }
+    });
+
+    await page1.waitForTimeout(500);
+
+    // Reload Page 1 immediately WITHOUT clicking Close button!
+    await page1.reload();
+    await page1.waitForSelector('app-note-card', { timeout: 10000 });
+
+    // Verify SQLite via API has Apples checked
+    const dbAfterCheck = await page1.evaluate(async (id) => {
+      const res = await fetch(`/api/notes/${id}`);
+      return await res.json();
+    }, noteId);
+    assert(dbAfterCheck.bodyMarkdown.includes('- [x] Apples'), 'SQLite persisted "- [x] Apples" immediately on dialog check without closing dialog');
+
+    // Reopen dialog and verify Apples is in completed
+    await page1.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('app-note-card'));
+      const target = cards.find(c => c.textContent && c.textContent.includes('Collaborative Shopping List'));
+      const clickable = target?.querySelector('.note-card') || target;
+      clickable?.click();
+    });
+    await page1.waitForSelector('app-note-dialog app-checklist-editor', { timeout: 10000 });
+    await page1.waitForFunction(() => {
+      const completed = Array.from(document.querySelectorAll('app-note-dialog .checklist-list--completed .checklist-item__input'));
+      return completed.some(i => i.value.trim() === 'Apples');
+    }, { timeout: 5000 });
+    assert(true, 'Reopened NoteDialog shows "Apples" as completed after ungraceful reload');
+
+    // Now UNCHECK 'Apples' inside the dialog and reload WITHOUT clicking Close ("vice versa" bug test)
+    await page1.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('app-note-dialog .checklist-list--completed .checklist-item'));
+      for (const item of items) {
+        const input = item.querySelector('.checklist-item__input');
+        if (input && input.value.trim() === 'Apples') {
+          item.querySelector('.checklist-item__checkbox')?.click();
+          break;
+        }
+      }
+    });
+
+    await page1.waitForTimeout(500);
+    await page1.reload();
+    await page1.waitForSelector('app-note-card', { timeout: 10000 });
+
+    const dbAfterUncheck = await page1.evaluate(async (id) => {
+      const res = await fetch(`/api/notes/${id}`);
+      return await res.json();
+    }, noteId);
+    assert(dbAfterUncheck.bodyMarkdown.includes('- [ ] Apples'), 'SQLite persisted "- [ ] Apples" immediately on dialog uncheck without closing dialog');
+
+    // Reopen dialog one more time to verify Apples is active (not re-checked by stale SignalR session!)
+    await page1.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('app-note-card'));
+      const target = cards.find(c => c.textContent && c.textContent.includes('Collaborative Shopping List'));
+      const clickable = target?.querySelector('.note-card') || target;
+      clickable?.click();
+    });
+    await page1.waitForSelector('app-note-dialog app-checklist-editor', { timeout: 10000 });
+    await page1.waitForFunction(() => {
+      const active = Array.from(document.querySelectorAll('app-note-dialog .checklist-list:not(.checklist-list--completed) .checklist-item__input'));
+      return active.some(i => i.value.trim() === 'Apples');
+    }, { timeout: 5000 });
+    assert(true, 'Reopened NoteDialog keeps "Apples" unchecked (no stale SignalR session replay)');
 
     console.log('\n========================================');
     console.log(`🎉 ALL REALTIME CHECKLIST TESTS PASSED: ${passedTests}/${totalTests}`);
