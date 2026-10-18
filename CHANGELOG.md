@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1](https://github.com/NikolasVir/journalt/compare/v1.3.0...v1.3.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **api:** add checklist patch and session cleanup ([8ae5c84](https://github.com/NikolasVir/journalt/commit/8ae5c84ef9a87ea19b50b46cdfdeca46b3be3df6))
+* **client:** auto-save and sync checklist edits ([1716f9b](https://github.com/NikolasVir/journalt/commit/1716f9b6c9c7ea82d51972d7bf1abff93223fa8c))
+
 ## [1.3.0](https://github.com/NikolasVir/journalt/compare/v1.2.0...v1.3.0) (2026-10-13)
 
 
